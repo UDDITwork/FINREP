@@ -1,0 +1,73 @@
+{
+  "name": "richeai-backend",
+  "version": "1.0.0",
+  "description": "RichieAI Backend with Enhanced CAS Parser",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "jest",
+    "test-cas": "node test-cas-parsing.js",
+    "test-cas-init": "node test-cas-parsing.js init",
+    "test-cas-files": "node test-cas-parsing.js files",
+    "lint": "eslint .",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "bcryptjs": "^3.0.2",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "date-fns": "^2.30.0",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^6.11.2",
+    "express-validator": "^7.0.1",
+    "fs-extra": "^11.1.1",
+    "helmet": "^7.2.0",
+    "joi": "^17.9.2",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.29.4",
+    "mongoose": "^8.17.1",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.1",
+    "node-cache": "^5.1.2",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^7.0.5",
+    "path": "^0.12.7",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^1.1.1",
+    "pdf2json": "^3.1.6",
+    "pdfjs-dist": "^5.3.93",
+    "pdfreader": "^3.0.7",
+    "winston": "^3.17.0",
+    "xss": "^1.0.14"
+  },
+  "devDependencies": {
+    "@types/node": "^20.5.0",
+    "eslint": "^8.47.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "jest": "^29.6.2",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.0.2",
+    "supertest": "^6.3.3"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": [
+    "fintech",
+    "cas-parser",
+    "financial-planning",
+    "cdsl",
+    "nsdl",
+    "mutual-funds",
+    "demat-accounts",
+    "pdf-parsing"
+  ],
+  "author": "RichieAI Team",
+  "license": "MIT"
+}

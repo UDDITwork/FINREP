@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LOE Test</title>
+</head>
+<body>
+    <h1>LOE API Test</h1>
+    <button onclick="testLOE()">Test LOE API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testLOE() {
+            const token = 'a58fc1bc8838d22d140845b9d63df4585be758f2795ea34ea5fa78e4e4b9be54';
+            const url = `http://localhost:5000/api/loe/view/${token}`;
+            
+            try {
+                console.log('🔍 Testing LOE API:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                console.log('✅ API Response:', data);
+                
+                document.getElementById('result').innerHTML = `
+                    <h3>API Response:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                if (data.success) {
+                    console.log('✅ LOE loaded successfully!');
+                    console.log('Client:', data.data.client);
+                    console.log('Advisor:', data.data.advisor);
+                } else {
+                    console.log('❌ LOE failed to load:', data.message);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                document.getElementById('result').innerHTML = `
+                    <h3>Error:</h3>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
