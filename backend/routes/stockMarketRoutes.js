@@ -1,22 +1,72 @@
 /**
  * FILE LOCATION: backend/routes/stockMarketRoutes.js
  * 
- * Stock Market API routes that provide access to real-time stock data,
- * mutual funds, IPOs, and market analytics. Includes rate limiting and
- * authentication middleware for secure access.
+ * Simplified Stock Market Routes using Perplexity AI with official 'sonar-pro' model.
+ * Removed complex fallback system, monitoring, and rate limiting
+ * for quick implementation. Same endpoints maintained for frontend compatibility.
  */
 
-// Load environment variables
 require('dotenv').config();
-
 const express = require('express');
 const router = express.Router();
+
+// ============================================================================
+// DEBUG ENDPOINT - NO AUTH (AT THE VERY TOP - BEFORE MIDDLEWARE)
+// ============================================================================
+router.get('/debug-perplexity', async (req, res) => {
+  try {
+    console.log('🧪 [DEBUG] Testing Perplexity API directly...');
+    
+    const axios = require('axios');
+    const apiKey = process.env.PERPLEXITY_API_KEY;
+    
+    console.log('🔑 [DEBUG] API Key present:', !!apiKey);
+    console.log('🔑 [DEBUG] API Key length:', apiKey?.length);
+    console.log('🔑 [DEBUG] API Key starts with:', apiKey?.substring(0, 10));
+    
+    const requestPayload = {
+      model: 'sonar-pro',
+      messages: [
+        { role: 'user', content: 'Hello, just respond with "API working"' }
+      ]
+    };
+    
+    console.log('📤 [DEBUG] Request payload:', JSON.stringify(requestPayload, null, 2));
+    
+    const response = await axios.post('https://api.perplexity.ai/chat/completions', requestPayload, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000
+    });
+    
+    console.log('✅ [DEBUG] Response received:', response.data);
+    res.json({ success: true, data: response.data });
+    
+  } catch (error) {
+    console.error('❌ [DEBUG] DETAILED ERROR:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      headers: error.response?.headers
+    });
+    
+    res.json({ 
+      success: false, 
+      error: error.message,
+      status: error.response?.status,
+      details: error.response?.data 
+    });
+  }
+});
+
+// NOW IMPORT MIDDLEWARE AFTER DEBUG ENDPOINT
 const { auth: authenticateToken } = require('../middleware/auth');
-const claudeAIFallbackService = require('../services/claudeAIFallbackService');
-const fallbackRoutes = require('./stockMarketFallbackRoutes');
-const stockMarketMonitoringService = require('../services/stockMarketMonitoringService');
+
+// Import controllers
 const {
-  checkRateLimit,
   searchStock,
   searchMutualFund,
   getMutualFunds,
@@ -30,140 +80,83 @@ const {
   getStockTargetPrice,
   getMarketOverview,
   clearCache,
-  getCacheStats
+  getCacheStats,
+  testPerplexity
 } = require('../controllers/stockMarketController');
 
-// Apply rate limiting to all stock market routes (except health check)
+// Apply authentication to all routes EXCEPT debug endpoint
 router.use((req, res, next) => {
-  // Skip rate limiting for health check
-  if (req.path === '/health') {
-    return next();
-  }
-  return checkRateLimit(req, res, next);
-});
-
-// Apply authentication to all routes (except health check and test endpoints)
-router.use((req, res, next) => {
-  // Skip authentication for health check and test endpoints
-  if (req.path === '/health' || req.path.startsWith('/test-')) {
+  if (req.path === '/health' || req.path.startsWith('/test-') || req.path === '/debug-perplexity') {
     return next();
   }
   return authenticateToken(req, res, next);
 });
 
 // ============================================================================
-// TEST ENDPOINTS WITH CLAUDE AI FALLBACK
+// TEST ENDPOINTS FOR PERPLEXITY API
 // ============================================================================
 
 /**
- * Test endpoint that demonstrates Claude AI fallback
- * GET /api/stock-market/test-claude-fallback
+ * Test endpoint for Perplexity stock search
+ * GET /api/stock-market/test-perplexity-stock
  */
-router.get('/test-claude-fallback', async (req, res) => {
+router.get('/test-perplexity-stock', async (req, res) => {
   try {
-    console.log('🤖 [Test] Testing Claude AI fallback service...');
+    console.log('🧪 [Test] Testing Perplexity stock search...');
     
-    // Test Claude AI with a simple stock query
-    const fallbackData = await claudeAIFallbackService.getStockFallback('RELIANCE', 'basic');
-    
-    if (fallbackData.success) {
-      console.log('✅ [Test] Claude AI fallback working successfully');
-      res.json({
-        success: true,
-        message: 'Claude AI fallback service is working!',
-        data: fallbackData.data,
-        source: fallbackData.source,
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      throw new Error(fallbackData.error || 'Claude AI fallback failed');
-    }
+    // Test with a popular stock
+    req.query = { companyName: 'Reliance Industries' };
+    await searchStock(req, res);
     
   } catch (error) {
-    console.error('❌ [Test] Claude AI fallback test failed:', error.message);
+    console.error('❌ [Test] Perplexity stock test failed:', error.message);
     res.status(500).json({
       success: false,
-      message: 'Claude AI fallback test failed',
+      message: 'Perplexity stock test failed',
       error: error.message
     });
   }
 });
 
 /**
- * Test endpoint for market data fallback
- * GET /api/stock-market/test-market-fallback
+ * Test endpoint for Perplexity trending stocks
+ * GET /api/stock-market/test-perplexity-trending
  */
-router.get('/test-market-fallback', async (req, res) => {
+router.get('/test-perplexity-trending', async (req, res) => {
   try {
-    console.log('🤖 [Test] Testing Claude AI market data fallback...');
+    console.log('🧪 [Test] Testing Perplexity trending stocks...');
     
-    const fallbackData = await claudeAIFallbackService.getMarketDataFallback('trending');
-    
-    if (fallbackData.success) {
-      console.log('✅ [Test] Claude AI market data fallback working successfully');
-      res.json({
-        success: true,
-        message: 'Claude AI market data fallback is working!',
-        data: fallbackData.data,
-        source: fallbackData.source,
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      throw new Error(fallbackData.error || 'Claude AI market data fallback failed');
-    }
+    await getTrendingStocks(req, res);
     
   } catch (error) {
-    console.error('❌ [Test] Claude AI market data fallback test failed:', error.message);
+    console.error('❌ [Test] Perplexity trending test failed:', error.message);
     res.status(500).json({
       success: false,
-      message: 'Claude AI market data fallback test failed',
+      message: 'Perplexity trending test failed',
       error: error.message
     });
   }
 });
 
 /**
- * Test endpoint for news fallback
- * GET /api/stock-market/test-news-fallback
+ * Test endpoint for Perplexity IPO data
+ * GET /api/stock-market/test-perplexity-ipo
  */
-router.get('/test-news-fallback', async (req, res) => {
+router.get('/test-perplexity-ipo', async (req, res) => {
   try {
-    console.log('🤖 [Test] Testing Claude AI news fallback...');
-    
-    const fallbackData = await claudeAIFallbackService.getNewsFallback();
-    
-    if (fallbackData.success) {
-      console.log('✅ [Test] Claude AI news fallback working successfully');
-      res.json({
-        success: true,
-        message: 'Claude AI news fallback is working!',
-        data: fallbackData.data,
-        source: fallbackData.source,
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      throw new Error(fallbackData.error || 'Claude AI news fallback failed');
-    }
-    
+    console.log('🧪 [Test] Testing Perplexity IPO data...');
+    await getIPOData(req, res);
   } catch (error) {
-    console.error('❌ [Test] Claude AI news fallback test failed:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Claude AI news fallback test failed',
-      error: error.message
-    });
+    console.error('❌ [Test] Perplexity IPO test failed:', error.message);
+    res.status(500).json({ success: false, message: 'Perplexity IPO test failed', error: error.message });
   }
 });
 
-// ============================================================================
-// FALLBACK ROUTES (No authentication required)
-// ============================================================================
-
 /**
- * Mount fallback routes
- * All fallback routes will be available at /api/stock-market/fallback/*
+ * Test endpoint for Perplexity API connection
+ * GET /api/stock-market/test-perplexity
  */
-router.use('/fallback', fallbackRoutes);
+router.get('/test-perplexity', testPerplexity);
 
 // ============================================================================
 // STOCK SEARCH & INFORMATION ROUTES
@@ -234,13 +227,13 @@ router.get('/price-shockers', getPriceShockers);
 // ============================================================================
 
 /**
- * Get historical data for a stock
+ * Get historical data for a stock (placeholder implementation)
  * GET /api/stock-market/historical-data?stockName=RELIANCE&period=1yr&filter=price
  */
 router.get('/historical-data', getHistoricalData);
 
 /**
- * Get analyst target prices for a stock
+ * Get analyst target prices for a stock (placeholder implementation)
  * GET /api/stock-market/stock-target-price?stockId=RELIANCE
  */
 router.get('/stock-target-price', getStockTargetPrice);
@@ -256,130 +249,14 @@ router.get('/stock-target-price', getStockTargetPrice);
 router.get('/overview', getMarketOverview);
 
 /**
- * Get cache statistics
+ * Get cache statistics (simplified - no caching implemented)
  * GET /api/stock-market/cache-stats
  */
 router.get('/cache-stats', getCacheStats);
 
 /**
- * Get comprehensive system monitoring metrics (Admin only)
- * GET /api/stock-market/monitoring
- */
-router.get('/monitoring', (req, res) => {
-  try {
-    // Check if user is admin (you can implement your own admin check logic)
-    const isAdmin = req.user && req.user.role === 'admin';
-    
-    if (!isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Admin privileges required.',
-        error: 'INSUFFICIENT_PERMISSIONS'
-      });
-    }
-
-    console.log('📊 [Stock Market] Admin requested monitoring metrics');
-    
-    const metricsReport = stockMarketMonitoringService.getMetricsReport();
-    
-    res.json({
-      success: true,
-      message: 'Monitoring metrics retrieved successfully',
-      data: metricsReport,
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('❌ [Stock Market] Error retrieving monitoring metrics:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve monitoring metrics',
-      error: error.message
-    });
-  }
-});
-
-/**
- * Get endpoint-specific metrics (Admin only)
- * GET /api/stock-market/monitoring/endpoint/:endpoint
- */
-router.get('/monitoring/endpoint/:endpoint', (req, res) => {
-  try {
-    // Check if user is admin
-    const isAdmin = req.user && req.user.role === 'admin';
-    
-    if (!isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Admin privileges required.',
-        error: 'INSUFFICIENT_PERMISSIONS'
-      });
-    }
-
-    const { endpoint } = req.params;
-    console.log(`📊 [Stock Market] Admin requested metrics for endpoint: ${endpoint}`);
-    
-    const endpointMetrics = stockMarketMonitoringService.getEndpointMetrics(endpoint);
-    
-    res.json({
-      success: true,
-      message: `Endpoint metrics retrieved for ${endpoint}`,
-      data: endpointMetrics,
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('❌ [Stock Market] Error retrieving endpoint metrics:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve endpoint metrics',
-      error: error.message
-    });
-  }
-});
-
-/**
- * Export monitoring metrics (Admin only)
- * GET /api/stock-market/monitoring/export
- */
-router.get('/monitoring/export', (req, res) => {
-  try {
-    // Check if user is admin
-    const isAdmin = req.user && req.user.role === 'admin';
-    
-    if (!isAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Admin privileges required.',
-        error: 'INSUFFICIENT_PERMISSIONS'
-      });
-    }
-
-    console.log('📊 [Stock Market] Admin requested metrics export');
-    
-    const exportedMetrics = stockMarketMonitoringService.exportMetrics();
-    
-    res.json({
-      success: true,
-      message: 'Monitoring metrics exported successfully',
-      data: exportedMetrics,
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('❌ [Stock Market] Error exporting monitoring metrics:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to export monitoring metrics',
-      error: error.message
-    });
-  }
-});
-
-/**
- * Clear cache (admin only)
+ * Clear cache (simplified - no caching implemented)
  * POST /api/stock-market/clear-cache
- * Body: { "pattern": "optional_pattern_to_clear" }
  */
 router.post('/clear-cache', clearCache);
 
@@ -396,31 +273,32 @@ router.get('/health', (req, res) => {
     success: true,
     message: 'Stock Market API is healthy',
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
+    version: '2.0.0',
     status: {
       primary: 'operational',
-      fallback: 'available',
-      cache: 'active'
+      dataSource: 'perplexity_ai',
+      fallback: 'not_needed'
     },
     endpoints: {
-      test: '/test-claude-fallback, /test-market-fallback, /test-news-fallback',
-      fallback: '/fallback/* (No auth required)',
+      test: '/test-perplexity-stock, /test-perplexity-trending, /test-perplexity-ipo',
       search: '/search-stock, /search-mutual-fund',
       market: '/ipo, /trending, /52-week-high-low, /most-active, /price-shockers',
       analytics: '/historical-data, /stock-target-price',
-      overview: '/overview, /mutual-funds',
+      overview: '/overview, /mutual-funds, /news',
       utility: '/cache-stats, /clear-cache, /health'
     },
-    fallbackSystem: {
-      status: 'active',
-      description: 'Claude AI provides data when main API fails',
-      endpoints: '/fallback/search-stock, /fallback/ipo, /fallback/news, etc.'
-    },
     features: {
-      automaticFallback: true,
-      responseTransformation: true,
-      intelligentCaching: true,
-      dataQualityValidation: true
+      perplexityIntegration: true,
+      realTimeData: true,
+      indianMarketFocus: true,
+      noAuthenticationRequired: 'test endpoints only',
+      consistentResponseFormat: true
+    },
+    removedFeatures: {
+      complexFallbackSystem: 'simplified to single Perplexity source',
+      rateLimiting: 'removed for quick implementation',
+      complexCaching: 'using real-time data only',
+      monitoring: 'removed for simplicity'
     }
   });
 });

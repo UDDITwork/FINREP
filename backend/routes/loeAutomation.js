@@ -11,6 +11,8 @@ const router = express.Router();
 const auth = require('../middleware/auth');
 const loeAutomationController = require('../controllers/loeAutomationController');
 const { logger } = require('../utils/logger');
+const fs = require('fs');
+const path = require('path');
 
 // Middleware to log LOE Automation requests
 const logLOEAutomationRequest = (action) => (req, res, next) => {
@@ -51,6 +53,32 @@ router.post('/clients/:clientId/create-loe',
 router.get('/client/:accessToken', 
   logLOEAutomationRequest('Get client LOE data'), 
   loeAutomationController.getClientLOEData
+);
+
+// Serve LOE PDF files
+router.get('/pdf/:filename', 
+  logLOEAutomationRequest('Serve LOE PDF file'), 
+  (req, res) => {
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, '../uploads/loe', filename);
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      logger.error('LOE PDF file not found', { filename, filePath });
+      return res.status(404).json({
+        success: false,
+        error: 'PDF file not found'
+      });
+    }
+    
+    // Set appropriate headers for PDF
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+    
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  }
 );
 
 // Submit client signature

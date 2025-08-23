@@ -1,26 +1,51 @@
 /**
  * FILE LOCATION: backend/services/stockMarketResponseTransformer.js
  * 
- * Response transformer service that ensures consistent data format
- * regardless of whether data comes from Indian Stock API or Claude AI fallback.
- * This service normalizes all responses to match the expected frontend schema.
+ * Simplified response transformer for Perplexity AI Stock Market data.
+ * Ensures consistent data format for frontend components regardless
+ * of Perplexity response variations. Uses official 'sonar-pro' model.
  */
 
 class StockMarketResponseTransformer {
+  
   /**
    * Transform stock search response to consistent format
-   * @param {Object} data - Raw API response data
-   * @param {string} source - Data source ('indian_api' or 'claude_ai_fallback')
+   * @param {Object} data - Raw Perplexity response data
+   * @param {string} source - Data source (always 'perplexity_ai')
    * @returns {Object} Normalized stock data
    */
-  transformStockResponse(data, source = 'indian_api') {
+  transformStockResponse(data, source = 'perplexity_ai') {
     try {
-      if (source === 'claude_ai_fallback') {
-        return this.transformClaudeAIStockData(data);
+      // Handle if data is already in correct format
+      if (data && data.companyName && data.currentPrice) {
+        return {
+          ...data,
+          source: source,
+          timestamp: data.timestamp || new Date().toISOString()
+        };
       }
-      
-      // Transform Indian Stock API response
-      return this.transformIndianAPIStockData(data);
+
+      // Handle various Perplexity response formats
+      const transformedData = {
+        companyName: data?.companyName || data?.name || 'N/A',
+        tickerId: data?.tickerId || data?.symbol || data?.ticker || 'N/A',
+        currentPrice: this.normalizePrice(data?.currentPrice),
+        percentChange: this.normalizeNumber(data?.percentChange || data?.change || 0),
+        yearHigh: this.normalizeNumber(data?.yearHigh || data?.high52Week || data?.fiftyTwoWeekHigh),
+        yearLow: this.normalizeNumber(data?.yearLow || data?.low52Week || data?.fiftyTwoWeekLow),
+        industry: data?.industry || data?.sector || 'N/A',
+        keyMetrics: {
+          marketCap: data?.keyMetrics?.marketCap || data?.marketCap || 'N/A',
+          peRatio: data?.keyMetrics?.peRatio || data?.peRatio || data?.pe || 'N/A'
+        },
+        companyProfile: {
+          description: data?.companyProfile?.description || data?.description || 'N/A'
+        },
+        timestamp: data?.timestamp || new Date().toISOString(),
+        source: source
+      };
+
+      return transformedData;
     } catch (error) {
       console.error('❌ [Response Transformer] Error transforming stock response:', error);
       return this.getDefaultStockData();
@@ -29,18 +54,23 @@ class StockMarketResponseTransformer {
 
   /**
    * Transform mutual fund response to consistent format
-   * @param {Object} data - Raw API response data
-   * @param {string} source - Data source ('indian_api' or 'claude_ai_fallback')
+   * @param {Object} data - Raw Perplexity response data
+   * @param {string} source - Data source
    * @returns {Object} Normalized mutual fund data
    */
-  transformMutualFundResponse(data, source = 'indian_api') {
+  transformMutualFundResponse(data, source = 'perplexity_ai') {
     try {
-      if (source === 'claude_ai_fallback') {
-        return this.transformClaudeAIMutualFundData(data);
-      }
-      
-      // Transform Indian Stock API response
-      return this.transformIndianAPIMutualFundData(data);
+      return {
+        fundName: data?.fundName || data?.schemeName || data?.name || 'N/A',
+        nav: this.normalizeNumber(data?.nav || data?.navValue || 0),
+        category: data?.category || data?.schemeType || data?.type || 'N/A',
+        fundHouse: data?.fundHouse || data?.amc || data?.assetManagementCompany || 'N/A',
+        expenseRatio: data?.expenseRatio || data?.totalExpenseRatio || 'N/A',
+        fundManager: data?.fundManager || data?.manager || 'N/A',
+        assetAllocation: data?.assetAllocation || data?.allocation || 'N/A',
+        timestamp: data?.timestamp || new Date().toISOString(),
+        source: source
+      };
     } catch (error) {
       console.error('❌ [Response Transformer] Error transforming mutual fund response:', error);
       return this.getDefaultMutualFundData();
@@ -49,18 +79,26 @@ class StockMarketResponseTransformer {
 
   /**
    * Transform news response to consistent format
-   * @param {Array} data - Raw API response data
-   * @param {string} source - Data source ('indian_api' or 'claude_ai_fallback')
+   * @param {Array|Object} data - Raw Perplexity response data
+   * @param {string} source - Data source
    * @returns {Array} Normalized news data
    */
-  transformNewsResponse(data, source = 'indian_api') {
+  transformNewsResponse(data, source = 'perplexity_ai') {
     try {
-      if (source === 'claude_ai_fallback') {
-        return this.transformClaudeAINewsData(data);
-      }
-      
-      // Transform Indian Stock API response
-      return this.transformIndianAPINewsData(data);
+      // Ensure data is an array
+      const newsArray = Array.isArray(data) ? data : [data];
+
+      return newsArray.map((item, index) => ({
+        title: item?.title || item?.headline || `News Item ${index + 1}`,
+        summary: item?.summary || item?.description || item?.content || 'No summary available',
+        source: item?.source || item?.sourceName || 'Perplexity AI',
+        pub_date: item?.pub_date || item?.publishedAt || item?.date || new Date().toISOString(),
+        topics: Array.isArray(item?.topics) ? item.topics : 
+               Array.isArray(item?.categories) ? item.categories : 
+               ['Market News'],
+        url: item?.url || item?.link || '#',
+        timestamp: item?.timestamp || new Date().toISOString()
+      }));
     } catch (error) {
       console.error('❌ [Response Transformer] Error transforming news response:', error);
       return this.getDefaultNewsData();
@@ -69,19 +107,59 @@ class StockMarketResponseTransformer {
 
   /**
    * Transform market data response to consistent format
-   * @param {Object} data - Raw API response data
+   * @param {Object} data - Raw Perplexity response data
    * @param {string} dataType - Type of market data
-   * @param {string} source - Data source ('indian_api' or 'claude_ai_fallback')
+   * @param {string} source - Data source
    * @returns {Object} Normalized market data
    */
-  transformMarketDataResponse(data, dataType, source = 'indian_api') {
+  transformMarketDataResponse(data, dataType, source = 'perplexity_ai') {
     try {
-      if (source === 'claude_ai_fallback') {
-        return this.transformClaudeAIMarketData(data, dataType);
-      }
+      const timestamp = data?.timestamp || new Date().toISOString();
       
-      // Transform Indian Stock API response
-      return this.transformIndianAPIMarketData(data, dataType);
+      switch (dataType) {
+        case 'trending':
+          return {
+            topGainers: this.normalizeStockArray(data?.topGainers || []),
+            topLosers: this.normalizeStockArray(data?.topLosers || []),
+            timestamp,
+            source
+          };
+
+        case 'ipo':
+          return {
+            upcoming: this.normalizeIPOArray(data?.upcoming || []),
+            active: this.normalizeIPOArray(data?.active || []),
+            listed: this.normalizeIPOArray(data?.listed || []),
+            closed: this.normalizeIPOArray(data?.closed || []),
+            timestamp,
+            source
+          };
+
+        case 'mostActive':
+          return {
+            nse: this.normalizeStockArray(data?.nse || []),
+            bse: this.normalizeStockArray(data?.bse || []),
+            timestamp,
+            source
+          };
+
+        case 'priceShockers':
+          return Array.isArray(data) ? 
+            this.normalizeStockArray(data) : 
+            this.normalizeStockArray(data?.shockers || []);
+
+        case 'overview':
+          return {
+            indices: this.normalizeIndicesArray(data?.indices || []),
+            sectors: this.normalizeSectorsArray(data?.sectors || []),
+            marketSentiment: data?.marketSentiment || 'neutral',
+            timestamp,
+            source
+          };
+
+        default:
+          return { ...data, timestamp, source };
+      }
     } catch (error) {
       console.error('❌ [Response Transformer] Error transforming market data response:', error);
       return this.getDefaultMarketData(dataType);
@@ -89,160 +167,98 @@ class StockMarketResponseTransformer {
   }
 
   /**
-   * Transform Claude AI stock data to consistent format
+   * Normalize stock array data
+   * @param {Array} stocks - Array of stock objects
+   * @returns {Array} Normalized stock array
    */
-  transformClaudeAIStockData(data) {
-    return {
-      companyName: data.companyName || 'N/A',
-      tickerId: data.tickerId || 'N/A',
-      currentPrice: {
-        BSE: data.currentPrice?.BSE || data.currentPrice || 'N/A',
-        NSE: data.currentPrice?.NSE || data.currentPrice || 'N/A'
-      },
-      percentChange: data.percentChange || 0,
-      yearHigh: data.yearHigh || 'N/A',
-      yearLow: data.yearLow || 'N/A',
-      industry: data.industry || 'N/A',
-      keyMetrics: {
-        marketCap: data.keyMetrics?.marketCap || 'N/A',
-        peRatio: data.keyMetrics?.peRatio || 'N/A'
-      },
-      companyProfile: {
-        description: data.companyProfile?.description || 'N/A'
-      },
-      timestamp: data.timestamp || new Date().toISOString(),
-      source: 'claude_ai_fallback'
-    };
-  }
-
-  /**
-   * Transform Claude AI mutual fund data to consistent format
-   */
-  transformClaudeAIMutualFundData(data) {
-    return {
-      fundName: data.fundName || 'N/A',
-      nav: data.nav || 'N/A',
-      category: data.category || 'N/A',
-      assetAllocation: data.assetAllocation || 'N/A',
-      expenseRatio: data.expenseRatio || 'N/A',
-      fundManager: data.fundManager || 'N/A',
-      fundHouse: data.fundHouse || 'N/A',
-      timestamp: data.timestamp || new Date().toISOString(),
-      source: 'claude_ai_fallback'
-    };
-  }
-
-  /**
-   * Transform Claude AI news data to consistent format
-   */
-  transformClaudeAINewsData(data) {
-    if (!Array.isArray(data)) {
-      data = [data];
-    }
-
-    return data.map(item => ({
-      title: item.title || 'N/A',
-      summary: item.summary || 'N/A',
-      source: item.source || 'Claude AI',
-      pub_date: item.pub_date || item.date || new Date().toISOString(),
-      topics: item.topics || item.categories || ['General'],
-      url: item.url || '#',
-      timestamp: item.timestamp || new Date().toISOString()
-    }));
-  }
-
-  /**
-   * Transform Claude AI market data to consistent format
-   */
-  transformClaudeAIMarketData(data, dataType) {
-    const timestamp = data.timestamp || new Date().toISOString();
+  normalizeStockArray(stocks) {
+    if (!Array.isArray(stocks)) return [];
     
-    switch (dataType) {
-      case 'trending':
-        return {
-          topGainers: data.topGainers || [],
-          topLosers: data.topLosers || [],
-          timestamp
-        };
-      case 'ipo':
-        return {
-          upcoming: data.upcoming || [],
-          active: data.active || [],
-          listed: data.listed || [],
-          closed: data.closed || [],
-          timestamp
-        };
-      case 'mostActive':
-        return {
-          nse: data.nse || [],
-          bse: data.bse || [],
-          timestamp
-        };
-      case 'priceShockers':
-        return {
-          shockers: data.shockers || [],
-          timestamp
-        };
-      case 'overview':
-        return {
-          indices: data.indices || [],
-          sectors: data.sectors || [],
-          marketSentiment: data.marketSentiment || 'neutral',
-          timestamp
-        };
-      default:
-        return { ...data, timestamp };
-    }
-  }
-
-  /**
-   * Transform Indian Stock API stock data to consistent format
-   */
-  transformIndianAPIStockData(data) {
-    // This would contain the logic to transform Indian Stock API responses
-    // For now, return as-is since we're focusing on fallback integration
-    return {
-      ...data,
-      source: 'indian_stock_api',
-      timestamp: data.timestamp || new Date().toISOString()
-    };
-  }
-
-  /**
-   * Transform Indian Stock API mutual fund data to consistent format
-   */
-  transformIndianAPIMutualFundData(data) {
-    return {
-      ...data,
-      source: 'indian_stock_api',
-      timestamp: data.timestamp || new Date().toISOString()
-    };
-  }
-
-  /**
-   * Transform Indian Stock API news data to consistent format
-   */
-  transformIndianAPINewsData(data) {
-    if (!Array.isArray(data)) {
-      data = [data];
-    }
-
-    return data.map(item => ({
-      ...item,
-      source: item.source || 'Indian Stock API',
-      timestamp: item.timestamp || new Date().toISOString()
+    return stocks.map(stock => ({
+      companyName: stock?.companyName || stock?.name || stock?.company || 'N/A',
+      tickerId: stock?.tickerId || stock?.symbol || stock?.ticker || 'N/A',
+      currentPrice: this.normalizeNumber(stock?.currentPrice || stock?.price || 0),
+      percentChange: this.normalizeNumber(stock?.percentChange || stock?.change || 0),
+      volume: this.normalizeNumber(stock?.volume || stock?.tradingVolume || 0)
     }));
   }
 
   /**
-   * Transform Indian Stock API market data to consistent format
+   * Normalize IPO array data
+   * @param {Array} ipos - Array of IPO objects
+   * @returns {Array} Normalized IPO array
    */
-  transformIndianAPIMarketData(data, dataType) {
-    return {
-      ...data,
-      source: 'indian_stock_api',
-      timestamp: data.timestamp || new Date().toISOString()
-    };
+  normalizeIPOArray(ipos) {
+    if (!Array.isArray(ipos)) return [];
+    
+    return ipos.map(ipo => ({
+      name: ipo?.name || ipo?.companyName || 'N/A',
+      symbol: ipo?.symbol || ipo?.tickerId || ipo?.ticker || 'N/A',
+      expected_price: ipo?.expected_price || ipo?.priceRange || ipo?.price || 'TBA',
+      expected_date: ipo?.expected_date || ipo?.listingDate || ipo?.date || 'TBA',
+      min_price: this.normalizeNumber(ipo?.min_price || ipo?.minPrice || 0),
+      max_price: this.normalizeNumber(ipo?.max_price || ipo?.maxPrice || 0),
+      lot_size: ipo?.lot_size || ipo?.lotSize || ipo?.minimumLot || 'TBA',
+      listing_price: this.normalizeNumber(ipo?.listing_price || ipo?.listingPrice || 0),
+      current_price: this.normalizeNumber(ipo?.current_price || ipo?.currentPrice || 0)
+    }));
+  }
+
+  /**
+   * Normalize indices array data
+   * @param {Array} indices - Array of index objects
+   * @returns {Array} Normalized indices array
+   */
+  normalizeIndicesArray(indices) {
+    if (!Array.isArray(indices)) return [];
+    
+    return indices.map(index => ({
+      name: index?.name || 'N/A',
+      value: this.normalizeNumber(index?.value || index?.points || 0),
+      change: this.normalizeNumber(index?.change || index?.pointsChange || 0),
+      changePercent: this.normalizeNumber(index?.changePercent || index?.percentChange || 0)
+    }));
+  }
+
+  /**
+   * Normalize sectors array data
+   * @param {Array} sectors - Array of sector objects
+   * @returns {Array} Normalized sectors array
+   */
+  normalizeSectorsArray(sectors) {
+    if (!Array.isArray(sectors)) return [];
+    
+    return sectors.map(sector => ({
+      name: sector?.name || sector?.sector || 'N/A',
+      change: this.normalizeNumber(sector?.change || sector?.percentChange || 0)
+    }));
+  }
+
+  /**
+   * Normalize price data (handle different formats)
+   * @param {any} price - Price data
+   * @returns {Object|Number} Normalized price
+   */
+  normalizePrice(price) {
+    if (typeof price === 'object' && price !== null) {
+      return {
+        BSE: this.normalizeNumber(price.BSE || price.bse || 0),
+        NSE: this.normalizeNumber(price.NSE || price.nse || 0)
+      };
+    }
+    return this.normalizeNumber(price);
+  }
+
+  /**
+   * Normalize number values
+   * @param {any} value - Value to normalize
+   * @returns {Number} Normalized number
+   */
+  normalizeNumber(value) {
+    if (value === null || value === undefined || value === '') return 0;
+    
+    const num = parseFloat(value);
+    return isNaN(num) ? 0 : num;
   }
 
   /**
@@ -252,10 +268,10 @@ class StockMarketResponseTransformer {
     return {
       companyName: 'N/A',
       tickerId: 'N/A',
-      currentPrice: { BSE: 'N/A', NSE: 'N/A' },
+      currentPrice: { BSE: 0, NSE: 0 },
       percentChange: 0,
-      yearHigh: 'N/A',
-      yearLow: 'N/A',
+      yearHigh: 0,
+      yearLow: 0,
       industry: 'N/A',
       keyMetrics: { marketCap: 'N/A', peRatio: 'N/A' },
       companyProfile: { description: 'Data temporarily unavailable' },
@@ -270,12 +286,12 @@ class StockMarketResponseTransformer {
   getDefaultMutualFundData() {
     return {
       fundName: 'N/A',
-      nav: 'N/A',
+      nav: 0,
       category: 'N/A',
-      assetAllocation: 'N/A',
+      fundHouse: 'N/A',
       expenseRatio: 'N/A',
       fundManager: 'N/A',
-      fundHouse: 'N/A',
+      assetAllocation: 'N/A',
       timestamp: new Date().toISOString(),
       source: 'transformer_default'
     };
@@ -304,37 +320,15 @@ class StockMarketResponseTransformer {
     
     switch (dataType) {
       case 'trending':
-        return { 
-          topGainers: [], 
-          topLosers: [], 
-          timestamp 
-        };
+        return { topGainers: [], topLosers: [], timestamp };
       case 'ipo':
-        return { 
-          upcoming: [], 
-          active: [], 
-          listed: [], 
-          closed: [], 
-          timestamp 
-        };
+        return { upcoming: [], active: [], listed: [], closed: [], timestamp };
       case 'mostActive':
-        return { 
-          nse: [], 
-          bse: [], 
-          timestamp 
-        };
+        return { nse: [], bse: [], timestamp };
       case 'priceShockers':
-        return { 
-          shockers: [], 
-          timestamp 
-        };
+        return [];
       case 'overview':
-        return { 
-          indices: [], 
-          sectors: [], 
-          marketSentiment: 'neutral', 
-          timestamp 
-        };
+        return { indices: [], sectors: [], marketSentiment: 'neutral', timestamp };
       default:
         return { timestamp };
     }

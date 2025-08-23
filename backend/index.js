@@ -8,6 +8,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const { logger, logDatabase } = require('./utils/logger');
 const { morganMiddleware, requestLogger, addRequestId, securityLogger } = require('./middleware/requestLogger');
+const path = require('path'); // Added for static file serving
 
 // Import comprehensive logging system
 const comprehensiveLogger = require('./utils/comprehensiveLogger');
@@ -82,6 +83,9 @@ app.use(express.urlencoded({
 // Request logger and security logger AFTER body parsing
 app.use(requestLogger);
 app.use(securityLogger);
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Add comprehensive user activity and performance logging
 app.use(userActivityLogger({
@@ -228,6 +232,44 @@ app.use('/api/kyc', require('./routes/kyc'));
 app.use('/api/mutual-fund-exit-strategies', require('./routes/mutualFundExitStrategies'));
 app.use('/api/transcriptions', require('./routes/transcriptions'));
 app.use('/api/final-report', require('./routes/finalReport'));
+
+// ============================================================================
+// 🆕 NEW: DEBUG ROUTES (NO AUTHENTICATION)
+// ============================================================================
+
+// Add Debug routes for testing (no authentication required)
+try {
+  console.log('🔍 Attempting to load debug routes...');
+  const debugRoutes = require('./routes/debugRoutes');
+  console.log('✅ Debug routes file loaded successfully');
+  app.use('/api/debug', debugRoutes);
+  console.log('✅ Debug routes registered: /api/debug/*');
+  
+  // Log Debug system availability
+  comprehensiveLogger.logSystemEvent('DEBUG_SYSTEM_ENABLED', {
+    debugRoutes: [
+      '/api/debug/perplexity'
+    ],
+    features: [
+      'Perplexity API Testing',
+      'No Authentication Required',
+      'Direct API Testing'
+    ],
+    timestamp: new Date().toISOString()
+  });
+  
+} catch (error) {
+  console.log('⚠️ Debug routes not found - skipping (app will work without debug features)');
+  console.log('Error details:', error.message);
+  logger.warn('Debug routes not available:', error.message);
+  
+  comprehensiveLogger.logSystemEvent('DEBUG_SYSTEM_DISABLED', {
+    reason: 'Debug routes file not found',
+    impact: 'App will function normally without debug features',
+    error: error.message,
+    timestamp: new Date().toISOString()
+  });
+}
 
 // ============================================================================
 // 🆕 NEW: CAS MANAGEMENT ROUTES (ONLY NEW ADDITION)
@@ -480,7 +522,8 @@ app.use((req, res) => {
       logs: '/api/logs/*',
       abTesting: '/api/ab-testing-suite-2/*',
       chat: '/api/chat/*',
-      stockMarket: '/api/stock-market/*' // NEW: Stock Market API routes
+      stockMarket: '/api/stock-market/*', // NEW: Stock Market API routes
+      debug: '/api/debug/*' // NEW: Debug routes
     }
   });
 });

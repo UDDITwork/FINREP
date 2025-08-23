@@ -127,6 +127,43 @@ export const loeAutomationAPI = {
     });
     
     return response.data;
+  },
+
+  // Download/View LOE PDF file
+  downloadLOEPDF: async (filename) => {
+    console.log('📄 [LOE Automation] Downloading LOE PDF:', { filename });
+    
+    try {
+      const response = await api.get(`/loe-automation/pdf/${filename}`, {
+        responseType: 'blob'
+      });
+      
+      // Create blob URL for viewing/downloading
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up blob URL
+      window.URL.revokeObjectURL(url);
+      
+      console.log('✅ [LOE Automation] LOE PDF downloaded successfully:', { filename });
+      return { success: true, filename };
+    } catch (error) {
+      console.error('❌ [LOE Automation] Error downloading LOE PDF:', error);
+      throw error;
+    }
+  },
+
+  // Get PDF URL for viewing
+  getLOEPDFUrl: (filename) => {
+    return `/api/loe-automation/pdf/${filename}`;
   }
 };
 

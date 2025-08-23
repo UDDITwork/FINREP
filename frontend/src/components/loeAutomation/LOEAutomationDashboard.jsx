@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { loeAutomationAPI, loeStatusUtils } from '../../services/loeAutomationService';
 import CreateLOEModal from './CreateLOEModal';
+import LOEPDFViewer from './LOEPDFViewer';
 
 const LOEAutomationDashboard = () => {
   const [clients, setClients] = useState([]);
@@ -35,6 +36,8 @@ const LOEAutomationDashboard = () => {
   const [loadingLOEDetails, setLoadingLOEDetails] = useState(false);
   const [showCreateLOEModal, setShowCreateLOEModal] = useState(false);
   const [clientForLOE, setClientForLOE] = useState(null);
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [selectedLOE, setSelectedLOE] = useState(null);
 
   // Fetch clients with LOE status on component mount
   useEffect(() => {
@@ -91,7 +94,49 @@ const LOEAutomationDashboard = () => {
 
   const handleViewLOE = (client) => {
     setSelectedClient(client);
-    fetchClientLOEDetails(client._id);
+    // Find the LOE record for this client
+    if (client.loeStatus && client.loeStatus.loeId) {
+      // Fetch LOE details and show PDF viewer
+      fetchClientLOEDetailsForViewing(client._id);
+    } else {
+      // Show details modal as fallback
+      fetchClientLOEDetails(client._id);
+    }
+  };
+
+  const fetchClientLOEDetailsForViewing = async (clientId) => {
+    try {
+      setLoadingLOEDetails(true);
+      setError(null);
+      
+      console.log('🔍 [LOE Automation] Fetching LOE details for viewing:', clientId);
+      const response = await loeAutomationAPI.getClientLOEDetails(clientId);
+      
+      if (response.success && response.data.loeRecords.length > 0) {
+        // Find the most recent signed LOE
+        const signedLOE = response.data.loeRecords.find(loe => 
+          loe.status === 'signed' && loe.signedPdfUrl
+        );
+        
+        if (signedLOE) {
+          setSelectedLOE(signedLOE);
+          setShowPDFViewer(true);
+          console.log('✅ [LOE Automation] LOE found for viewing:', signedLOE._id);
+        } else {
+          // No signed LOE found, show details modal
+          setLoeDetails(response.data);
+          setShowLOEDetails(true);
+          console.log('⚠️ [LOE Automation] No signed LOE found, showing details');
+        }
+      } else {
+        throw new Error(response.error || 'Failed to fetch LOE details');
+      }
+    } catch (error) {
+      console.error('❌ [LOE Automation] Error fetching LOE details for viewing:', error);
+      setError(error.message);
+    } finally {
+      setLoadingLOEDetails(false);
+    }
   };
 
   const handleCreateLOE = (client) => {
@@ -448,11 +493,14 @@ const LOEAutomationDashboard = () => {
                                 <p className="text-xs text-gray-500">ID: {loe._id.substring(0, 8)}...</p>
                                 {loe.accessToken && (
                                   <button
-                                    onClick={() => window.open(`/loe/view/${loe.accessToken}`, '_blank')}
+                                    onClick={() => {
+                                      setSelectedLOE(loe);
+                                      setShowPDFViewer(true);
+                                    }}
                                     className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
                                   >
-                                    <ExternalLink className="w-3 h-3 mr-1" />
-                                    View
+                                    <Eye className="w-3 h-3 mr-1" />
+                                    View LOE
                                   </button>
                                 )}
                               </div>
@@ -490,6 +538,16 @@ const LOEAutomationDashboard = () => {
           }}
           client={clientForLOE}
           onLOECreated={handleLOECreated}
+        />
+      )}
+
+      {/* LOE PDF Viewer */}
+      {showPDFViewer && selectedLOE && (
+        <LOEPDFViewer
+          isOpen={showPDFViewer}
+          onClose={() => setShowPDFViewer(false)}
+          loeData={selectedLOE}
+          clientName={selectedClient?.clientName || 'Unknown Client'}
         />
       )}
     </div>
