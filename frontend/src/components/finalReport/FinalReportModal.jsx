@@ -100,26 +100,19 @@ const FinalReportModal = ({ isOpen, onClose }) => {
               </button>
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Generating Final Report
+                  Generate Final Report
                 </h2>
                 <p className="text-sm text-gray-600">
-                  {selectedClient.firstName} {selectedClient.lastName}
+                  Client: {selectedClient.firstName} {selectedClient.lastName}
                 </p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
           </div>
           
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6">
             <ComprehensivePDFGenerator 
-              client={selectedClient}
-              advisorId={user.id}
-              onClose={onClose}
+              client={selectedClient} 
+              onBack={handleBackToClientList}
             />
           </div>
         </div>

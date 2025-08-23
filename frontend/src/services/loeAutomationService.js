@@ -163,7 +163,9 @@ export const loeAutomationAPI = {
 
   // Get PDF URL for viewing
   getLOEPDFUrl: (filename) => {
-    return `/api/loe-automation/pdf/${filename}`;
+    // Use environment-aware API URL for production compatibility
+    const baseUrl = import.meta.env.VITE_API_URL || '/api';
+    return `${baseUrl}/loe-automation/pdf/${filename}`;
   }
 };
 
