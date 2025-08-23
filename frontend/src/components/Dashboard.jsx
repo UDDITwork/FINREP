@@ -13,6 +13,7 @@ import MetricCard from './dashboard/MetricCard';
 import ActionCard from './dashboard/ActionCard';
 import StockMarketSearch from './dashboard/StockMarketSearch';
 import MarketOverview from './dashboard/MarketOverview';
+import EnhancedMarketOverview from './dashboard/EnhancedMarketOverview';
 import { clientAPI } from '../services/api';
 import { stockMarketAPI, getNews } from '../services/stockMarketAPI';
 import toast from 'react-hot-toast';
@@ -83,6 +84,11 @@ function Dashboard() {
     setIsMarketDataLoading(true);
     try {
       console.log('📊 [Dashboard] Loading market data...');
+      console.log('🔧 [Dashboard] Environment check:', {
+        VITE_API_URL: import.meta.env.VITE_API_URL,
+        VITE_APP_ENV: import.meta.env.VITE_APP_ENV,
+        NODE_ENV: process.env.NODE_ENV
+      });
       
       const [trendingResult, ipoResult, mostActiveResult] = await Promise.allSettled([
         stockMarketAPI.getTrendingStocks(),
@@ -110,6 +116,10 @@ function Dashboard() {
     setIsNewsLoading(true);
     try {
       console.log('📰 [Dashboard] Loading news data...');
+      console.log('🔧 [Dashboard] News API environment check:', {
+        VITE_API_URL: import.meta.env.VITE_API_URL,
+        VITE_APP_ENV: import.meta.env.VITE_APP_ENV
+      });
       
       const newsResult = await getNews();
       
@@ -440,6 +450,13 @@ function Dashboard() {
             description="View real-time market data and trends"
             buttonText="View Market"
             onClick={() => setActiveSection('market')}
+          />
+          <ActionCard
+            icon={Activity}
+            title="Live Markets"
+            description="Real-time NSE/BSE indices and stock data"
+            buttonText="View Live"
+            onClick={() => setActiveSection('enhanced-market')}
           />
           <ActionCard
             icon={Newspaper}
@@ -773,6 +790,17 @@ function Dashboard() {
             <TrendingUp className="w-4 h-4" />
             <span>Market Data</span>
           </button>
+          <button
+            onClick={() => setActiveSection('enhanced-market')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeSection === 'enhanced-market'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            <span>Live Markets</span>
+          </button>
         </div>
       </div>
 
@@ -786,6 +814,13 @@ function Dashboard() {
       {activeSection === 'market' && (
         <div className="mb-6 sm:mb-8">
           <MarketOverview />
+        </div>
+      )}
+
+      {/* Enhanced Market Overview Section */}
+      {activeSection === 'enhanced-market' && (
+        <div className="mb-6 sm:mb-8">
+          <EnhancedMarketOverview />
         </div>
       )}
 
