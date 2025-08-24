@@ -15,7 +15,7 @@ class PerplexityStockAPI {
     this.baseURL = 'https://api.perplexity.ai/chat/completions';
     
     if (!this.apiKey) {
-      console.error('❌ PERPLEXITY_API_KEY not found in environment variables');
+      console.error('❌ PERPLEXITY_API_KEY not is found in environment variables');
       throw new Error('Perplexity API key is required');
     }
 
