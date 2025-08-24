@@ -4,6 +4,8 @@
  * Perplexity-powered Stock Market API service that provides access to
  * real-time Indian stock market data, mutual funds, IPOs, and market analytics.
  * Replaces Indian Stock API with Perplexity AI for reliable data delivery.
+ * 
+ * IMPROVED: Added fallback system to prevent app crashes when API fails
  */
 
 require('dotenv').config();
@@ -13,32 +15,42 @@ class PerplexityStockAPI {
   constructor() {
     this.apiKey = process.env.PERPLEXITY_API_KEY;
     this.baseURL = 'https://api.perplexity.ai/chat/completions';
+    this.fallbackMode = false;
     
     if (!this.apiKey) {
-      console.error('❌ PERPLEXITY_API_KEY not is found in environment variables');
-      throw new Error('Perplexity API key is required');
+      console.warn('⚠️ PERPLEXITY_API_KEY not found - running in fallback mode');
+      this.fallbackMode = true;
+    } else {
+      // Create axios instance only if API key exists
+      this.api = axios.create({
+        baseURL: this.baseURL,
+        timeout: 30000,
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('✅ [Perplexity Stock API] Service initialized successfully');
     }
 
-    // Create axios instance - EXACTLY like documentation
-    this.api = axios.create({
-      baseURL: this.baseURL,
-      timeout: 30000,
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    console.log('✅ [Perplexity Stock API] Service initialized successfully');
+    if (this.fallbackMode) {
+      console.log('⚠️ [Perplexity Stock API] Running in fallback mode - using sample data');
+    }
   }
 
   /**
-   * Make API call to Perplexity
+   * Make API call to Perplexity with fallback support
    * @param {string} systemPrompt - System instruction
    * @param {string} userQuery - User query
-   * @returns {Promise<Object>} Parsed response
+   * @returns {Promise<Object>} Parsed response or fallback data
    */
   async makePerplexityCall(systemPrompt, userQuery) {
+    // If in fallback mode, return sample data immediately
+    if (this.fallbackMode) {
+      console.log('⚠️ [Perplexity API] Fallback mode - returning sample data');
+      return this.getFallbackData(userQuery);
+    }
+
     try {
       console.log(`🔍 [Perplexity API] Query: ${userQuery.substring(0, 100)}...`);
       
@@ -83,42 +95,201 @@ class PerplexityStockAPI {
         if (jsonMatch) {
           let jsonString = jsonMatch[0].replace(/```json|```/g, '').trim();
           
-          // Clean up common issues
+          // IMPROVED JSON CLEANING
+          console.log(`🧹 [Perplexity API] ORIGINAL JSON:`, jsonString.substring(0, 500) + '...');
+          
+          // Remove control characters
           jsonString = jsonString.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+          
+          // Fix trailing commas in arrays and objects
+          jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
+          
+          // Fix missing commas between array elements
+          jsonString = jsonString.replace(/(\d+)\s*(\{)/g, '$1,$2');
+          jsonString = jsonString.replace(/(\})\s*(\{)/g, '$1,$2');
+          jsonString = jsonString.replace(/(\})\s*(\[)/g, '$1,$2');
+          jsonString = jsonString.replace(/(\])\s*(\{)/g, '$1,$2');
+          
+          // Fix missing quotes around property names
+          jsonString = jsonString.replace(/(\w+):/g, '"$1":');
+          
+          // Remove any trailing commas before closing brackets
           jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
           
           console.log(`🧹 [Perplexity API] CLEANED JSON:`, jsonString.substring(0, 500) + '...');
           
-          const parsed = JSON.parse(jsonString);
-          console.log(`✅ [Perplexity API] Successfully parsed JSON`);
-          return parsed;
+          try {
+            const parsed = JSON.parse(jsonString);
+            console.log(`✅ [Perplexity API] Successfully parsed JSON`);
+            return parsed;
+          } catch (parseError) {
+            console.error(`❌ [Perplexity API] JSON Parse Error after cleaning:`, parseError.message);
+            console.error(`❌ [Perplexity API] Failed JSON string:`, jsonString);
+            
+            // Try to fix common JSON issues and parse again
+            try {
+              // Remove any incomplete trailing content
+              let lastBrace = jsonString.lastIndexOf('}');
+              let lastBracket = jsonString.lastIndexOf(']');
+              let endPos = Math.max(lastBrace, lastBracket);
+              
+              if (endPos > 0) {
+                let truncatedJson = jsonString.substring(0, endPos + 1);
+                console.log(`🔄 [Perplexity API] Trying truncated JSON...`);
+                
+                const parsed = JSON.parse(truncatedJson);
+                console.log(`✅ [Perplexity API] Successfully parsed truncated JSON`);
+                return parsed;
+              }
+            } catch (truncateError) {
+              console.error(`❌ [Perplexity API] Truncated JSON also failed:`, truncateError.message);
+            }
+            
+            // If all parsing attempts fail, return fallback
+            console.log('🔄 [Perplexity API] JSON parsing failed, returning fallback data');
+            return this.getFallbackData(userQuery);
+          }
         }
         
         // FALLBACK: Return structured data
         console.log(`⚠️ [Perplexity API] No JSON found, creating fallback`);
-        return {
-          content: content,
-          source: 'perplexity_ai',
-          timestamp: new Date().toISOString(),
-          fallback: true
-        };
+        return this.getFallbackData(userQuery);
         
       } catch (parseError) {
         console.error(`❌ [Perplexity API] JSON Parse Error:`, parseError.message);
-        
-        return {
-          content: content,
-          source: 'perplexity_ai', 
-          timestamp: new Date().toISOString(),
-          parseError: parseError.message,
-          fallback: true
-        };
+        console.log('🔄 [Perplexity API] Returning fallback data due to parsing error');
+        return this.getFallbackData(userQuery);
       }
       
     } catch (error) {
       console.error('❌ [Perplexity API] Error:', error.response?.data || error.message);
-      throw new Error(`Perplexity API failed: ${error.message}`);
+      console.log('🔄 [Perplexity API] API call failed, returning fallback data');
+      return this.getFallbackData(userQuery);
     }
+  }
+
+  /**
+   * Generate fallback data when API is unavailable
+   * @param {string} query - Original user query
+   * @returns {Object} Fallback data structure
+   */
+  getFallbackData(query) {
+    console.log(`🔄 [Perplexity API] Generating fallback data for: ${query.substring(0, 50)}...`);
+    
+    return {
+      message: 'Stock market data temporarily unavailable - showing sample data',
+      data: this.generateSampleData(query),
+      source: 'fallback',
+      timestamp: new Date().toISOString(),
+      fallback: true
+    };
+  }
+
+  /**
+   * Generate realistic sample data based on query type
+   * @param {string} query - User query to determine data type
+   * @returns {Object} Sample data structure
+   */
+  generateSampleData(query) {
+    const lowerQuery = query.toLowerCase();
+    
+    // Trending stocks data
+    if (lowerQuery.includes('trending') || lowerQuery.includes('gaining') || lowerQuery.includes('losing')) {
+      return {
+        topGainers: [
+          { companyName: 'Reliance Industries', tickerId: 'RELIANCE', currentPrice: 2931.55, percentChange: 5.2, volume: 23100000 },
+          { companyName: 'TCS', tickerId: 'TCS', currentPrice: 4125.80, percentChange: 3.8, volume: 18500000 },
+          { companyName: 'HDFC Bank', tickerId: 'HDFCBANK', currentPrice: 1689.45, percentChange: 2.1, volume: 12500000 }
+        ],
+        topLosers: [
+          { companyName: 'Infosys', tickerId: 'INFY', currentPrice: 1456.78, percentChange: -2.1, volume: 9800000 },
+          { companyName: 'ITC', tickerId: 'ITC', currentPrice: 456.32, percentChange: -1.8, volume: 7500000 }
+        ]
+      };
+    }
+    
+    // IPO data
+    if (lowerQuery.includes('ipo')) {
+      return {
+        upcoming: [
+          { name: 'Sample Tech IPO', symbol: 'STECH', expected_price: '₹500-550', expected_date: '2025-01-15', lot_size: '100' },
+          { name: 'Green Energy Ltd', symbol: 'GREEN', expected_price: '₹200-220', expected_date: '2025-01-20', lot_size: '200' }
+        ],
+        active: [
+          { name: 'Digital Solutions', symbol: 'DIGI', min_price: 400, max_price: 450, lot_size: '150' }
+        ],
+        listed: [
+          { name: 'Innovation Corp', symbol: 'INNOV', listing_price: 300, current_price: 325 }
+        ],
+        closed: []
+      };
+    }
+    
+    // Most active stocks
+    if (lowerQuery.includes('most active') || lowerQuery.includes('volume')) {
+      return {
+        nse: [
+          { companyName: 'Reliance Industries', tickerId: 'RELIANCE', currentPrice: 2931.55, percentChange: 5.2, volume: 23100000 },
+          { companyName: 'TCS', tickerId: 'TCS', currentPrice: 4125.80, percentChange: 3.8, volume: 18500000 }
+        ],
+        bse: [
+          { companyName: 'HDFC Bank', tickerId: 'HDFCBANK', currentPrice: 1689.45, percentChange: 2.1, volume: 12500000 }
+        ]
+      };
+    }
+    
+    // Price shockers
+    if (lowerQuery.includes('price shocker') || lowerQuery.includes('significant price')) {
+      return [
+        { companyName: 'Tech Startup', tickerId: 'TECH', currentPrice: 150, percentChange: 12.5, volume: 5000000 },
+        { companyName: 'Pharma Corp', tickerId: 'PHARMA', currentPrice: 89, percentChange: -8.2, volume: 3200000 }
+      ];
+    }
+    
+    // Mutual fund data
+    if (lowerQuery.includes('mutual fund') || lowerQuery.includes('fund')) {
+      return {
+        fundName: 'Sample Large Cap Fund',
+        nav: 45.67,
+        category: 'Large Cap',
+        fundHouse: 'Sample AMC',
+        expenseRatio: '1.5%',
+        fundManager: 'Sample Manager',
+        assetAllocation: 'Equity: 95%, Cash: 5%'
+      };
+    }
+    
+    // News data
+    if (lowerQuery.includes('news')) {
+      return [
+        {
+          title: 'Sample Market Update',
+          summary: 'This is a sample news article for demonstration purposes.',
+          source: 'Sample News',
+          pub_date: new Date().toISOString(),
+          topics: ['Market', 'Sample'],
+          url: '#'
+        }
+      ];
+    }
+    
+    // Default stock data
+    return {
+      companyName: 'Sample Company Ltd',
+      tickerId: 'SAMPLE',
+      currentPrice: { BSE: 1000, NSE: 1000 },
+      percentChange: 1.5,
+      yearHigh: 1200,
+      yearLow: 900,
+      industry: 'Sample Industry',
+      keyMetrics: {
+        marketCap: '₹1000 Cr',
+        peRatio: '20.5'
+      },
+      companyProfile: {
+        description: 'This is a sample company for demonstration purposes when the API is unavailable.'
+      }
+    };
   }
 
   /**
