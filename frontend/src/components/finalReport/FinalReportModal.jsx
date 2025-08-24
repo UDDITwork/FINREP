@@ -26,10 +26,12 @@ const FinalReportModal = ({ isOpen, onClose }) => {
       setLoading(true);
       setError(null);
       
-      const response = await api.get(`/final-report/clients/${user.id}`);
+      // Call the endpoint without advisorId parameter (it's extracted from auth token)
+      const response = await api.get('/final-report/clients');
       
       if (response.data.success) {
-        setClients(response.data.clients);
+        // Fix: access the correct data structure from backend
+        setClients(response.data.data.clients || []);
       } else {
         setError('Failed to fetch clients');
       }
@@ -238,26 +240,26 @@ const FinalReportModal = ({ isOpen, onClose }) => {
                             </div>
                             
                             <div className="flex items-center space-x-2">
-                              <span className="text-gray-500">Portfolio:</span>
+                              <span className="text-gray-500">Net Worth:</span>
                               <span className="text-gray-900 font-medium">
-                                {formatCurrency(client.totalPortfolioValue)}
+                                {formatCurrency(client.netWorth)}
                               </span>
                             </div>
                             
                             <div className="flex items-center space-x-2">
                               <span className="text-gray-500">Onboarding:</span>
                               <span className="text-gray-900">
-                                Step {client.onboardingStep}/7
+                                {client.onboardingProgress || 'Not started'}
                               </span>
                             </div>
                           </div>
                         </div>
                         
                         <div className="flex items-center space-x-2">
-                          {client.hasCASData && (
+                          {client.invitationStatus && client.invitationStatus !== 'No invitation' && (
                             <div className="flex items-center space-x-1 text-green-600">
                               <CheckCircle className="h-4 w-4" />
-                              <span className="text-xs">CAS</span>
+                              <span className="text-xs">Invited</span>
                             </div>
                           )}
                           

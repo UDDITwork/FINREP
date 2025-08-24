@@ -241,7 +241,7 @@ class StockMarketResponseTransformer {
    */
   normalizePrice(price) {
     if (typeof price === 'object' && price !== null) {
-      return {
+    return {
         BSE: this.normalizeNumber(price.BSE || price.bse || 0),
         NSE: this.normalizeNumber(price.NSE || price.nse || 0)
       };

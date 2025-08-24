@@ -264,53 +264,247 @@ const FinalReportPDF = ({ data }) => {
           </View>
         </View>
 
-        {/* Financial Plans */}
+        {/* Client Invitations - Complete Details */}
+        {services.clientInvitations.count > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Client Invitations ({services.clientInvitations.count})</Text>
+            {services.clientInvitations.invitations.map((invitation, index) => (
+              <View key={index} style={styles.summaryBox}>
+                <Text style={styles.gridTitle}>Invitation {index + 1}</Text>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Client Email:</Text>
+                  <Text style={styles.value}>{invitation.clientEmail}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Client Name:</Text>
+                  <Text style={styles.value}>{invitation.clientFirstName} {invitation.clientLastName}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Status:</Text>
+                  <Text style={styles.value}>{invitation.status}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Sent At:</Text>
+                  <Text style={styles.value}>{invitation.sentAt ? new Date(invitation.sentAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Opened At:</Text>
+                  <Text style={styles.value}>{invitation.openedAt ? new Date(invitation.openedAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Completed At:</Text>
+                  <Text style={styles.value}>{invitation.completedAt ? new Date(invitation.completedAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Expires At:</Text>
+                  <Text style={styles.value}>{invitation.expiresAt ? new Date(invitation.expiresAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Form Started:</Text>
+                  <Text style={styles.value}>{invitation.formStartedAt ? new Date(invitation.formStartedAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Form Completed:</Text>
+                  <Text style={styles.value}>{invitation.formCompletedAt ? new Date(invitation.formCompletedAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Email Attempts:</Text>
+                  <Text style={styles.value}>{invitation.emailAttempts}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Reminders Sent:</Text>
+                  <Text style={styles.value}>{invitation.remindersSent}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Invitation Source:</Text>
+                  <Text style={styles.value}>{invitation.invitationSource}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Notes:</Text>
+                  <Text style={styles.value}>{invitation.notes}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>CAS Upload Data:</Text>
+                  <Text style={styles.value}>{JSON.stringify(invitation.casUploadData)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>CAS Parsed Data:</Text>
+                  <Text style={styles.value}>{invitation.casParsedData ? 'Available' : 'N/A'}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* LOE Documents - Complete Details */}
+        {services.loeDocuments.count > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>LOE Documents ({services.loeDocuments.count})</Text>
+            {services.loeDocuments.documents.map((loe, index) => (
+              <View key={index} style={styles.summaryBox}>
+                <Text style={styles.gridTitle}>LOE Document {index + 1}</Text>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Meeting ID:</Text>
+                  <Text style={styles.value}>{loe.meetingId}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Status:</Text>
+                  <Text style={styles.value}>{loe.status}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Content:</Text>
+                  <Text style={styles.value}>{JSON.stringify(loe.content)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Signatures:</Text>
+                  <Text style={styles.value}>{JSON.stringify(loe.signatures)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Sent At:</Text>
+                  <Text style={styles.value}>{loe.sentAt ? new Date(loe.sentAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Viewed At:</Text>
+                  <Text style={styles.value}>{loe.viewedAt ? new Date(loe.viewedAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Signed At:</Text>
+                  <Text style={styles.value}>{loe.signedAt ? new Date(loe.signedAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Expires At:</Text>
+                  <Text style={styles.value}>{loe.expiresAt ? new Date(loe.expiresAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Signed PDF URL:</Text>
+                  <Text style={styles.value}>{loe.signedPdfUrl}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Emails Sent:</Text>
+                  <Text style={styles.value}>{JSON.stringify(loe.emailsSent)}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* LOE Automation - Complete Details */}
+        {services.loeAutomation.count > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>LOE Automation ({services.loeAutomation.count})</Text>
+            {services.loeAutomation.documents.map((loe, index) => (
+              <View key={index} style={styles.summaryBox}>
+                <Text style={styles.gridTitle}>LOE Automation {index + 1}</Text>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Status:</Text>
+                  <Text style={styles.value}>{loe.status}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Access Token:</Text>
+                  <Text style={styles.value}>{loe.accessToken}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Client Access URL:</Text>
+                  <Text style={styles.value}>{loe.clientAccessUrl}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Content:</Text>
+                  <Text style={styles.value}>{JSON.stringify(loe.content)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Signatures:</Text>
+                  <Text style={styles.value}>{JSON.stringify(loe.signatures)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Sent At:</Text>
+                  <Text style={styles.value}>{loe.sentAt ? new Date(loe.sentAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Viewed At:</Text>
+                  <Text style={styles.value}>{loe.viewedAt ? new Date(loe.viewedAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Signed At:</Text>
+                  <Text style={styles.value}>{loe.signedAt ? new Date(loe.signedAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Expires At:</Text>
+                  <Text style={styles.value}>{loe.expiresAt ? new Date(loe.expiresAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Signed PDF URL:</Text>
+                  <Text style={styles.value}>{loe.signedPdfUrl}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Financial Plans - Complete Details */}
         {services.financialPlans.count > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Financial Plans ({services.financialPlans.count})</Text>
             {services.financialPlans.plans.map((plan, index) => (
               <View key={index} style={styles.summaryBox}>
-                <Text style={styles.gridTitle}>Plan {index + 1}</Text>
+                <Text style={styles.gridTitle}>Financial Plan {index + 1}</Text>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Plan Type:</Text>
+                  <Text style={styles.value}>{plan.planType}</Text>
+                </View>
                 <View style={styles.row}>
                   <Text style={styles.label}>Status:</Text>
                   <Text style={styles.value}>{plan.status}</Text>
                 </View>
                 <View style={styles.row}>
-                  <Text style={styles.label}>Created:</Text>
-                  <Text style={styles.value}>{new Date(plan.createdAt).toLocaleDateString()}</Text>
+                  <Text style={styles.label}>Version:</Text>
+                  <Text style={styles.value}>{plan.version}</Text>
                 </View>
-                {plan.planType && (
-                  <View style={styles.row}>
-                    <Text style={styles.label}>Type:</Text>
-                    <Text style={styles.value}>{plan.planType}</Text>
-                  </View>
-                )}
+                <View style={styles.row}>
+                  <Text style={styles.label}>Created At:</Text>
+                  <Text style={styles.value}>{plan.createdAt ? new Date(plan.createdAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Client Data Snapshot:</Text>
+                  <Text style={styles.value}>{JSON.stringify(plan.clientDataSnapshot)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Plan Details:</Text>
+                  <Text style={styles.value}>{JSON.stringify(plan.planDetails)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Advisor Recommendations:</Text>
+                  <Text style={styles.value}>{JSON.stringify(plan.advisorRecommendations)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>AI Recommendations:</Text>
+                  <Text style={styles.value}>{JSON.stringify(plan.aiRecommendations)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Review Schedule:</Text>
+                  <Text style={styles.value}>{JSON.stringify(plan.reviewSchedule)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Performance Metrics:</Text>
+                  <Text style={styles.value}>{JSON.stringify(plan.performanceMetrics)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Change History:</Text>
+                  <Text style={styles.value}>{JSON.stringify(plan.changeHistory)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>A/B Test Comparisons:</Text>
+                  <Text style={styles.value}>{JSON.stringify(plan.abTestComparisons)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>PDF Reports:</Text>
+                  <Text style={styles.value}>{plan.pdfReports ? `${plan.pdfReports.length} reports` : 'N/A'}</Text>
+                </View>
               </View>
             ))}
           </View>
         )}
 
-        {/* KYC Verifications */}
-        {services.kyc.count > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>KYC Verifications ({services.kyc.count})</Text>
-            {services.kyc.verifications.map((kyc, index) => (
-              <View key={index} style={styles.summaryBox}>
-                <Text style={styles.gridTitle}>KYC {index + 1}</Text>
-                <View style={styles.row}>
-                  <Text style={styles.label}>Status:</Text>
-                  <Text style={styles.value}>{kyc.overallStatus}</Text>
-                </View>
-                <View style={styles.row}>
-                  <Text style={styles.label}>Completed:</Text>
-                  <Text style={styles.value}>{new Date(kyc.updatedAt).toLocaleDateString()}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Meetings */}
+        {/* Meetings - Complete Details */}
         {services.meetings.count > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Meetings ({services.meetings.count})</Text>
@@ -318,38 +512,152 @@ const FinalReportPDF = ({ data }) => {
               <View key={index} style={styles.summaryBox}>
                 <Text style={styles.gridTitle}>Meeting {index + 1}</Text>
                 <View style={styles.row}>
-                  <Text style={styles.label}>Date:</Text>
-                  <Text style={styles.value}>{new Date(meeting.meetingDate).toLocaleDateString()}</Text>
+                  <Text style={styles.label}>Room Name:</Text>
+                  <Text style={styles.value}>{meeting.roomName}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Room URL:</Text>
+                  <Text style={styles.value}>{meeting.roomUrl}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Daily Room ID:</Text>
+                  <Text style={styles.value}>{meeting.dailyRoomId}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Daily Meeting Session ID:</Text>
+                  <Text style={styles.value}>{meeting.dailyMtgSessionId}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Scheduled At:</Text>
+                  <Text style={styles.value}>{meeting.scheduledAt ? new Date(meeting.scheduledAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Started At:</Text>
+                  <Text style={styles.value}>{meeting.startedAt ? new Date(meeting.startedAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Ended At:</Text>
+                  <Text style={styles.value}>{meeting.endedAt ? new Date(meeting.endedAt).toLocaleDateString() : 'N/A'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Duration:</Text>
+                  <Text style={styles.value}>{meeting.duration} minutes</Text>
                 </View>
                 <View style={styles.row}>
                   <Text style={styles.label}>Status:</Text>
                   <Text style={styles.value}>{meeting.status}</Text>
                 </View>
-                {meeting.notes && (
-                  <View style={styles.row}>
-                    <Text style={styles.label}>Notes:</Text>
-                    <Text style={styles.value}>{meeting.notes}</Text>
-                  </View>
-                )}
+                <View style={styles.row}>
+                  <Text style={styles.label}>Meeting Type:</Text>
+                  <Text style={styles.value}>{meeting.meetingType}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Is Onboarding Meeting:</Text>
+                  <Text style={styles.value}>{meeting.isOnboardingMeeting ? 'Yes' : 'No'}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Invitation ID:</Text>
+                  <Text style={styles.value}>{meeting.invitationId}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Participants:</Text>
+                  <Text style={styles.value}>{JSON.stringify(meeting.participants)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Transcript:</Text>
+                  <Text style={styles.value}>{JSON.stringify(meeting.transcript)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Recording:</Text>
+                  <Text style={styles.value}>{JSON.stringify(meeting.recording)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Notes:</Text>
+                  <Text style={styles.value}>{meeting.notes}</Text>
+                </View>
               </View>
             ))}
           </View>
         )}
 
-        {/* LOE Documents */}
-        {services.loeDocuments.count > 0 && (
+        {/* Mutual Fund Exit Strategies - Complete Details */}
+        {services.mutualFundStrategies.count > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>LOE Documents ({services.loeDocuments.count})</Text>
-            {services.loeDocuments.documents.map((loe, index) => (
+            <Text style={styles.sectionTitle}>Mutual Fund Exit Strategies ({services.mutualFundStrategies.count})</Text>
+            {services.mutualFundStrategies.strategies.map((strategy, index) => (
               <View key={index} style={styles.summaryBox}>
-                <Text style={styles.gridTitle}>LOE {index + 1}</Text>
+                <Text style={styles.gridTitle}>Strategy {index + 1}</Text>
                 <View style={styles.row}>
-                  <Text style={styles.label}>Status:</Text>
-                  <Text style={styles.value}>{loe.status}</Text>
+                  <Text style={styles.label}>Fund ID:</Text>
+                  <Text style={styles.value}>{strategy.fundId}</Text>
                 </View>
                 <View style={styles.row}>
-                  <Text style={styles.label}>Created:</Text>
-                  <Text style={styles.value}>{new Date(loe.createdAt).toLocaleDateString()}</Text>
+                  <Text style={styles.label}>Fund Name:</Text>
+                  <Text style={styles.value}>{strategy.fundName}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Fund Category:</Text>
+                  <Text style={styles.value}>{strategy.fundCategory}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Fund Type:</Text>
+                  <Text style={styles.value}>{strategy.fundType}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Source:</Text>
+                  <Text style={styles.value}>{strategy.source}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Primary Exit Analysis:</Text>
+                  <Text style={styles.value}>{JSON.stringify(strategy.primaryExitAnalysis)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Timing Strategy:</Text>
+                  <Text style={styles.value}>{JSON.stringify(strategy.timingStrategy)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Tax Implications:</Text>
+                  <Text style={styles.value}>{JSON.stringify(strategy.taxImplications)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Alternative Investment Strategy:</Text>
+                  <Text style={styles.value}>{JSON.stringify(strategy.alternativeInvestmentStrategy)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Financial Goal Assessment:</Text>
+                  <Text style={styles.value}>{JSON.stringify(strategy.financialGoalAssessment)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Risk Analysis:</Text>
+                  <Text style={styles.value}>{JSON.stringify(strategy.riskAnalysis)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Execution Action Plan:</Text>
+                  <Text style={styles.value}>{JSON.stringify(strategy.executionActionPlan)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Cost-Benefit Analysis:</Text>
+                  <Text style={styles.value}>{JSON.stringify(strategy.costBenefitAnalysis)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Advisor Certification:</Text>
+                  <Text style={styles.value}>{JSON.stringify(strategy.advisorCertification)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Client Acknowledgment:</Text>
+                  <Text style={styles.value}>{JSON.stringify(strategy.clientAcknowledgment)}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Status:</Text>
+                  <Text style={styles.value}>{strategy.status}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Priority:</Text>
+                  <Text style={styles.value}>{strategy.priority}</Text>
+                </View>
+                <View style={styles.row}>
+                  <Text style={styles.label}>Created At:</Text>
+                  <Text style={styles.value}>{strategy.createdAt ? new Date(strategy.createdAt).toLocaleDateString() : 'N/A'}</Text>
                 </View>
               </View>
             ))}
@@ -376,7 +684,7 @@ const ComprehensivePDFGenerator = ({ client, onBack }) => {
 
   useEffect(() => {
     if (client && user) {
-      fetchComprehensiveData();
+    fetchComprehensiveData();
     }
   }, [client, user]);
 
@@ -406,13 +714,13 @@ const ComprehensivePDFGenerator = ({ client, onBack }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
+      <div className="text-center">
+        <Loader2 className="h-12 w-12 text-blue-600 animate-spin mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Generating Comprehensive Report</h3>
           <p className="text-gray-600">Fetching data from all systems...</p>
-        </div>
       </div>
-    );
+    </div>
+  );
   }
 
   if (error) {
@@ -438,8 +746,8 @@ const ComprehensivePDFGenerator = ({ client, onBack }) => {
         <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-gray-900 mb-2">No Data Available</h3>
         <p className="text-gray-600">Unable to generate report for this client.</p>
-      </div>
-    );
+    </div>
+  );
   }
 
   return (
@@ -450,7 +758,7 @@ const ComprehensivePDFGenerator = ({ client, onBack }) => {
           <h2 className="text-2xl font-bold text-gray-900">
             Comprehensive Financial Report
           </h2>
-          <p className="text-gray-600">
+        <p className="text-gray-600">
             Client: {client.firstName} {client.lastName}
           </p>
         </div>
@@ -475,8 +783,8 @@ const ComprehensivePDFGenerator = ({ client, onBack }) => {
           <div className="text-center p-4 bg-green-50 rounded-lg">
             <div className="text-2xl font-bold text-green-600">{data.summary.activeServices}</div>
             <div className="text-sm text-green-600">Active Services</div>
-          </div>
-          
+        </div>
+        
           <div className="text-center p-4 bg-purple-50 rounded-lg">
             <div className="text-2xl font-bold text-purple-600">
               ₹{data.summary.portfolioValue?.toLocaleString() || '0'}
@@ -487,7 +795,7 @@ const ComprehensivePDFGenerator = ({ client, onBack }) => {
           <div className="text-center p-4 bg-yellow-50 rounded-lg">
             <div className="text-2xl font-bold text-yellow-600">
               {data.summary.onboardingProgress || 'N/A'}
-            </div>
+        </div>
             <div className="text-sm text-yellow-600">Onboarding Step</div>
           </div>
         </div>
@@ -502,7 +810,7 @@ const ComprehensivePDFGenerator = ({ client, onBack }) => {
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">Financial Plans</span>
               <span className="text-lg font-bold text-blue-600">{data.services.financialPlans.count}</span>
-            </div>
+      </div>
             <div className="text-xs text-gray-500">Active financial planning services</div>
           </div>
           

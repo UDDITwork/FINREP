@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: '/api', // Use relative URL to work with Vite proxy
   timeout: 30000, // Increased timeout for large form submissions
   headers: {
     'Content-Type': 'application/json',
