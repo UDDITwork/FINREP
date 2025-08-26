@@ -684,28 +684,53 @@ const ComprehensivePDFGenerator = ({ client, onBack }) => {
 
   useEffect(() => {
     if (client && user) {
-    fetchComprehensiveData();
+      fetchComprehensiveData();
     }
   }, [client, user]);
 
   const fetchComprehensiveData = async () => {
+    // Add validation to ensure we have required data
+    if (!client || !client._id) {
+      setError('Invalid client data. Please select a valid client.');
+      return;
+    }
+    
+    if (!user) {
+      setError('User not authenticated. Please log in again.');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
       
       console.log('📊 [PDF Generator] Fetching comprehensive data for client:', client._id);
       
-      const response = await api.get(`/final-report/data/${user.id}/${client._id}`);
+      // Fixed API endpoint to match backend route structure
+      const response = await api.get(`/final-report/data/${client._id}`);
       
       if (response.data.success) {
         console.log('✅ [PDF Generator] Data fetched successfully:', response.data.data);
         setData(response.data.data);
       } else {
-        setError('Failed to fetch comprehensive data');
+        console.error('❌ [PDF Generator] API returned error:', response.data);
+        setError(response.data.message || 'Failed to fetch comprehensive data');
       }
     } catch (error) {
       console.error('❌ [PDF Generator] Error fetching data:', error);
-      setError(error.response?.data?.error || 'Failed to fetch comprehensive data');
+      
+      // Better error handling with specific messages
+      if (error.response?.status === 401) {
+        setError('Authentication required. Please log in again.');
+      } else if (error.response?.status === 404) {
+        setError('Client data not found. Please check the client ID.');
+      } else if (error.response?.status === 500) {
+        setError('Server error. Please try again later.');
+      } else if (error.code === 'NETWORK_ERROR') {
+        setError('Network error. Please check your connection.');
+      } else {
+        setError(error.response?.data?.message || 'Failed to fetch comprehensive data');
+      }
     } finally {
       setLoading(false);
     }
@@ -729,6 +754,18 @@ const ComprehensivePDFGenerator = ({ client, onBack }) => {
         <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Data</h3>
         <p className="text-gray-600 mb-4">{error}</p>
+        
+        {/* Debug Information */}
+        <div className="bg-gray-50 p-4 rounded-lg mb-4 text-left max-w-md mx-auto">
+          <h4 className="font-medium text-gray-700 mb-2">Debug Information:</h4>
+          <div className="text-sm text-gray-600 space-y-1">
+            <p><strong>Client ID:</strong> {client?._id || 'Not available'}</p>
+            <p><strong>User ID:</strong> {user?.id || 'Not available'}</p>
+            <p><strong>Client Name:</strong> {client?.firstName} {client?.lastName}</p>
+            <p><strong>API Endpoint:</strong> /final-report/data/{client?._id}</p>
+          </div>
+        </div>
+        
         <button
           onClick={fetchComprehensiveData}
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

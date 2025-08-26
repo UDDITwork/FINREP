@@ -28,6 +28,7 @@ import LOESignaturePage from './components/loe/LOESignaturePage'
 import { CASManagementPage } from './components/casManagement'
 import ABTestingDashboard from './components/abTesting/ABTestingDashboard'
 import ABTestingSuite2 from './components/abTesting/ABTestingSuite2'
+import ABTestingVisualizations from './components/abTesting/visualizations/ABTestingVisualizations'
 import PortfolioManagementDashboard from './components/portfolio/PortfolioManagementDashboard'
 import Settings from './components/Settings'
 import ChatRichieAI from './pages/ChatRichieAI'
@@ -96,6 +97,7 @@ function App() {
               <Route path="/cas-management" element={<CASManagementPage />} />
               <Route path="/ab-testing" element={<ABTestingDashboard />} />
               <Route path="/ab-testing-suite-2" element={<ABTestingSuite2 />} />
+              <Route path="/ab-testing-visualizations/:clientId" element={<ABTestingVisualizations />} />
               <Route path="/portfolio-management" element={<PortfolioManagementDashboard />} />
               <Route path="/chat-richieai" element={<ChatRichieAI />} />
               <Route path="/kyc-verification" element={<KYCVerification />} />

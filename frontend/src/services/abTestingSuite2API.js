@@ -74,6 +74,15 @@ const abTestingSuite2API = {
     }
   },
 
+  getClientSessions: async (clientId) => {
+    try {
+      const response = await api.get(`/sessions?clientId=${clientId}&limit=50`);
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Failed to fetch client sessions');
+    }
+  },
+
   // Risk Assessment
   updateRiskProfile: async (sessionId, riskProfile) => {
     try {

@@ -11,17 +11,108 @@ class ClaudeAiService {
     this.model = process.env.CLAUDE_MODEL || 'claude-3-5-sonnet-20241022';
     this.maxTokens = 4000;
     
-    if (!this.apiKey) {
-      throw new Error('Claude API key not found in environment variables');
-    }
+    // Enhanced production debugging
+    this.debugMode = process.env.NODE_ENV === 'production' ? 'production' : 'development';
+    this.requestCounter = 0;
+    this.errorStats = {
+      totalErrors: 0,
+      networkErrors: 0,
+      apiErrors: 0,
+      timeoutErrors: 0,
+      authErrors: 0,
+      lastError: null,
+      lastErrorTime: null
+    };
+    
+    // Validate configuration on startup
+    this.validateAndLogConfiguration();
   }
 
   /**
-   * Make a request to Claude API
+   * Enhanced configuration validation with detailed logging
+   */
+  validateAndLogConfiguration() {
+    console.log('🔧 [ClaudeAI] Configuration validation started...');
+    
+    const config = {
+      nodeEnv: process.env.NODE_ENV || 'not_set',
+      hasApiKey: !!this.apiKey,
+      apiKeyLength: this.apiKey ? this.apiKey.length : 0,
+      apiKeyPrefix: this.apiKey ? this.apiKey.substring(0, 10) + '...' : 'none',
+      apiUrl: this.apiUrl,
+      model: this.model,
+      maxTokens: this.maxTokens,
+      debugMode: this.debugMode
+    };
+
+    console.log('📋 [ClaudeAI] Configuration details:', config);
+
+    // Check for critical issues
+    const issues = [];
+    
+    if (!this.apiKey) {
+      issues.push('CRITICAL: CLAUDE_API_KEY environment variable is missing');
+      console.error('❌ [ClaudeAI] MISSING API KEY - Service will not function!');
+    } else if (this.apiKey.length < 50) {
+      issues.push('WARNING: API key seems too short, may be invalid');
+      console.warn('⚠️ [ClaudeAI] API key length seems insufficient');
+    }
+
+    if (!this.apiUrl.includes('anthropic.com')) {
+      issues.push('WARNING: API URL may not be correct');
+      console.warn('⚠️ [ClaudeAI] API URL validation failed');
+    }
+
+    if (this.debugMode === 'production') {
+      console.log('🚀 [ClaudeAI] Running in PRODUCTION mode with enhanced debugging');
+    }
+
+    // Log environment variables for debugging
+    console.log('🌍 [ClaudeAI] Environment variables check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      CLAUDE_API_KEY: this.apiKey ? 'SET' : 'MISSING',
+      CLAUDE_API_URL: process.env.CLAUDE_API_URL || 'DEFAULT',
+      CLAUDE_MODEL: process.env.CLAUDE_MODEL || 'DEFAULT',
+      PORT: process.env.PORT,
+      LOG_LEVEL: process.env.LOG_LEVEL
+    });
+
+    if (issues.length > 0) {
+      console.error('❌ [ClaudeAI] Configuration issues found:', issues);
+      logger.error('Claude AI service configuration issues', { issues, config });
+    } else {
+      console.log('✅ [ClaudeAI] Configuration validation passed');
+    }
+
+    return {
+      isValid: issues.length === 0,
+      issues,
+      config
+    };
+  }
+
+  /**
+   * Enhanced request tracking and diagnostics
    */
   async makeRequest(systemPrompt, userMessage, temperature = 0.3) {
+    this.requestCounter++;
+    const requestId = `REQ-${this.requestCounter}-${Date.now()}`;
     const requestStartTime = Date.now();
     
+    console.log(`📡 [ClaudeAI-${requestId}] Starting request #${this.requestCounter}...`);
+    
+    // Pre-request validation
+    const preflightCheck = this.performPreflightCheck();
+    if (!preflightCheck.success) {
+      console.error(`❌ [ClaudeAI-${requestId}] Preflight check failed:`, preflightCheck.issues);
+      return {
+        success: false,
+        error: `Preflight check failed: ${preflightCheck.issues.join(', ')}`,
+        requestId,
+        timestamp: new Date().toISOString()
+      };
+    }
+
     const requestPayload = {
       model: this.model,
       max_tokens: this.maxTokens,
@@ -35,34 +126,60 @@ class ClaudeAiService {
       ]
     };
 
-    console.log('📡 [ClaudeAI] Preparing Claude API request:', {
+    // Enhanced request logging
+    console.log(`📤 [ClaudeAI-${requestId}] Request details:`, {
       apiUrl: this.apiUrl,
       model: this.model,
       maxTokens: this.maxTokens,
       temperature,
       systemPromptLength: systemPrompt.length + ' chars',
       userMessageLength: userMessage.length + ' chars',
-      payloadSize: JSON.stringify(requestPayload).length + ' chars'
+      payloadSize: JSON.stringify(requestPayload).length + ' chars',
+      requestId,
+      timestamp: new Date().toISOString()
     });
 
+    // Network connectivity test
+    const networkTest = await this.testNetworkConnectivity();
+    if (!networkTest.success) {
+      console.error(`❌ [ClaudeAI-${requestId}] Network connectivity test failed:`, networkTest);
+      this.updateErrorStats('networkErrors');
+      return {
+        success: false,
+        error: `Network connectivity issue: ${networkTest.error}`,
+        requestId,
+        timestamp: new Date().toISOString(),
+        diagnostics: { networkTest }
+      };
+    }
+
     try {
-      console.log('🚀 [ClaudeAI] Sending request to Claude API...');
+      console.log(`🚀 [ClaudeAI-${requestId}] Sending request to Claude API...`);
+      
+      // Enhanced axios configuration with detailed error handling
+      const axiosConfig = {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        timeout: 30000, // 30 second timeout
+        validateStatus: (status) => status < 500, // Don't throw on 4xx errors
+        maxRedirects: 0, // Prevent redirect loops
+        maxContentLength: 50 * 1024 * 1024, // 50MB max response
+        maxBodyLength: 50 * 1024 * 1024 // 50MB max request
+      };
+
       const response = await axios.post(
         this.apiUrl,
         requestPayload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': this.apiKey,
-            'anthropic-version': '2023-06-01'
-          },
-          timeout: 30000 // 30 second timeout
-        }
+        axiosConfig
       );
 
       const requestTime = Date.now() - requestStartTime;
 
-      console.log('✅ [ClaudeAI] Claude API request successful:', {
+      // Enhanced success logging
+      console.log(`✅ [ClaudeAI-${requestId}] Request successful:`, {
         requestTime: requestTime + 'ms',
         status: response.status,
         statusText: response.statusText,
@@ -70,24 +187,39 @@ class ClaudeAiService {
         hasContent: !!response.data.content,
         contentLength: response.data.content?.[0]?.text?.length + ' chars' || 0,
         hasUsage: !!response.data.usage,
-        usage: response.data.usage
+        usage: response.data.usage,
+        responseHeaders: Object.keys(response.headers),
+        requestId
       });
 
+      // Validate response structure
+      const responseValidation = this.validateResponseStructure(response.data);
+      if (!responseValidation.isValid) {
+        console.warn(`⚠️ [ClaudeAI-${requestId}] Response structure validation warnings:`, responseValidation.issues);
+      }
+
       logger.info('Claude AI API request successful', {
+        requestId,
         model: this.model,
-        usage: response.data.usage
+        usage: response.data.usage,
+        requestTime
       });
 
       const result = {
         success: true,
         content: response.data.content[0].text,
-        usage: response.data.usage
+        usage: response.data.usage,
+        requestId,
+        timestamp: new Date().toISOString(),
+        requestTime,
+        responseValidation
       };
 
-      console.log('📤 [ClaudeAI] Returning successful response:', {
+      console.log(`📤 [ClaudeAI-${requestId}] Returning successful response:`, {
         hasContent: !!result.content,
         contentPreview: result.content?.substring(0, 100) + '...',
-        hasUsage: !!result.usage
+        hasUsage: !!result.usage,
+        requestId
       });
 
       return result;
@@ -95,45 +227,286 @@ class ClaudeAiService {
     } catch (error) {
       const requestTime = Date.now() - requestStartTime;
       
-      console.error('❌ [ClaudeAI] Claude API request failed:', {
+      // Enhanced error analysis and categorization
+      const errorAnalysis = this.analyzeError(error, requestId);
+      this.updateErrorStats(errorAnalysis.errorType);
+      
+      console.error(`❌ [ClaudeAI-${requestId}] Request failed:`, {
         requestTime: requestTime + 'ms',
         errorType: error.constructor.name,
         errorMessage: error.message,
+        errorCode: error.code,
         status: error.response?.status,
         statusText: error.response?.statusText,
         responseData: error.response?.data,
-        isTimeoutError: error.code === 'ECONNABORTED',
-        isNetworkError: !error.response,
-        hasApiKey: !!this.apiKey,
-        apiUrl: this.apiUrl
+        requestId,
+        timestamp: new Date().toISOString(),
+        errorAnalysis
       });
 
+      // Log detailed error information
       logger.error('Claude AI API request failed', {
+        requestId,
         error: error.message,
         status: error.response?.status,
-        data: error.response?.data
+        data: error.response?.data,
+        errorAnalysis,
+        requestTime
       });
 
       const result = {
         success: false,
-        error: error.response?.data?.error?.message || error.message
+        error: error.response?.data?.error?.message || error.message,
+        requestId,
+        timestamp: new Date().toISOString(),
+        requestTime,
+        errorAnalysis,
+        diagnostics: {
+          errorType: error.constructor.name,
+          errorCode: error.code,
+          status: error.response?.status,
+          responseData: error.response?.data,
+          networkTest,
+          preflightCheck
+        }
       };
 
-      console.log('📤 [ClaudeAI] Returning error response:', result);
+      console.log(`📤 [ClaudeAI-${requestId}] Returning error response:`, result);
 
       return result;
     }
   }
 
   /**
-   * Load system prompt from file
+   * Preflight check before making API request
+   */
+  performPreflightCheck() {
+    const issues = [];
+    
+    if (!this.apiKey) {
+      issues.push('API key not configured');
+    }
+    
+    if (!this.apiUrl) {
+      issues.push('API URL not configured');
+    }
+    
+    if (!this.model) {
+      issues.push('Model not configured');
+    }
+    
+    // Check if API key format looks valid
+    if (this.apiKey && !this.apiKey.startsWith('sk-ant-')) {
+      issues.push('API key format appears invalid (should start with sk-ant-)');
+    }
+    
+    return {
+      success: issues.length === 0,
+      issues
+    };
+  }
+
+  /**
+   * Test network connectivity to Claude API
+   */
+  async testNetworkConnectivity() {
+    try {
+      console.log('🌐 [ClaudeAI] Testing network connectivity...');
+      
+      // Test DNS resolution
+      const url = new URL(this.apiUrl);
+      const hostname = url.hostname;
+      
+      // Test basic connectivity with a simple HEAD request
+      const testResponse = await axios.head(this.apiUrl, {
+        timeout: 10000,
+        validateStatus: () => true // Accept any status for connectivity test
+      });
+      
+      console.log('✅ [ClaudeAI] Network connectivity test passed:', {
+        hostname,
+        status: testResponse.status,
+        responseTime: testResponse.headers['x-response-time'] || 'unknown'
+      });
+      
+      return {
+        success: true,
+        hostname,
+        status: testResponse.status,
+        responseTime: testResponse.headers['x-response-time'] || 'unknown'
+      };
+      
+    } catch (error) {
+      console.error('❌ [ClaudeAI] Network connectivity test failed:', {
+        error: error.message,
+        code: error.code,
+        hostname: new URL(this.apiUrl).hostname
+      });
+      
+      return {
+        success: false,
+        error: error.message,
+        code: error.code,
+        hostname: new URL(this.apiUrl).hostname
+      };
+    }
+  }
+
+  /**
+   * Validate response structure from Claude API
+   */
+  validateResponseStructure(responseData) {
+    const issues = [];
+    
+    if (!responseData) {
+      issues.push('Response data is null or undefined');
+      return { isValid: false, issues };
+    }
+    
+    if (!responseData.content) {
+      issues.push('Response missing content field');
+    } else if (!Array.isArray(responseData.content)) {
+      issues.push('Content field is not an array');
+    } else if (responseData.content.length === 0) {
+      issues.push('Content array is empty');
+    } else if (!responseData.content[0].text) {
+      issues.push('First content item missing text field');
+    }
+    
+    if (!responseData.usage) {
+      issues.push('Response missing usage information');
+    }
+    
+    return {
+      isValid: issues.length === 0,
+      issues
+    };
+  }
+
+  /**
+   * Enhanced error analysis and categorization
+   */
+  analyzeError(error, requestId) {
+    let errorType = 'unknown';
+    let severity = 'medium';
+    let suggestedAction = 'Check logs and retry';
+    
+    if (error.code === 'ECONNABORTED') {
+      errorType = 'timeout';
+      severity = 'high';
+      suggestedAction = 'Increase timeout or check network stability';
+    } else if (error.code === 'ENOTFOUND') {
+      errorType = 'dns';
+      severity = 'high';
+      suggestedAction = 'Check DNS resolution and network connectivity';
+    } else if (error.code === 'ECONNREFUSED') {
+      errorType = 'connection';
+      severity = 'high';
+      suggestedAction = 'Check if Claude API is accessible';
+    } else if (error.response) {
+      if (error.response.status === 401) {
+        errorType = 'auth';
+        severity = 'critical';
+        suggestedAction = 'Check API key validity and permissions';
+      } else if (error.response.status === 429) {
+        errorType = 'rateLimit';
+        severity = 'medium';
+        suggestedAction = 'Implement rate limiting and retry with backoff';
+      } else if (error.response.status >= 500) {
+        errorType = 'server';
+        severity = 'medium';
+        suggestedAction = 'Retry later, issue may be on Claude side';
+      } else {
+        errorType = 'client';
+        severity = 'low';
+        suggestedAction = 'Check request payload and parameters';
+      }
+    } else if (error.request) {
+      errorType = 'network';
+      severity = 'high';
+      suggestedAction = 'Check network connectivity and firewall settings';
+    }
+    
+    return {
+      errorType,
+      severity,
+      suggestedAction,
+      requestId,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Update error statistics
+   */
+  updateErrorStats(errorType) {
+    this.errorStats.totalErrors++;
+    this.errorStats.lastError = errorType;
+    this.errorStats.lastErrorTime = new Date().toISOString();
+    
+    if (this.errorStats[errorType + 'Errors'] !== undefined) {
+      this.errorStats[errorType + 'Errors']++;
+    }
+  }
+
+  /**
+   * Get comprehensive service health status
+   */
+  getServiceHealth() {
+    const config = this.validateAndLogConfiguration();
+    const networkStatus = this.testNetworkConnectivity();
+    
+    return {
+      service: 'Claude AI Service',
+      status: config.isValid && networkStatus.success ? 'healthy' : 'unhealthy',
+      timestamp: new Date().toISOString(),
+      configuration: config,
+      network: networkStatus,
+      statistics: {
+        totalRequests: this.requestCounter,
+        errorStats: this.errorStats,
+        uptime: process.uptime(),
+        memoryUsage: process.memoryUsage(),
+        nodeVersion: process.version
+      },
+      environment: {
+        nodeEnv: process.env.NODE_ENV,
+        hasApiKey: !!this.apiKey,
+        apiUrl: this.apiUrl,
+        model: this.model
+      }
+    };
+  }
+
+  /**
+   * Enhanced prompt loading with better error handling
    */
   loadPrompt(promptPath) {
     try {
       const fullPath = path.join(__dirname, '..', 'prompts', promptPath);
-      return fs.readFileSync(fullPath, 'utf-8');
+      console.log(`📖 [ClaudeAI] Loading prompt from: ${fullPath}`);
+      
+      if (!fs.existsSync(fullPath)) {
+        console.error(`❌ [ClaudeAI] Prompt file not found: ${fullPath}`);
+        logger.error(`Prompt file not found: ${promptPath}`, { fullPath });
+        return null;
+      }
+      
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      console.log(`✅ [ClaudeAI] Prompt loaded successfully:`, {
+        path: promptPath,
+        size: content.length + ' chars',
+        firstLine: content.split('\n')[0].substring(0, 100) + '...'
+      });
+      
+      return content;
     } catch (error) {
-      logger.error(`Failed to load prompt: ${promptPath}`, { error: error.message });
+      console.error(`❌ [ClaudeAI] Failed to load prompt: ${promptPath}`, {
+        error: error.message,
+        code: error.code,
+        path: promptPath
+      });
+      logger.error(`Failed to load prompt: ${promptPath}`, { error: error.message, path: promptPath });
       return null;
     }
   }
@@ -142,28 +515,45 @@ class ClaudeAiService {
    * Analyze client debt and liabilities for cash flow planning
    */
   async analyzeDebtStrategy(clientData) {
-    console.log('🧠 [ClaudeAI] Starting debt strategy analysis:', {
+    const requestId = `DEBT-${Date.now()}`;
+    console.log(`🧠 [ClaudeAI-${requestId}] Starting debt strategy analysis:`, {
       hasClientData: !!clientData,
       clientId: clientData._id || clientData.id || 'unknown',
       clientName: clientData ? `${clientData.firstName || ''} ${clientData.lastName || ''}`.trim() : 'N/A'
     });
 
-    const systemPrompt = this.loadPrompt('debt-analysis.md');
-    if (!systemPrompt) {
-      console.log('❌ [ClaudeAI] Debt analysis prompt not found');
-      throw new Error('Debt analysis prompt not found');
+    // Validate client data
+    if (!clientData) {
+      console.error(`❌ [ClaudeAI-${requestId}] No client data provided for debt analysis`);
+      return {
+        success: false,
+        error: 'No client data provided',
+        requestId,
+        timestamp: new Date().toISOString()
+      };
     }
 
-    console.log('📋 [ClaudeAI] System prompt loaded:', {
+    const systemPrompt = this.loadPrompt('debt-analysis.md');
+    if (!systemPrompt) {
+      console.log(`❌ [ClaudeAI-${requestId}] Debt analysis prompt not found`);
+      return {
+        success: false,
+        error: 'Debt analysis prompt not found',
+        requestId,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    console.log(`📋 [ClaudeAI-${requestId}] System prompt loaded:`, {
       promptLength: systemPrompt.length + ' chars',
       hasPrompt: !!systemPrompt
     });
 
     // Format client data for analysis
-    console.log('🔧 [ClaudeAI] Formatting client data for analysis...');
+    console.log(`🔧 [ClaudeAI-${requestId}] Formatting client data for analysis...`);
     const clientContext = this.formatClientDataForAnalysis(clientData);
     
-    console.log('📊 [ClaudeAI] Client context formatted:', {
+    console.log(`📊 [ClaudeAI-${requestId}] Client context formatted:`, {
       contextLength: clientContext.length + ' chars',
       totalDebts: this.countClientDebts(clientData),
       hasFinancialData: clientContext.includes('Monthly Income:'),
@@ -184,26 +574,28 @@ Please provide:
 
 Format the response as structured JSON for easy parsing.`;
 
-    console.log('📝 [ClaudeAI] User message prepared:', {
+    console.log(`📝 [ClaudeAI-${requestId}] User message prepared:`, {
       messageLength: userMessage.length + ' chars',
       contextPreview: clientContext.substring(0, 200) + '...'
     });
 
     logger.info('Requesting debt analysis from Claude AI', {
+      requestId,
       clientId: clientData._id,
       totalDebts: this.countClientDebts(clientData)
     });
 
-    console.log('📡 [ClaudeAI] Making request to Claude API...');
+    console.log(`📡 [ClaudeAI-${requestId}] Making request to Claude API...`);
     const response = await this.makeRequest(systemPrompt, userMessage, 0.3);
     
-    console.log('📥 [ClaudeAI] Claude API response received:', {
+    console.log(`📥 [ClaudeAI-${requestId}] Claude API response received:`, {
       success: response.success,
       hasContent: !!response.content,
       contentLength: response.content ? response.content.length + ' chars' : 0,
       hasUsage: !!response.usage,
       error: response.error,
-      usageDetails: response.usage
+      usageDetails: response.usage,
+      requestId: response.requestId
     });
 
     return response;
@@ -396,29 +788,56 @@ Please provide specific, actionable debt management recommendations focusing on:
    * Analyze financial goals for goal-based planning
    */
   async analyzeGoals(selectedGoals, clientData) {
-    console.log('🎯 [ClaudeAI] Starting goal analysis:', {
+    const requestId = `GOALS-${Date.now()}`;
+    console.log(`🎯 [ClaudeAI-${requestId}] Starting goal analysis:`, {
       hasClientData: !!clientData,
       clientId: clientData._id || clientData.id || 'unknown',
       selectedGoalsCount: selectedGoals?.length || 0,
       goalTypes: selectedGoals?.map(g => g.type || g.title) || []
     });
 
-    const systemPrompt = this.loadPrompt('goal-analysis.md');
-    if (!systemPrompt) {
-      console.log('❌ [ClaudeAI] Goal analysis prompt not found');
-      throw new Error('Goal analysis prompt not found');
+    // Validate inputs
+    if (!selectedGoals || !Array.isArray(selectedGoals) || selectedGoals.length === 0) {
+      console.error(`❌ [ClaudeAI-${requestId}] No goals provided for analysis`);
+      return {
+        success: false,
+        error: 'No goals provided for analysis',
+        requestId,
+        timestamp: new Date().toISOString()
+      };
     }
 
-    console.log('📋 [ClaudeAI] System prompt loaded:', {
+    if (!clientData) {
+      console.error(`❌ [ClaudeAI-${requestId}] No client data provided for goal analysis`);
+      return {
+        success: false,
+        error: 'No client data provided',
+        requestId,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    const systemPrompt = this.loadPrompt('goal-analysis.md');
+    if (!systemPrompt) {
+      console.log(`❌ [ClaudeAI-${requestId}] Goal analysis prompt not found`);
+      return {
+        success: false,
+        error: 'Goal analysis prompt not found',
+        requestId,
+        timestamp: new Date().toISOString()
+      };
+    }
+
+    console.log(`📋 [ClaudeAI-${requestId}] System prompt loaded:`, {
       promptLength: systemPrompt.length + ' chars',
       hasPrompt: !!systemPrompt
     });
 
     // Format client and goals data for analysis
-    console.log('🔧 [ClaudeAI] Formatting data for goal analysis...');
+    console.log(`🔧 [ClaudeAI-${requestId}] Formatting data for goal analysis...`);
     const analysisContext = this.formatGoalsForAnalysis(selectedGoals, clientData);
     
-    console.log('📊 [ClaudeAI] Analysis context prepared:', {
+    console.log(`📊 [ClaudeAI-${requestId}] Analysis context prepared:`, {
       contextLength: analysisContext.length + ' chars',
       hasFinancialData: analysisContext.includes('FINANCIAL SUMMARY:'),
       hasGoalsData: analysisContext.includes('SELECTED GOALS:')
@@ -438,31 +857,42 @@ Provide detailed analysis including:
 
 CRITICAL: Respond with ONLY valid JSON. Start with { and end with }. No explanations, no markdown blocks.`;
 
-    console.log('📝 [ClaudeAI] User message prepared:', {
+    console.log(`📝 [ClaudeAI-${requestId}] User message prepared:`, {
       messageLength: userMessage.length + ' chars'
     });
 
     logger.info('Requesting goal analysis from Claude AI', {
+      requestId,
       clientId: clientData._id,
       goalsCount: selectedGoals.length
     });
 
-    console.log('📡 [ClaudeAI] Making request to Claude API...');
+    console.log(`📡 [ClaudeAI-${requestId}] Making request to Claude API...`);
     const response = await this.makeRequest(systemPrompt, userMessage, 0.3);
     
-    console.log('📥 [ClaudeAI] Claude API response received:', {
+    console.log(`📥 [ClaudeAI-${requestId}] Claude API response received:`, {
       success: response.success,
       hasContent: !!response.content,
       contentLength: response.content ? response.content.length + ' chars' : 0,
-      error: response.error
+      error: response.error,
+      requestId: response.requestId
     });
 
     return response;
   }
 
+  /**
+   * Enhanced plan comparison with better error handling
+   */
   async comparePlans(planA, planB) {
+    const requestId = `COMPARE-${Date.now()}`;
     try {
-      console.log('🤖 [ClaudeAI] Starting plan comparison');
+      console.log(`🤖 [ClaudeAI-${requestId}] Starting plan comparison`);
+      
+      // Validate inputs
+      if (!planA || !planB) {
+        throw new Error('Both plans must be provided for comparison');
+      }
       
       const comparisonPrompt = this.buildComparisonPrompt(planA, planB);
       
@@ -471,14 +901,29 @@ CRITICAL: Respond with ONLY valid JSON. Start with { and end with }. No explanat
         comparisonPrompt
       );
       
+      if (!response.success) {
+        throw new Error(`Claude API request failed: ${response.error}`);
+      }
+      
       const analysis = this.parseComparisonResponse(response.content);
       
-      console.log('✅ [ClaudeAI] Plan comparison completed successfully');
-      return analysis;
+      console.log(`✅ [ClaudeAI-${requestId}] Plan comparison completed successfully`);
+      return {
+        ...analysis,
+        requestId,
+        timestamp: new Date().toISOString()
+      };
       
     } catch (error) {
-      console.error('❌ [ClaudeAI] Plan comparison failed:', error);
-      throw new Error(`Plan comparison failed: ${error.message}`);
+      console.error(`❌ [ClaudeAI-${requestId}] Plan comparison failed:`, error);
+      logger.error('Plan comparison failed', { requestId, error: error.message });
+      
+      return {
+        success: false,
+        error: `Plan comparison failed: ${error.message}`,
+        requestId,
+        timestamp: new Date().toISOString()
+      };
     }
   }
 
@@ -944,27 +1389,48 @@ IMPORTANT CONTEXT:
   }
 
   /**
-   * Validate API configuration
+   * Enhanced configuration validation
    */
   validateConfiguration() {
-    const issues = [];
+    console.log('🔧 [ClaudeAI] Running configuration validation...');
     
-    if (!this.apiKey) {
-      issues.push('Claude API key not configured');
-    }
-    
-    if (!this.apiUrl) {
-      issues.push('Claude API URL not configured');
-    }
-    
-    if (!this.model) {
-      issues.push('Claude model not configured');
-    }
+    const validation = this.validateAndLogConfiguration();
+    const networkTest = this.testNetworkConnectivity();
     
     return {
-      isValid: issues.length === 0,
-      issues
+      ...validation,
+      networkConnectivity: networkTest,
+      timestamp: new Date().toISOString(),
+      recommendations: this.generateConfigurationRecommendations(validation, networkTest)
     };
+  }
+
+  /**
+   * Generate configuration recommendations
+   */
+  generateConfigurationRecommendations(validation, networkTest) {
+    const recommendations = [];
+    
+    if (!validation.isValid) {
+      if (validation.issues.includes('CRITICAL: CLAUDE_API_KEY environment variable is missing')) {
+        recommendations.push('Set CLAUDE_API_KEY environment variable with valid Anthropic API key');
+      }
+      if (validation.issues.includes('API key format appears invalid')) {
+        recommendations.push('Verify API key format starts with sk-ant- and is complete');
+      }
+    }
+    
+    if (!networkTest.success) {
+      recommendations.push('Check network connectivity and firewall settings');
+      recommendations.push('Verify DNS resolution for api.anthropic.com');
+    }
+    
+    if (process.env.NODE_ENV === 'production') {
+      recommendations.push('Ensure all environment variables are properly set in production');
+      recommendations.push('Check application logs for detailed error information');
+    }
+    
+    return recommendations;
   }
 }
 

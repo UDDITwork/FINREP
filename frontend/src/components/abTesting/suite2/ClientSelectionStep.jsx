@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Search, User, MapPin, Phone, Mail, Calendar, ArrowRight, Filter } from 'lucide-react';
+import { Search, User, MapPin, Phone, Mail, Calendar, ArrowRight, Filter, BarChart3 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const ClientSelectionStep = ({ clients, loading, selectedClient, onClientSelect, onComplete }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('name');
+  const navigate = useNavigate();
 
   // Filter and sort clients
   const filteredClients = useMemo(() => {
@@ -271,20 +273,32 @@ const ClientSelectionStep = ({ clients, loading, selectedClient, onClientSelect,
           )}
         </div>
         
-        <button
-          onClick={handleProceed}
-          disabled={!selectedClient}
-          className={`
-            flex items-center px-6 py-2 rounded-lg font-medium transition-all duration-200
-            ${selectedClient
-              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }
-          `}
-        >
-          Proceed to Risk Assessment
-          <ArrowRight className="ml-2 w-4 h-4" />
-        </button>
+        <div className="flex gap-3">
+          {selectedClient && (
+            <button
+              onClick={() => navigate(`/ab-testing-visualizations/${selectedClient._id}`)}
+              className="flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-200 bg-purple-600 text-white hover:bg-purple-700 shadow-md hover:shadow-lg"
+            >
+              <BarChart3 className="mr-2 w-4 h-4" />
+              View Charts
+            </button>
+          )}
+          
+          <button
+            onClick={handleProceed}
+            disabled={!selectedClient}
+            className={`
+              flex items-center px-6 py-2 rounded-lg font-medium transition-all duration-200
+              ${selectedClient
+                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }
+            `}
+          >
+            Proceed to Risk Assessment
+            <ArrowRight className="ml-2 w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
