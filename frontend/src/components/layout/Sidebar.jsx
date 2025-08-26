@@ -8,7 +8,7 @@
 
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Video, BarChart3, PieChart, User, Settings, LogOut, TrendingUp, MessageCircle, Shield, TrendingDown, FileText, Menu, X, Palette, Lock } from 'lucide-react';
+import { Home, Users, Video, BarChart3, PieChart, User, Settings, LogOut, TrendingUp, MessageCircle, Shield, TrendingDown, FileText, Menu, X, Palette, Lock, ChevronDown, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 function Sidebar() {
@@ -16,6 +16,10 @@ function Sidebar() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState({
+    main: true,
+    account: true
+  });
 
   const menuItems = [
     {
@@ -125,6 +129,13 @@ function Sidebar() {
     setIsMobileMenuOpen(false);
   };
 
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
   return (
     <>
       {/* Mobile Menu Button */}
@@ -147,99 +158,136 @@ function Sidebar() {
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-[#1e3a5f] transition-transform duration-300 transform
+        fixed inset-y-0 left-0 z-50 w-64 bg-[#F7F8FA] transition-transform duration-300 transform
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="flex h-full flex-col">
           {/* Logo */}
-          <div className="flex h-16 items-center justify-center border-b border-white/10">
-            <h1 className="text-xl sm:text-2xl font-bold text-white">Richie AI</h1>
+          <div className="flex h-20 items-center justify-center px-4 border-b border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-[#1e3a5f] rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-lg">R</span>
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold text-gray-900">Richie AI</h1>
+                <p className="text-xs text-gray-500">Financial Platform</p>
+              </div>
+            </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto">
+          <nav className="flex-1 px-4 py-6 overflow-y-auto space-y-6">
             {/* Main Section */}
-            <div className="space-y-1">
-              <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Main
-              </p>
-              {menuItems.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.path);
-                
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={closeMobileMenu}
-                    className={`
-                      group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
-                      ${active 
-                        ? 'bg-orange-500 text-white' 
-                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                      }
-                    `}
-                  >
-                    <Icon 
-                      className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                        active ? 'text-white' : 'text-gray-400 group-hover:text-white'
-                      }`} 
-                    />
-                    <span className="truncate">{item.name}</span>
-                  </Link>
-                );
-              })}
+            <div className="space-y-3">
+              <button
+                onClick={() => toggleSection('main')}
+                className="flex items-center justify-between w-full text-left px-2 py-1 text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700 transition-colors"
+              >
+                <span>Main Navigation</span>
+                {expandedSections.main ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </button>
+              
+              {expandedSections.main && (
+                <div className="space-y-1 ml-2">
+                  {menuItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.path);
+                    
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={closeMobileMenu}
+                        className={`
+                          group flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-r-lg transition-all duration-200
+                          ${active 
+                            ? 'bg-[#E0E7FF] text-gray-900' 
+                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                          }
+                        `}
+                      >
+                        <Icon 
+                          className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                            active ? 'text-gray-900' : 'text-gray-500 group-hover:text-gray-700'
+                          }`} 
+                        />
+                        <span className="truncate">{item.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </nav>
 
           {/* Account Section - Bottom */}
-          <div className="border-t border-white/10 p-2">
-            <div className="space-y-1">
-              {accountItems.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.path);
-                
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    onClick={closeMobileMenu}
-                    className={`
-                      group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200
-                      ${active 
-                        ? 'bg-orange-500 text-white' 
-                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                      }
-                    `}
-                  >
-                    <Icon 
-                      className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                        active ? 'text-white' : 'text-gray-400 group-hover:text-white'
-                      }`} 
-                    />
-                    <span className="truncate">{item.name}</span>
-                  </Link>
-                );
-              })}
-              
-              {/* Logout Button */}
+          <div className="border-t border-gray-200 px-4 py-4">
+            <div className="space-y-3">
               <button
-                onClick={() => {
-                  closeMobileMenu();
-                  handleLogout();
-                }}
-                className="group flex items-center w-full px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 text-gray-300 hover:bg-red-600/20 hover:text-red-400"
+                onClick={() => toggleSection('account')}
+                className="flex items-center justify-between w-full text-left px-2 py-1 text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700 transition-colors"
               >
-                <LogOut 
-                  className="mr-3 h-5 w-5 flex-shrink-0 text-gray-400 group-hover:text-red-400" 
-                />
-                <span className="truncate">Logout</span>
+                <span>Account</span>
+                {expandedSections.account ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
               </button>
+              
+              {expandedSections.account && (
+                <div className="space-y-1 ml-2">
+                  {accountItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = isActive(item.path);
+                    
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={closeMobileMenu}
+                        className={`
+                          group flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-r-lg transition-all duration-200
+                          ${active 
+                            ? 'bg-[#E0E7FF] text-gray-900' 
+                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                          }
+                        `}
+                      >
+                        <Icon 
+                          className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                            active ? 'text-gray-900' : 'text-gray-500 group-hover:text-gray-700'
+                          }`} 
+                        />
+                        <span className="truncate">{item.name}</span>
+                      </Link>
+                    );
+                  })}
+                  
+                  {/* Logout Button */}
+                  <button
+                    onClick={() => {
+                      closeMobileMenu();
+                      handleLogout();
+                    }}
+                    className="group flex items-center w-full px-3 py-2.5 text-sm font-medium rounded-r-lg transition-all duration-200 text-gray-700 hover:bg-red-50 hover:text-red-700"
+                  >
+                    <LogOut 
+                      className="mr-3 h-5 w-5 flex-shrink-0 text-gray-500 group-hover:text-red-600" 
+                    />
+                    <span className="truncate">Logout</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Footer */}
-          <div className="border-t border-white/10 px-4 py-2">
+          <div className="border-t border-gray-200 px-4 py-3">
             <p className="text-xs text-gray-500 text-center">
               Richie v1.0 • SEBI 2025
             </p>
