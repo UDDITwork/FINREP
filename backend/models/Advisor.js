@@ -75,6 +75,14 @@ const advisorSchema = new mongoose.Schema({
     type: String,
     enum: ['active', 'inactive', 'suspended'],
     default: 'active'
+  },
+  // Password reset fields
+  passwordResetRequested: {
+    type: Boolean,
+    default: false
+  },
+  passwordResetAt: {
+    type: Date
   }
 }, {
   timestamps: true

@@ -7,3 +7,5 @@ export { default as MeetingsList } from './MeetingsList';
 export { default as MeetingRoom } from './MeetingRoom';
 export { default as TranscriptViewer } from './TranscriptViewer';
 export { default as TranscriptionsPage } from './TranscriptionsPage';
+export { default as MeetingCalendar } from './MeetingCalendar';
+export { default as MeetingAnalytics } from './MeetingAnalytics';

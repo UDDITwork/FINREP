@@ -233,8 +233,8 @@ const MeetingsList = ({ refreshTrigger }) => {
     const statusConfig = {
       scheduled: { color: 'bg-blue-100 text-blue-800', label: 'Scheduled' },
       active: { color: 'bg-green-100 text-green-800', label: 'Active' },
-      completed: { color: 'bg-gray-100 text-gray-800', label: 'Completed' },
-      cancelled: { color: 'bg-red-100 text-red-800', label: 'Cancelled' }
+      completed: { color: 'bg-green-50 text-green-700', label: 'Completed' },
+      cancelled: { color: 'bg-blue-50 text-blue-700', label: 'Cancelled' }
     };
 
     const config = statusConfig[status] || statusConfig.scheduled;
@@ -248,11 +248,11 @@ const MeetingsList = ({ refreshTrigger }) => {
 
   const getMeetingTypeBadge = (meetingType) => {
     return meetingType === 'instant' ? (
-      <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
+      <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
         Instant
       </span>
     ) : (
-      <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
         Scheduled
       </span>
     );
@@ -292,7 +292,7 @@ const MeetingsList = ({ refreshTrigger }) => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Video className="h-6 w-6 text-blue-600" />
-          <h2 className="text-xl font-semibold text-gray-900">Recent Meetings</h2>
+          <h2 className="text-xl font-semibold text-blue-900">Recent Meetings</h2>
         </div>
         
         <div className="flex items-center gap-4">
@@ -323,18 +323,18 @@ const MeetingsList = ({ refreshTrigger }) => {
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-start">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-red-800">Error loading meetings</h3>
-              <p className="mt-1 text-sm text-red-700">{error}</p>
+              <h3 className="text-sm font-medium text-blue-800">Error loading meetings</h3>
+              <p className="mt-1 text-sm text-blue-700">{error}</p>
               {error.includes('Not authenticated') && (
-                <p className="mt-2 text-xs text-red-600">
+                <p className="mt-2 text-xs text-blue-600">
                   Token status: {localStorage.getItem('token') ? 'Found' : 'Missing'} | 
                   User: {localStorage.getItem('user') ? 'Logged in' : 'Not logged in'}
                 </p>
@@ -342,14 +342,14 @@ const MeetingsList = ({ refreshTrigger }) => {
               <div className="mt-3 flex gap-3">
                 <button
                   onClick={loadMeetings}
-                  className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition-colors flex items-center gap-1"
+                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
                 >
                   <RefreshCw className="h-3 w-3" />
                   Retry
                 </button>
                 <button
                   onClick={() => setShowDirectJoin(true)}
-                  className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors"
+                  className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
                 >
                   Join with Direct Link
                 </button>
@@ -370,9 +370,9 @@ const MeetingsList = ({ refreshTrigger }) => {
       {/* Meetings List */}
       {meetings.length === 0 ? (
         <div className="text-center py-12">
-          <Video className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 mb-2">No meetings found</p>
-          <p className="text-sm text-gray-500">
+          <Video className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+          <p className="text-blue-600 mb-2">No meetings found</p>
+          <p className="text-sm text-blue-500">
             {filter === 'all' 
               ? 'Create your first meeting to get started.' 
               : `No ${filter} meetings found.`
@@ -390,8 +390,8 @@ const MeetingsList = ({ refreshTrigger }) => {
                   {/* Meeting Info */}
                   <div className="flex items-center gap-3 mb-2">
                     <div className="flex items-center gap-1">
-                      <User className="h-4 w-4 text-gray-500" />
-                      <span className="font-medium text-gray-900">
+                      <User className="h-4 w-4 text-blue-500" />
+                      <span className="font-medium text-blue-900">
                         {meeting.client?.firstName} {meeting.client?.lastName}
                       </span>
                     </div>
@@ -401,7 +401,7 @@ const MeetingsList = ({ refreshTrigger }) => {
                   </div>
                   
                   {/* Date/Time */}
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                  <div className="flex items-center gap-4 text-sm text-blue-600 mb-3">
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
                       <span>{formatDateTime(meeting.scheduledAt)}</span>
@@ -417,54 +417,54 @@ const MeetingsList = ({ refreshTrigger }) => {
                   {/* Meeting Links */}
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-600 w-16">Client:</span>
+                      <span className="text-blue-600 w-16">Client:</span>
                       <input
                         type="text"
                         value={meeting.clientMeetingLink}
                         readOnly
-                        className="flex-1 p-2 text-xs bg-gray-50 border border-gray-300 rounded text-gray-700"
+                        className="flex-1 p-2 text-xs bg-blue-50 border border-blue-300 rounded text-blue-700"
                       />
-                      <button
-                        onClick={() => handleCopyLink(meeting.clientMeetingLink, meeting.id)}
-                        className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
-                        title="Copy client link"
-                      >
-                        {copied === meeting.id ? (
-                          <Check className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </button>
-                      <a
-                        href={meeting.clientMeetingLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
-                        title="Open client link"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
+                                              <button
+                          onClick={() => handleCopyLink(meeting.clientMeetingLink, meeting.id)}
+                          className="p-2 text-blue-600 hover:text-blue-800 transition-colors"
+                          title="Copy client link"
+                        >
+                          {copied === meeting.id ? (
+                            <Check className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </button>
+                        <a
+                          href={meeting.clientMeetingLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 text-blue-600 hover:text-blue-800 transition-colors"
+                          title="Open client link"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
                     </div>
                     
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="text-gray-600 w-16">Advisor:</span>
+                      <span className="text-blue-600 w-16">Advisor:</span>
                       <input
                         type="text"
                         value={meeting.advisorMeetingLink}
                         readOnly
-                        className="flex-1 p-2 text-xs bg-gray-50 border border-gray-300 rounded text-gray-700"
+                        className="flex-1 p-2 text-xs bg-blue-50 border border-blue-300 rounded text-blue-700"
                       />
-                      <button
-                        onClick={() => handleCopyLink(meeting.advisorMeetingLink, meeting.id)}
-                        className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
-                        title="Copy advisor link"
-                      >
-                        {copied === meeting.id ? (
-                          <Check className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </button>
+                                              <button
+                          onClick={() => handleCopyLink(meeting.advisorMeetingLink, meeting.id)}
+                          className="p-2 text-blue-600 hover:text-blue-800 transition-colors"
+                          title="Copy advisor link"
+                        >
+                          {copied === meeting.id ? (
+                            <Check className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </button>
                       <a
                         href={meeting.advisorMeetingLink}
                         target="_blank"
@@ -529,7 +529,7 @@ const MeetingsList = ({ refreshTrigger }) => {
                   {meeting.status === 'completed' && (
                     <button
                       onClick={() => handleFetchTranscriptionFromDaily(meeting.id)}
-                      className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 transition-colors flex items-center gap-1"
+                      className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
                       title="Fetch transcription from Daily.co"
                     >
                       <Download className="h-3 w-3" />
@@ -556,7 +556,7 @@ const MeetingsList = ({ refreshTrigger }) => {
                   {meeting.status === 'completed' && (
                     <button
                       onClick={() => setSelectedLOEMeeting(meeting)}
-                      className="px-3 py-1 bg-indigo-600 text-white text-xs rounded hover:bg-indigo-700 transition-colors flex items-center gap-1"
+                      className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
                       title="Send Letter of Engagement"
                     >
                       <Send className="h-3 w-3" />

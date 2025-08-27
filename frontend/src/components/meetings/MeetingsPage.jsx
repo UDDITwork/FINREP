@@ -1,13 +1,16 @@
 // Location: frontend/src/components/meetings/MeetingsPage.jsx
 
 import React, { useState } from 'react';
-import { Video, UserPlus, List } from 'lucide-react';
+import { Video, UserPlus, List, BarChart3 } from 'lucide-react';
 import ClientOnboardingWithMeeting from './ClientOnboardingWithMeeting';
 import MeetingsList from './MeetingsList';
+import MeetingCalendar from './MeetingCalendar';
+import MeetingAnalytics from './MeetingAnalytics';
 
 const MeetingsPage = () => {
   const [activeTab, setActiveTab] = useState('onboard'); // 'onboard' or 'list'
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedDate, setSelectedDate] = useState(null);
 
   const handleOnboardingSuccess = (data) => {
     console.log('Onboarding with meeting created:', data);
@@ -32,14 +35,14 @@ const MeetingsPage = () => {
 
         {/* Tab Navigation */}
         <div className="mb-6">
-          <div className="border-b border-gray-200">
+          <div className="border-b border-blue-200">
             <nav className="flex space-x-8">
               <button
                 onClick={() => setActiveTab('onboard')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'onboard'
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-blue-500 hover:text-blue-700 hover:border-blue-300'
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -52,12 +55,25 @@ const MeetingsPage = () => {
                 className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === 'list'
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-blue-500 hover:text-blue-700 hover:border-blue-300'
                 }`}
               >
                 <div className="flex items-center gap-2">
                   <List className="h-4 w-4" />
                   Onboarding History
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'analytics'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-blue-500 hover:text-blue-700 hover:border-blue-300'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Analytics & Insights
                 </div>
               </button>
             </nav>
@@ -73,8 +89,15 @@ const MeetingsPage = () => {
                 <ClientOnboardingWithMeeting onSuccess={handleOnboardingSuccess} />
               </div>
               
-              {/* Process Info/Benefits - Takes 1/3 width on large screens */}
+              {/* Right Sidebar - Calendar and Info */}
               <div className="space-y-4">
+                {/* Meeting Calendar */}
+                <MeetingCalendar 
+                  onDateSelect={setSelectedDate}
+                  selectedDate={selectedDate}
+                />
+                
+                {/* Process Info/Benefits */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h3 className="font-medium text-blue-900 mb-2">🎯 Onboarding Process</h3>
                   <ul className="text-sm text-blue-800 space-y-1">
@@ -97,9 +120,9 @@ const MeetingsPage = () => {
                   </ul>
                 </div>
 
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h3 className="font-medium text-orange-900 mb-2">📋 What Clients Complete</h3>
-                  <ul className="text-sm text-orange-800 space-y-1">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="font-medium text-blue-900 mb-2">📋 What Clients Complete</h3>
+                  <ul className="text-sm text-blue-800 space-y-1">
                     <li>• Personal & KYC information</li>
                     <li>• Income & expense analysis</li>
                     <li>• Financial goals planning</li>
@@ -112,7 +135,24 @@ const MeetingsPage = () => {
           )}
 
           {activeTab === 'list' && (
-            <MeetingsList refreshTrigger={refreshTrigger} />
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Meeting Calendar - Takes 1/4 width on large screens */}
+              <div className="lg:col-span-1">
+                <MeetingCalendar 
+                  onDateSelect={setSelectedDate}
+                  selectedDate={selectedDate}
+                />
+              </div>
+              
+              {/* Meetings List - Takes 3/4 width on large screens */}
+              <div className="lg:col-span-3">
+                <MeetingsList refreshTrigger={refreshTrigger} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <MeetingAnalytics />
           )}
         </div>
       </div>

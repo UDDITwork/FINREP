@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, Video, Send, Copy, Check } from 'lucide-react';
 import { meetingAPI, clientAPI } from '../../services/api';
+import MeetingCalendar from './MeetingCalendar';
 
 const MeetingScheduler = ({ onMeetingCreated, selectedClientId = null }) => {
   const [clients, setClients] = useState([]);
@@ -15,6 +16,7 @@ const MeetingScheduler = ({ onMeetingCreated, selectedClientId = null }) => {
   const [createdMeeting, setCreatedMeeting] = useState(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
 
   // Load clients on component mount
   useEffect(() => {
@@ -96,6 +98,14 @@ const MeetingScheduler = ({ onMeetingCreated, selectedClientId = null }) => {
     }
   };
 
+  // Handle calendar date selection
+  const handleCalendarDateSelect = (date) => {
+    setSelectedDate(date);
+    if (meetingType === 'scheduled') {
+      setScheduledDate(date.toISOString().split('T')[0]);
+    }
+  };
+
   const getMinDateTime = () => {
     const now = new Date();
     return now.toISOString().slice(0, 16);
@@ -117,21 +127,23 @@ const MeetingScheduler = ({ onMeetingCreated, selectedClientId = null }) => {
   const selectedClientData = clients.find(c => c._id === selectedClient);
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <div className="flex items-center gap-2 mb-6">
-        <Video className="h-6 w-6 text-blue-600" />
-        <h2 className="text-xl font-semibold text-gray-900">Schedule Meeting</h2>
-      </div>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Meeting Form - Takes 2/3 width on large screens */}
+      <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Video className="h-6 w-6 text-blue-600" />
+          <h2 className="text-xl font-semibold text-blue-900">Schedule Meeting</h2>
+        </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-700 text-sm">{error}</p>
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-blue-700 text-sm">{error}</p>
         </div>
       )}
 
       {/* Meeting Type Selection */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label className="block text-sm font-medium text-blue-700 mb-3">
           Meeting Type
         </label>
         <div className="flex gap-4">
@@ -143,7 +155,7 @@ const MeetingScheduler = ({ onMeetingCreated, selectedClientId = null }) => {
               onChange={(e) => setMeetingType(e.target.value)}
               className="mr-2"
             />
-            <span className="text-sm text-gray-700">Instant Meeting</span>
+            <span className="text-sm text-blue-700">Instant Meeting</span>
           </label>
           <label className="flex items-center">
             <input
@@ -153,25 +165,25 @@ const MeetingScheduler = ({ onMeetingCreated, selectedClientId = null }) => {
               onChange={(e) => setMeetingType(e.target.value)}
               className="mr-2"
             />
-            <span className="text-sm text-gray-700">Scheduled Meeting</span>
+            <span className="text-sm text-blue-700">Scheduled Meeting</span>
           </label>
         </div>
       </div>
 
       {/* Client Selection */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-blue-700 mb-2">
           <User className="h-4 w-4 inline mr-1" />
           Select Client
         </label>
         {loadingClients ? (
-          <div className="p-3 text-gray-500 text-sm">Loading clients...</div>
+          <div className="p-3 text-blue-500 text-sm">Loading clients...</div>
         ) : (
           <select
             value={selectedClient}
             onChange={(e) => setSelectedClient(e.target.value)}
             disabled={selectedClientId} // Disable if client is pre-selected
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Choose a client...</option>
             {clients.map((client) => (
@@ -187,7 +199,7 @@ const MeetingScheduler = ({ onMeetingCreated, selectedClientId = null }) => {
       {meetingType === 'scheduled' && (
         <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-blue-700 mb-2">
               <Calendar className="h-4 w-4 inline mr-1" />
               Meeting Date
             </label>
@@ -196,11 +208,11 @@ const MeetingScheduler = ({ onMeetingCreated, selectedClientId = null }) => {
               value={scheduledDate}
               onChange={(e) => setScheduledDate(e.target.value)}
               min={new Date().toISOString().split('T')[0]}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-blue-700 mb-2">
               <Clock className="h-4 w-4 inline mr-1" />
               Meeting Time
             </label>
@@ -208,7 +220,7 @@ const MeetingScheduler = ({ onMeetingCreated, selectedClientId = null }) => {
               type="time"
               value={scheduledTime}
               onChange={(e) => setScheduledTime(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
@@ -254,35 +266,35 @@ const MeetingScheduler = ({ onMeetingCreated, selectedClientId = null }) => {
           
           <div className="space-y-3 text-sm">
             <div>
-              <span className="font-medium text-gray-700">Client: </span>
-              <span className="text-gray-900">
-                {createdMeeting.client?.firstName} {createdMeeting.client?.lastName}
-              </span>
+                      <span className="font-medium text-blue-700">Client: </span>
+        <span className="text-blue-900">
+          {createdMeeting.client?.firstName} {createdMeeting.client?.lastName}
+        </span>
             </div>
             
             {createdMeeting.meetingType === 'scheduled' && (
               <div>
-                <span className="font-medium text-gray-700">Scheduled for: </span>
-                <span className="text-gray-900">{formatDateTime(createdMeeting.scheduledAt)}</span>
+                        <span className="font-medium text-blue-700">Scheduled for: </span>
+        <span className="text-blue-900">{formatDateTime(createdMeeting.scheduledAt)}</span>
               </div>
             )}
             
             <div>
-              <span className="font-medium text-gray-700">Meeting Room: </span>
-              <span className="text-gray-900">{createdMeeting.roomName}</span>
+                      <span className="font-medium text-blue-700">Meeting Room: </span>
+        <span className="text-blue-900">{createdMeeting.roomName}</span>
             </div>
             
             <div className="pt-3 border-t border-green-200">
-              <p className="font-medium text-gray-700 mb-2">Meeting Links:</p>
+              <p className="font-medium text-blue-700 mb-2">Meeting Links:</p>
               
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gray-600 w-20">Advisor:</span>
+                  <span className="text-xs font-medium text-blue-600 w-20">Advisor:</span>
                   <input
                     type="text"
                     value={createdMeeting.advisorMeetingLink}
                     readOnly
-                    className="flex-1 p-2 text-xs bg-white border border-gray-300 rounded text-gray-700"
+                    className="flex-1 p-2 text-xs bg-white border border-blue-300 rounded text-blue-700"
                   />
                   <button
                     onClick={() => handleCopyMeetingLink(createdMeeting.advisorMeetingLink)}
@@ -294,12 +306,12 @@ const MeetingScheduler = ({ onMeetingCreated, selectedClientId = null }) => {
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gray-600 w-20">Client:</span>
+                  <span className="text-xs font-medium text-blue-600 w-20">Client:</span>
                   <input
                     type="text"
                     value={createdMeeting.clientMeetingLink}
                     readOnly
-                    className="flex-1 p-2 text-xs bg-white border border-gray-300 rounded text-gray-700"
+                    className="flex-1 p-2 text-xs bg-white border border-blue-300 rounded text-blue-700"
                   />
                   <button
                     onClick={() => handleCopyMeetingLink(createdMeeting.clientMeetingLink)}
@@ -311,13 +323,22 @@ const MeetingScheduler = ({ onMeetingCreated, selectedClientId = null }) => {
                 </div>
               </div>
               
-              <p className="text-xs text-gray-600 mt-3">
+              <p className="text-xs text-blue-600 mt-3">
                 💡 Send the client link to your client to join the meeting.
               </p>
             </div>
           </div>
         </div>
       )}
+      </div>
+
+      {/* Meeting Calendar - Takes 1/3 width on large screens */}
+      <div className="lg:col-span-1">
+        <MeetingCalendar 
+          onDateSelect={handleCalendarDateSelect}
+          selectedDate={selectedDate}
+        />
+      </div>
     </div>
   );
 };

@@ -11,9 +11,13 @@
  * - Meeting (Meeting history & transcripts)
  * - MutualFundExitStrategy (Investment strategies)
  * - Client (Basic client information)
+ * - KYCVerification (KYC status)
+ * - ChatHistory (AI chat interactions)
+ * - Transcription (Meeting transcripts)
+ * - ABTestComparison (A/B testing data)
  */
 
-const Client = require('../models/Client');
+const finalReportService = require('../services/finalReportService');
 const { logger } = require('../utils/logger');
 
 /**
@@ -21,57 +25,50 @@ const { logger } = require('../utils/logger');
  * GET /api/final-report/clients
  */
 const getAdvisorClients = async (req, res) => {
+  const correlationId = `REQ_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const advisorId = req.advisor.id;
+  
   try {
-    // Get advisorId from authenticated user (not from params)
-    const advisorId = req.advisor.id;
-    
     if (!advisorId) {
+      logger.warn(`[${correlationId}] [FINAL_REPORT] Missing advisor ID in request`);
       return res.status(400).json({
         success: false,
-        message: 'Advisor ID is required'
+        message: 'Advisor ID is required',
+        correlationId
       });
     }
 
-    logger.info(`📊 [Final Report] Fetching clients for advisor: ${advisorId}`);
+    logger.info(`[${correlationId}] [FINAL_REPORT] Fetching clients for advisor: ${advisorId}`);
 
-    // Fetch all clients for this advisor
-    const clients = await Client.find({ advisor: advisorId }).lean();
+    // Use the service layer for data fetching
+    const result = await finalReportService.getClientsForReport(advisorId, correlationId);
     
-    logger.info(`✅ [Final Report] Found ${clients.length} clients for advisor: ${advisorId}`);
+    logger.info(`[${correlationId}] [FINAL_REPORT] Successfully retrieved ${result.clients.length} clients for advisor: ${advisorId}`);
 
     res.json({
       success: true,
-      data: {
-        clients: clients.map(client => ({
-          _id: client._id,
-          firstName: client.firstName || 'N/A',
-          lastName: client.lastName || 'N/A',
-          email: client.email || 'N/A',
-          phoneNumber: client.phoneNumber || 'N/A',
-          dateOfBirth: client.dateOfBirth || 'N/A',
-          panNumber: client.panNumber || 'N/A',
-          maritalStatus: client.maritalStatus || 'N/A',
-          numberOfDependents: client.numberOfDependents || 'N/A',
-          totalMonthlyIncome: client.totalMonthlyIncome || 0,
-          totalMonthlyExpenses: client.totalMonthlyExpenses || 0,
-          netWorth: client.netWorth || 0,
-          status: client.status || 'active',
-          createdAt: client.createdAt,
-          invitationStatus: 'Not checked',
-          lastInvitationSent: null,
-          onboardingProgress: 'Not started'
-        })),
-        totalCount: clients.length
-      },
+      data: result,
+      correlationId,
       message: 'Clients retrieved successfully'
     });
 
   } catch (error) {
-    logger.error(`❌ [Final Report] Error fetching advisor clients:`, error);
+    logger.error(`[${correlationId}] [FINAL_REPORT] Error fetching advisor clients:`, error);
+    
+    // Enhanced error handling
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid advisor ID format',
+        correlationId
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve clients',
-      error: error.message
+      correlationId,
+      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -81,94 +78,87 @@ const getAdvisorClients = async (req, res) => {
  * GET /api/final-report/data/:clientId
  */
 const getComprehensiveData = async (req, res) => {
+  const correlationId = `REQ_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const { clientId } = req.params;
+  const advisorId = req.advisor.id;
+  
   try {
-    const { clientId } = req.params;
-    const advisorId = req.advisor.id; // Get from authenticated user
-    
     if (!clientId) {
+      logger.warn(`[${correlationId}] [FINAL_REPORT] Missing client ID in request`);
       return res.status(400).json({
         success: false,
-        message: 'Client ID is required'
+        message: 'Client ID is required',
+        correlationId
       });
     }
 
-    logger.info(`📊 [Final Report] Fetching comprehensive data for advisor: ${advisorId}, client: ${clientId}`);
-
-    // For now, just return basic client data
-    const client = await Client.findById(clientId).lean();
-    
-    if (!client) {
-      return res.status(404).json({
+    if (!advisorId) {
+      logger.warn(`[${correlationId}] [FINAL_REPORT] Missing advisor ID in request`);
+      return res.status(400).json({
         success: false,
-        message: 'Client not found'
+        message: 'Advisor ID is required',
+        correlationId
       });
     }
 
-    const comprehensiveData = {
-      header: {
-        reportId: `REP_${Date.now()}_${clientId}`,
-        generatedAt: new Date().toISOString(),
-        clientName: `${client.firstName || 'N/A'} ${client.lastName || 'N/A'}`,
-        advisor: {
-          firstName: 'N/A',
-          lastName: 'N/A',
-          email: 'N/A',
-          phoneNumber: 'N/A'
-        },
-        firm: {
-          firmName: 'N/A',
-          address: 'N/A',
-          phone: 'N/A'
-        }
-      },
-      client: {
-        personal: {
-          firstName: client.firstName || 'N/A',
-          lastName: client.lastName || 'N/A',
-          email: client.email || 'N/A',
-          phoneNumber: client.phoneNumber || 'N/A',
-          dateOfBirth: client.dateOfBirth || 'N/A',
-          panNumber: client.panNumber || 'N/A',
-          maritalStatus: client.maritalStatus || 'N/A',
-          numberOfDependents: client.numberOfDependents || 'N/A'
-        },
-        financial: {
-          totalMonthlyIncome: client.totalMonthlyIncome || 0,
-          totalMonthlyExpenses: client.totalMonthlyExpenses || 0,
-          netWorth: client.netWorth || 0
-        }
-      },
-      services: {
-        clientInvitations: { count: 0, invitations: [] },
-        loeDocuments: { count: 0, documents: [] },
-        loeAutomation: { count: 0, documents: [] },
-        financialPlans: { count: 0, plans: [] },
-        meetings: { count: 0, meetings: [] },
-        mutualFundStrategies: { count: 0, strategies: [] },
-        chatHistory: { count: 0, chats: [] }
-      },
-      summary: {
-        totalServices: 0,
-        activeServices: 0,
-        portfolioValue: 0,
-        onboardingProgress: 'N/A'
-      }
-    };
+    logger.info(`[${correlationId}] [FINAL_REPORT] Fetching comprehensive data for advisor: ${advisorId}, client: ${clientId}`);
 
-    logger.info(`✅ [Final Report] Basic data compiled successfully for client: ${clientId}`);
+    // Validate client access first
+    const hasAccess = await finalReportService.validateClientAccess(clientId, advisorId, correlationId);
+    if (!hasAccess) {
+      logger.warn(`[${correlationId}] [FINAL_REPORT] Unauthorized access attempt - Client: ${clientId}, Advisor: ${advisorId}`);
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized access to client data',
+        correlationId
+      });
+    }
+
+    // Get comprehensive data using the service layer
+    const comprehensiveData = await finalReportService.aggregateClientData(clientId, advisorId, correlationId);
+    
+    logger.info(`[${correlationId}] [FINAL_REPORT] Successfully retrieved comprehensive data for client: ${clientId}`);
 
     res.json({
       success: true,
       data: comprehensiveData,
-      message: 'Basic data retrieved successfully'
+      correlationId,
+      message: 'Comprehensive data retrieved successfully'
     });
 
   } catch (error) {
-    logger.error(`❌ [Final Report] Error fetching comprehensive data:`, error);
+    logger.error(`[${correlationId}] [FINAL_REPORT] Error fetching comprehensive data:`, error);
+    
+    // Enhanced error handling with specific error types
+    if (error.name === 'CastError' || error.message.includes('Invalid client ID')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid client ID provided',
+        correlationId
+      });
+    }
+    
+    if (error.message.includes('Client not found')) {
+      return res.status(404).json({
+        success: false,
+        message: 'Client not found',
+        correlationId
+      });
+    }
+    
+    if (error.message.includes('Advisor not found')) {
+      return res.status(404).json({
+        success: false,
+        message: 'Advisor not found',
+        correlationId
+      });
+    }
+    
     res.status(500).json({
       success: false,
-      message: 'Failed to retrieve comprehensive data',
-      error: error.message
+      message: 'Failed to retrieve comprehensive client data',
+      correlationId,
+      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -178,43 +168,99 @@ const getComprehensiveData = async (req, res) => {
  * GET /api/final-report/summary/:clientId
  */
 const getComprehensiveSummary = async (req, res) => {
+  const correlationId = `REQ_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const { clientId } = req.params;
+  const advisorId = req.advisor.id;
+  
   try {
-    const { clientId } = req.params;
-    const advisorId = req.advisor.id; // Get from authenticated user
-    
     if (!clientId) {
+      logger.warn(`[${correlationId}] [FINAL_REPORT] Missing client ID in request`);
       return res.status(400).json({
         success: false,
-        message: 'Client ID is required'
+        message: 'Client ID is required',
+        correlationId
       });
     }
 
-    logger.info(`📊 [Final Report] Fetching summary for advisor: ${advisorId}, client: ${clientId}`);
+    if (!advisorId) {
+      logger.warn(`[${correlationId}] [FINAL_REPORT] Missing advisor ID in request`);
+      return res.status(400).json({
+        success: false,
+        message: 'Advisor ID is required',
+        correlationId
+      });
+    }
 
+    logger.info(`[${correlationId}] [FINAL_REPORT] Fetching summary for advisor: ${advisorId}, client: ${clientId}`);
+
+    // Validate client access first
+    const hasAccess = await finalReportService.validateClientAccess(clientId, advisorId, correlationId);
+    if (!hasAccess) {
+      logger.warn(`[${correlationId}] [FINAL_REPORT] Unauthorized access attempt - Client: ${clientId}, Advisor: ${advisorId}`);
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized access to client data',
+        correlationId
+      });
+    }
+
+    // Get comprehensive data and extract summary
+    const comprehensiveData = await finalReportService.aggregateClientData(clientId, advisorId, correlationId);
+    
     const summary = {
-      totalServices: 0,
+      totalServices: comprehensiveData.summary.totalServices,
+      activeServices: comprehensiveData.summary.activeServices,
+      portfolioValue: comprehensiveData.summary.portfolioValue,
+      onboardingProgress: comprehensiveData.summary.onboardingProgress,
       breakdown: {
-        clientInvitations: 0,
-        loeDocuments: 0,
-        loeAutomation: 0,
-        financialPlans: 0,
-        meetings: 0,
-        mutualFundStrategies: 0
+        financialPlans: comprehensiveData.services.financialPlans.count,
+        kyc: comprehensiveData.services.kyc.count,
+        meetings: comprehensiveData.services.meetings.count,
+        loeDocuments: comprehensiveData.services.loeDocuments.count,
+        loeAutomation: comprehensiveData.services.loeAutomation.count,
+        clientInvitations: comprehensiveData.services.clientInvitations.count,
+        mutualFundStrategies: comprehensiveData.services.mutualFundStrategies.count,
+        chatHistory: comprehensiveData.services.chatHistory.count,
+        transcriptions: comprehensiveData.services.transcriptions.count,
+        abTestComparisons: comprehensiveData.services.abTestComparisons.count,
+        vaultData: comprehensiveData.services.vaultData.count
       }
     };
+
+    logger.info(`[${correlationId}] [FINAL_REPORT] Successfully retrieved summary for client: ${clientId}`);
 
     res.json({
       success: true,
       data: summary,
+      correlationId,
       message: 'Summary retrieved successfully'
     });
 
   } catch (error) {
-    logger.error(`❌ [Final Report] Error fetching summary:`, error);
+    logger.error(`[${correlationId}] [FINAL_REPORT] Error fetching summary:`, error);
+    
+    // Enhanced error handling
+    if (error.name === 'CastError' || error.message.includes('Invalid client ID')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid client ID provided',
+        correlationId
+      });
+    }
+    
+    if (error.message.includes('Client not found')) {
+      return res.status(404).json({
+        success: false,
+        message: 'Client not found',
+        correlationId
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Failed to retrieve summary',
-      error: error.message
+      correlationId,
+      debug: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

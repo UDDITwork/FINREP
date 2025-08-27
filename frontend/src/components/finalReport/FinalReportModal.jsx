@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Search, Download, Loader2, AlertCircle, CheckCircle, FileText, Users, TrendingUp, Calendar } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import api from '../../services/api';
+import { finalReportAPI } from '../../services/api';
 import ComprehensivePDFGenerator from './ComprehensivePDFGenerator';
 
 const FinalReportModal = ({ isOpen, onClose }) => {
@@ -26,18 +26,33 @@ const FinalReportModal = ({ isOpen, onClose }) => {
       setLoading(true);
       setError(null);
       
-      // Call the endpoint without advisorId parameter (it's extracted from auth token)
-      const response = await api.get('/final-report/clients');
+      console.log('📊 [Final Report Modal] Fetching clients for report generation');
       
-      if (response.data.success) {
-        // Fix: access the correct data structure from backend
-        setClients(response.data.data.clients || []);
+      // Use the new finalReportAPI
+      const response = await finalReportAPI.getClientsForReport();
+      
+      if (response.success) {
+        console.log('✅ [Final Report Modal] Clients fetched successfully:', response.data);
+        setClients(response.data.clients || []);
       } else {
-        setError('Failed to fetch clients');
+        console.error('❌ [Final Report Modal] API returned error:', response);
+        setError(response.message || 'Failed to fetch clients');
       }
     } catch (error) {
-      console.error('Error fetching clients:', error);
-      setError(error.response?.data?.error || 'Failed to fetch clients');
+      console.error('❌ [Final Report Modal] Error fetching clients:', error);
+      
+      // Enhanced error handling
+      if (error.response?.status === 401) {
+        setError('Authentication required. Please log in again.');
+      } else if (error.response?.status === 403) {
+        setError('Access denied. Please contact administrator.');
+      } else if (error.response?.status === 500) {
+        setError('Server error. Please try again later.');
+      } else if (error.code === 'NETWORK_ERROR') {
+        setError('Network error. Please check your connection.');
+      } else {
+        setError(error.response?.data?.message || 'Failed to fetch clients');
+      }
     } finally {
       setLoading(false);
     }
@@ -240,9 +255,9 @@ const FinalReportModal = ({ isOpen, onClose }) => {
                             </div>
                             
                             <div className="flex items-center space-x-2">
-                              <span className="text-gray-500">Net Worth:</span>
+                              <span className="text-gray-500">Portfolio:</span>
                               <span className="text-gray-900 font-medium">
-                                {formatCurrency(client.netWorth)}
+                                {formatCurrency(client.portfolioValue || client.netWorth)}
                               </span>
                             </div>
                             
@@ -256,10 +271,10 @@ const FinalReportModal = ({ isOpen, onClose }) => {
                         </div>
                         
                         <div className="flex items-center space-x-2">
-                          {client.invitationStatus && client.invitationStatus !== 'No invitation' && (
+                          {client.hasCASData && (
                             <div className="flex items-center space-x-1 text-green-600">
                               <CheckCircle className="h-4 w-4" />
-                              <span className="text-xs">Invited</span>
+                              <span className="text-xs">CAS Data</span>
                             </div>
                           )}
                           

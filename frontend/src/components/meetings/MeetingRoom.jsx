@@ -743,17 +743,17 @@ const MeetingRoomContent = ({ meetingId, onLeave }) => {
       
       {/* Error Display */}
       {(error || transcriptionError || recordingError) && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-red-500" />
-          <p className="text-red-700 text-sm">{error || transcriptionError || recordingError}</p>
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-blue-500" />
+          <p className="text-blue-700 text-sm">{error || transcriptionError || recordingError}</p>
         </div>
       )}
 
       {/* Feature Status Display */}
       {featuresLoaded && domainFeatures?.plan?.requiresUpgrade && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 flex items-center gap-2">
-          <Info className="h-5 w-5 text-yellow-500" />
-          <div className="text-yellow-700 text-sm">
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-4 flex items-center gap-2">
+          <Info className="h-5 w-5 text-blue-500" />
+          <div className="text-blue-700 text-sm">
             <strong>Upgrade Required:</strong> Transcription and recording features require a paid Daily.co plan.
             {!domainFeatures.features.transcription.enabled && !domainFeatures.features.recording.enabled && (
               <span className="block mt-1">Contact your administrator to enable these features.</span>
@@ -764,14 +764,14 @@ const MeetingRoomContent = ({ meetingId, onLeave }) => {
 
       {/* Feature Status Indicator */}
       {featuresLoaded && !domainFeatures?.plan?.requiresUpgrade && (
-        <div className="bg-gray-50 border-l-4 border-gray-400 p-3 text-sm flex items-center gap-6">
+        <div className="bg-blue-50 border-l-4 border-blue-400 p-3 text-sm flex items-center gap-6">
           <span className="flex items-center gap-2">
             {domainFeatures?.features?.transcription?.enabled ? (
               <CheckCircle className="h-4 w-4 text-green-600" />
             ) : (
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTriangle className="h-4 w-4 text-blue-600" />
             )}
-            <span className="text-gray-700">
+            <span className="text-blue-700">
               Transcription: {domainFeatures?.features?.transcription?.enabled ? 'Available' : 'Not Available'}
             </span>
           </span>
@@ -779,9 +779,9 @@ const MeetingRoomContent = ({ meetingId, onLeave }) => {
             {domainFeatures?.features?.recording?.enabled ? (
               <CheckCircle className="h-4 w-4 text-green-600" />
             ) : (
-              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTriangle className="h-4 w-4 text-blue-600" />
             )}
-            <span className="text-gray-700">
+            <span className="text-blue-700">
               Recording: {domainFeatures?.features?.recording?.enabled ? 'Available' : 'Not Available'}
             </span>
           </span>
@@ -844,7 +844,7 @@ const MeetingRoomContent = ({ meetingId, onLeave }) => {
         ) : (
           <button
             disabled
-            className="px-4 py-3 rounded-full bg-gray-500 text-gray-300 transition-colors flex items-center gap-2 font-medium opacity-50 cursor-not-allowed"
+            className="px-4 py-3 rounded-full bg-blue-300 text-blue-100 transition-colors flex items-center gap-2 font-medium opacity-50 cursor-not-allowed"
             title="Transcription not available - upgrade plan required"
           >
             <AlertTriangle className="h-5 w-5" />
@@ -885,7 +885,7 @@ const MeetingRoomContent = ({ meetingId, onLeave }) => {
         ) : (
           <button
             disabled
-            className="px-4 py-3 rounded-full bg-gray-500 text-gray-300 transition-colors flex items-center gap-2 font-medium opacity-50 cursor-not-allowed"
+            className="px-4 py-3 rounded-full bg-blue-300 text-blue-100 transition-colors flex items-center gap-2 font-medium opacity-50 cursor-not-allowed"
             title="Recording not available - upgrade plan required"
           >
             <AlertTriangle className="h-5 w-5" />

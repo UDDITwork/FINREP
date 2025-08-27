@@ -93,7 +93,7 @@ function Sidebar() {
       icon: Lock,
     },
     {
-      name: 'Final Report',
+      name: 'Client Reports',
       path: '/final-report', 
       icon: FileText,
     }

@@ -81,6 +81,19 @@ const logAuth = {
   },
   profileUpdate: (advisorId, updatedFields) => {
     logger.info(`Profile updated for advisor: ${advisorId} - Fields: ${updatedFields.join(', ')}`);
+  },
+  // Password reset logging functions
+  passwordResetRequest: (email, ip) => {
+    logger.info(`Password reset request for email: ${email} from IP: ${ip}`);
+  },
+  passwordResetEmailSent: (email, advisorId, ip) => {
+    logger.info(`Password reset email sent for advisor: ${advisorId} (${email}) from IP: ${ip}`);
+  },
+  passwordResetFailed: (email, reason, ip) => {
+    logger.warn(`Password reset failed for email: ${email} - Reason: ${reason} from IP: ${ip}`);
+  },
+  passwordResetSuccess: (email, advisorId, ip) => {
+    logger.info(`Password reset successful for advisor: ${advisorId} (${email}) from IP: ${ip}`);
   }
 };
 

@@ -24,14 +24,30 @@ api.interceptors.request.use(
       requestId: `REQ_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     };
     
-    // Log API request start
-    console.log(`🚀 API Request [${config.metadata.requestId}]:`, {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      hasAuth: !!token,
-      hasData: !!(config.data && Object.keys(config.data).length > 0),
-      timestamp: config.metadata.startTime.toISOString()
-    });
+    // Enhanced logging for password reset requests
+    if (config.url === '/auth/forgot-password' || config.url === '/auth/reset-password') {
+      console.log(`🔍 [API DEBUG] Password Reset Request [${config.metadata.requestId}]:`, {
+        method: config.method?.toUpperCase(),
+        url: config.url,
+        hasAuth: !!token,
+        hasData: !!(config.data && Object.keys(config.data).length > 0),
+        dataKeys: config.data ? Object.keys(config.data) : [],
+        email: config.data?.email || 'NOT PROVIDED',
+        password: config.data?.password ? '***' + config.data.password.slice(-4) : 'NOT PROVIDED',
+        timestamp: config.metadata.startTime.toISOString(),
+        userAgent: navigator.userAgent,
+        currentUrl: window.location.href
+      });
+    } else {
+      // Log API request start
+      console.log(`🚀 API Request [${config.metadata.requestId}]:`, {
+        method: config.method?.toUpperCase(),
+        url: config.url,
+        hasAuth: !!token,
+        hasData: !!(config.data && Object.keys(config.data).length > 0),
+        timestamp: config.metadata.startTime.toISOString()
+      });
+    }
     
     return config;
   },
@@ -46,31 +62,61 @@ api.interceptors.response.use(
   (response) => {
     const duration = new Date() - response.config.metadata.startTime;
     
-    // Log successful API response
-    console.log(`✅ API Response [${response.config.metadata.requestId}]:`, {
-      method: response.config.method?.toUpperCase(),
-      url: response.config.url,
-      status: response.status,
-      duration: `${duration}ms`,
-      success: response.data?.success,
-      hasData: !!(response.data?.data),
-      timestamp: new Date().toISOString()
-    });
+    // Enhanced logging for password reset responses
+    if (response.config.url === '/auth/forgot-password' || response.config.url === '/auth/reset-password') {
+      console.log(`🔍 [API DEBUG] Password Reset Response [${response.config.metadata.requestId}]:`, {
+        method: response.config.method?.toUpperCase(),
+        url: response.config.url,
+        status: response.status,
+        duration: `${duration}ms`,
+        success: response.data?.success,
+        message: response.data?.message,
+        hasData: !!(response.data?.data),
+        timestamp: new Date().toISOString(),
+        responseSize: JSON.stringify(response.data).length
+      });
+    } else {
+      // Log successful API response
+      console.log(`✅ API Response [${response.config.metadata.requestId}]:`, {
+        method: response.config.method?.toUpperCase(),
+        url: response.config.url,
+        status: response.status,
+        duration: `${duration}ms`,
+        success: response.data?.success,
+        hasData: !!(response.data?.data),
+        timestamp: new Date().toISOString()
+      });
+    }
     
     return response;
   },
   (error) => {
     const duration = error.config?.metadata ? new Date() - error.config.metadata.startTime : 0;
     
-    // Enhanced error logging
-    console.error(`❌ API Error [${error.config?.metadata?.requestId || 'UNKNOWN'}]:`, {
-      method: error.config?.method?.toUpperCase(),
-      url: error.config?.url,
-      status: error.response?.status,
-      duration: `${duration}ms`,
-      message: error.response?.data?.message || error.message,
-      timestamp: new Date().toISOString()
-    });
+    // Enhanced error logging for password reset
+    if (error.config?.url === '/auth/forgot-password' || error.config?.url === '/auth/reset-password') {
+      console.error(`🔍 [API DEBUG] Password Reset Error [${error.config?.metadata?.requestId || 'UNKNOWN'}]:`, {
+        method: error.config?.method?.toUpperCase(),
+        url: error.config?.url,
+        status: error.response?.status,
+        duration: `${duration}ms`,
+        message: error.response?.data?.message || error.message,
+        errorType: error.constructor.name,
+        timestamp: new Date().toISOString(),
+        responseData: error.response?.data,
+        requestData: error.config?.data
+      });
+    } else {
+      // Enhanced error logging
+      console.error(`❌ API Error [${error.config?.metadata?.requestId || 'UNKNOWN'}]:`, {
+        method: error.config?.method?.toUpperCase(),
+        url: error.config?.url,
+        status: error.response?.status,
+        duration: `${duration}ms`,
+        message: error.response?.data?.message || error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
     
     // Handle specific error cases
     if (error.response?.status === 401) {
@@ -2043,6 +2089,92 @@ export const transcriptionAPI = {
     });
     
     return response.data;
+  }
+};
+
+// ============================================================================
+// FINAL REPORT API FUNCTIONS (Comprehensive Client Data Aggregation)
+// ============================================================================
+
+export const finalReportAPI = {
+  // Get all clients for an advisor (for client selection)
+  getClientsForReport: async () => {
+    console.log('📊 [FINAL REPORT API] Fetching clients for report generation...');
+    
+    const startTime = Date.now();
+    const response = await api.get('/final-report/clients');
+    const duration = Date.now() - startTime;
+    
+    console.log('✅ [FINAL REPORT API] Clients fetched successfully:', {
+      success: response.data.success,
+      clientCount: response.data.data?.clients?.length || 0,
+      totalClients: response.data.data?.totalClients || 0,
+      correlationId: response.data.correlationId,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    });
+    
+    return response.data;
+  },
+
+  // Get comprehensive client data for final report generation
+  getComprehensiveClientData: async (clientId) => {
+    console.log(`📊 [FINAL REPORT API] Fetching comprehensive data for client: ${clientId}`);
+    
+    const startTime = Date.now();
+    const response = await api.get(`/final-report/data/${clientId}`);
+    const duration = Date.now() - startTime;
+    
+    console.log('✅ [FINAL REPORT API] Comprehensive data fetched successfully:', {
+      success: response.data.success,
+      clientId,
+      reportId: response.data.data?.header?.reportId,
+      totalServices: response.data.data?.summary?.totalServices,
+      activeServices: response.data.data?.summary?.activeServices,
+      portfolioValue: response.data.data?.summary?.portfolioValue,
+      correlationId: response.data.correlationId,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    });
+    
+    return response.data;
+  },
+
+  // Get comprehensive data summary (lightweight version)
+  getComprehensiveSummary: async (clientId) => {
+    console.log(`📊 [FINAL REPORT API] Fetching summary for client: ${clientId}`);
+    
+    const startTime = Date.now();
+    const response = await api.get(`/final-report/summary/${clientId}`);
+    const duration = Date.now() - startTime;
+    
+    console.log('✅ [FINAL REPORT API] Summary fetched successfully:', {
+      success: response.data.success,
+      clientId,
+      totalServices: response.data.data?.totalServices,
+      activeServices: response.data.data?.activeServices,
+      correlationId: response.data.correlationId,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    });
+    
+    return response.data;
+  },
+
+  // Test the final report API endpoints
+  testEndpoints: async () => {
+    console.log('🧪 [FINAL REPORT API] Testing endpoints...');
+    
+    try {
+      // Test clients endpoint
+      const clientsResponse = await api.get('/final-report/test');
+      console.log('✅ [FINAL REPORT API] Test endpoint working:', clientsResponse.data);
+      
+      return { success: true, message: 'All endpoints working correctly' };
+    } catch (error) {
+      console.error('❌ [FINAL REPORT API] Test failed:', error);
+      return { success: false, error: error.message };
+    }
   }
 };
 

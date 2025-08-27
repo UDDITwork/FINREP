@@ -14,6 +14,8 @@ import DashboardLayout from './components/layout/DashboardLayout'
 import Home from './components/Home'
 import Login from './components/Login'
 import Signup from './components/Signup'
+import ForgotPassword from './components/ForgotPassword'
+import ResetPassword from './components/ResetPassword'
 import Dashboard from './components/Dashboard'
 import AdvisorProfile from './components/AdvisorProfile'
 import ClientsPage from './components/ClientsPage'
@@ -71,6 +73,8 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/client-onboarding/:token" element={<ClientOnboardingForm />} />
             <Route path="/loe/sign/:token" element={<LOESignaturePage />} />
             <Route path="/loe-automation/sign/:accessToken" element={<ClientLOESigningPage />} />

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Loader2, AlertCircle, CheckCircle, Download, FileText, TrendingUp, Calendar, Users, Shield, Target, BarChart3 } from 'lucide-react';
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
-import api from '../../services/api';
+import { finalReportAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 // Register fonts for PDF
@@ -706,15 +706,15 @@ const ComprehensivePDFGenerator = ({ client, onBack }) => {
       
       console.log('📊 [PDF Generator] Fetching comprehensive data for client:', client._id);
       
-      // Fixed API endpoint to match backend route structure
-      const response = await api.get(`/final-report/data/${client._id}`);
+      // Use the new finalReportAPI for comprehensive data
+      const response = await finalReportAPI.getComprehensiveClientData(client._id);
       
-      if (response.data.success) {
-        console.log('✅ [PDF Generator] Data fetched successfully:', response.data.data);
-        setData(response.data.data);
+      if (response.success) {
+        console.log('✅ [PDF Generator] Data fetched successfully:', response.data);
+        setData(response.data);
       } else {
-        console.error('❌ [PDF Generator] API returned error:', response.data);
-        setError(response.data.message || 'Failed to fetch comprehensive data');
+        console.error('❌ [PDF Generator] API returned error:', response);
+        setError(response.message || 'Failed to fetch comprehensive data');
       }
     } catch (error) {
       console.error('❌ [PDF Generator] Error fetching data:', error);
