@@ -395,6 +395,64 @@ try {
   const vaultRoutes = require('./routes/vaultRoutes');
   console.log('✅ Vault routes file loaded successfully');
   app.use('/api/vault', vaultRoutes);
+
+// ============================================================================
+// BILLING ROUTES
+// ============================================================================
+
+try {
+  const billingRoutes = require('./routes/billing');
+  app.use('/api/billing', billingRoutes);
+  logger.info('✅ Billing routes loaded successfully');
+} catch (error) {
+  console.log('⚠️ Billing routes not found - skipping (app will work without billing features)');
+  console.log('Error details:', error.message);
+  logger.warn('Billing routes not available:', error.message);
+}
+
+// Claude AI routes
+// ============================================================================
+
+try {
+  const claudeRoutes = require('./routes/claude');
+  app.use('/api/claude', claudeRoutes);
+  logger.info('✅ Claude AI routes loaded successfully');
+} catch (error) {
+  console.log('⚠️ Claude AI routes not found - skipping (app will work without Claude AI features)');
+  console.log('Error details:', error.message);
+  logger.warn('Claude AI routes not available:', error.message);
+}
+
+// Log Billing system availability (if billing routes were loaded successfully)
+try {
+  comprehensiveLogger.logSystemEvent('BILLING_SYSTEM_ENABLED', {
+    billingRoutes: [
+      '/api/billing/subscription-status',
+      '/api/billing/create-payment',
+      '/api/billing/check-payment-status',
+      '/api/billing/payment-history',
+      '/api/billing/webhook',
+      '/api/billing/cancel-subscription',
+      '/api/billing/stats'
+    ],
+    features: [
+      'SMEPay Integration',
+      'Monthly Subscription',
+      'Payment Processing',
+      'Subscription Management',
+      'Payment History',
+      'Webhook Handling'
+    ],
+    timestamp: new Date().toISOString()
+  });
+} catch (error) {
+  comprehensiveLogger.logSystemEvent('BILLING_SYSTEM_DISABLED', {
+    reason: 'Billing routes file not found',
+    impact: 'App will function normally without billing features',
+    error: error.message,
+    timestamp: new Date().toISOString()
+  });
+}
   console.log('✅ Vault routes registered: /api/vault/*');
   
   // Log Vault system availability

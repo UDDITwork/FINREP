@@ -5,6 +5,7 @@ import { FileText, Users, TrendingUp, Calendar, Eye, ArrowRight } from 'lucide-r
 import casManagementAPI from '../../services/casManagementAPI';
 import ClientCASList from './ClientCASList';
 import ClientCASDetails from './ClientCASDetails';
+import ClientFinancialCharts from './ClientFinancialCharts';
 import CASSummary from './CASSummary';
 import toast from 'react-hot-toast';
 
@@ -14,6 +15,7 @@ const CASManagementPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedClient, setSelectedClient] = useState(null);
+  const [selectedClientCASDetails, setSelectedClientCASDetails] = useState(null);
 
   useEffect(() => {
     loadCASData();
@@ -43,12 +45,23 @@ const CASManagementPage = () => {
     }
   };
 
-  const handleClientSelect = (client) => {
+  const handleClientSelect = async (client) => {
     setSelectedClient(client);
+    setSelectedClientCASDetails(null);
+    
+    // Load client CAS details for charts
+    try {
+      const response = await casManagementAPI.getClientCASDetails(client.clientId);
+      setSelectedClientCASDetails(response.data);
+    } catch (error) {
+      console.error('Error loading client CAS details for charts:', error);
+      // Don't show error toast as this is for charts only
+    }
   };
 
   const handleBackToList = () => {
     setSelectedClient(null);
+    setSelectedClientCASDetails(null);
   };
 
   if (isLoading) {
@@ -118,6 +131,14 @@ const CASManagementPage = () => {
         {/* Summary Cards */}
         {summary && <CASSummary summary={summary} />}
 
+        {/* Client Financial Charts - Only show when client is selected */}
+        {selectedClient && selectedClientCASDetails && (
+          <ClientFinancialCharts 
+            client={selectedClient} 
+            casDetails={selectedClientCASDetails}
+          />
+        )}
+
         {/* Main Content */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
@@ -144,6 +165,7 @@ const CASManagementPage = () => {
             <ClientCASDetails 
               client={selectedClient} 
               onBack={handleBackToList}
+              casDetails={selectedClientCASDetails}
             />
           ) : (
             <ClientCASList 

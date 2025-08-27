@@ -9,23 +9,26 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import SubscriptionChecker from '../billing/SubscriptionChecker';
 
 function DashboardLayout() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <Sidebar />
-      
-      {/* Header */}
-      <Header />
-      
-      {/* Main Content Area - Responsive Layout */}
-      <main className="pl-0 lg:pl-64 pt-16 transition-all duration-300">
-        <div className="p-3 sm:p-4 lg:p-6">
-          <Outlet />
-        </div>
-      </main>
-    </div>
+    <SubscriptionChecker>
+      <div className="min-h-screen bg-gray-50">
+        {/* Sidebar */}
+        <Sidebar />
+        
+        {/* Header */}
+        <Header />
+        
+        {/* Main Content Area - Responsive Layout */}
+        <main className="pl-0 lg:pl-64 pt-16 transition-all duration-300">
+          <div className="p-3 sm:p-4 lg:p-6">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </SubscriptionChecker>
   );
 }
 

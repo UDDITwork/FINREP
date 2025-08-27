@@ -310,25 +310,25 @@ const ClientPDFReportsSection = ({ clientId, clientName, onOpenPlanModal }) => {
                     </Box>
                   }
                   secondary={
-                    <Box sx={{ mt: 1 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                        <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
+                        <Typography variant="caption" component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <TimeIcon sx={{ fontSize: 14 }} />
                           Generated: {new Date(report.generatedAt).toLocaleString()}
                         </Typography>
-                        <Typography variant="caption">
+                        <Typography variant="caption" component="span">
                           Size: {formatFileSize(report.fileSize)}
                         </Typography>
-                      </Box>
+                      </div>
                       
                       {report.metadata?.contentSummary && (
-                        <Typography variant="caption" display="block" color="text.secondary">
+                        <Typography variant="caption" component="span" display="block" color="text.secondary">
                           Goals: {report.metadata.contentSummary.goalsCount || 0} | 
                           Total SIP: ₹{new Intl.NumberFormat('en-IN').format(report.metadata.contentSummary.totalSIPAmount || 0)} | 
                           AI Recommendations: {report.metadata.contentSummary.hasRecommendations ? 'Yes' : 'No'}
                         </Typography>
                       )}
-                    </Box>
+                    </div>
                   }
                 />
                 <ListItemSecondaryAction>

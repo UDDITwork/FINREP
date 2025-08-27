@@ -39,6 +39,7 @@ import MutualFundExitSuite from './components/mutualFundExit/MutualFundExitSuite
 import { LOEAutomationDashboard, ClientLOESigningPage } from './components/loeAutomation'
 import Vault from './components/Vault'
 import { FinalReportPage } from './components/finalReport'
+import BillingPage from './components/billing/BillingPage'
 
 function App() {
   return (
@@ -110,6 +111,7 @@ function App() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/vault" element={<Vault />} />
               <Route path="/final-report" element={<FinalReportPage />} />
+              <Route path="/billing" element={<BillingPage />} />
             </Route>
             
             {/* Redirect any unknown routes to home */}

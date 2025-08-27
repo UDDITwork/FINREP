@@ -8,7 +8,7 @@
 
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Video, BarChart3, PieChart, User, Settings, LogOut, TrendingUp, MessageCircle, Shield, TrendingDown, FileText, Menu, X, Palette, Lock, ChevronDown, ChevronRight } from 'lucide-react';
+import { Home, Users, Video, BarChart3, PieChart, User, Settings, LogOut, TrendingUp, MessageCircle, Shield, TrendingDown, FileText, Menu, X, Palette, Lock, ChevronDown, ChevronRight, CreditCard } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 function Sidebar() {
@@ -96,6 +96,11 @@ function Sidebar() {
       name: 'Client Reports',
       path: '/final-report', 
       icon: FileText,
+    },
+    {
+      name: 'Billing & Subscription',
+      path: '/billing', 
+      icon: CreditCard,
     }
   ];
 

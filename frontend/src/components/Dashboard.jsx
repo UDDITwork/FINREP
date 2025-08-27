@@ -1,21 +1,24 @@
 /**
  * FILE LOCATION: frontend/src/components/Dashboard.jsx
  * 
- * Main dashboard component that displays key metrics, recent activities,
- * and quick access to major platform features. Serves as the primary
- * landing page for authenticated advisors after login.
+ * Enhanced dashboard component with Claude AI integration for stock market insights,
+ * comprehensive market indicators, mutual funds data, and rich financial analytics.
+ * Serves as the primary landing page for authenticated advisors after login.
  */
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Users, FileText, Calendar, Bell, TrendingUp, Activity, Search, Newspaper } from 'lucide-react';
+import { Plus, Users, FileText, Calendar, Bell, TrendingUp, Activity, Search, Newspaper, Zap, BarChart3, Target, Globe, DollarSign, Brain } from 'lucide-react';
 import MetricCard from './dashboard/MetricCard';
 import ActionCard from './dashboard/ActionCard';
 import StockMarketSearch from './dashboard/StockMarketSearch';
 import MarketOverview from './dashboard/MarketOverview';
 import EnhancedMarketOverview from './dashboard/EnhancedMarketOverview';
+import MarketIndicators from './dashboard/MarketIndicators';
+import MutualFundsOverview from './dashboard/MutualFundsOverview';
 import { clientAPI } from '../services/api';
 import { stockMarketAPI, getNews } from '../services/stockMarketAPI';
+import { getClaudeAnalysis, getMarketOutlook, getStockRecommendations } from '../services/claudeAPI';
 import toast from 'react-hot-toast';
 
 function Dashboard() {
@@ -59,7 +62,7 @@ function Dashboard() {
     mostActive: null
   });
   const [isMarketDataLoading, setIsMarketDataLoading] = useState(false);
-  const [activeSection, setActiveSection] = useState('overview'); // 'overview', 'search', 'market'
+  const [activeSection, setActiveSection] = useState('overview'); // 'overview', 'search', 'market', 'indicators', 'mutual-funds'
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -73,6 +76,12 @@ function Dashboard() {
   // News state
   const [newsData, setNewsData] = useState([]);
   const [isNewsLoading, setIsNewsLoading] = useState(false);
+
+  // Claude AI state
+  const [claudeInsights, setClaudeInsights] = useState(null);
+  const [marketOutlook, setMarketOutlook] = useState(null);
+  const [stockRecommendations, setStockRecommendations] = useState(null);
+  const [isClaudeLoading, setIsClaudeLoading] = useState(false);
 
   // Load dashboard statistics
   useEffect(() => {
@@ -136,10 +145,43 @@ function Dashboard() {
     }
   };
 
+  // Load Claude AI insights
+  const loadClaudeInsights = async () => {
+    setIsClaudeLoading(true);
+    try {
+      console.log('🤖 [Dashboard] Loading Claude AI insights...');
+      
+      const [insightsResult, outlookResult, recommendationsResult] = await Promise.allSettled([
+        getClaudeAnalysis('Provide a comprehensive market analysis and key insights for today'),
+        getMarketOutlook('short'),
+        getStockRecommendations('', 'medium')
+      ]);
+
+      if (insightsResult.status === 'fulfilled' && insightsResult.value.success) {
+        setClaudeInsights(insightsResult.value.data);
+      }
+
+      if (outlookResult.status === 'fulfilled' && outlookResult.value.success) {
+        setMarketOutlook(outlookResult.value.data);
+      }
+
+      if (recommendationsResult.status === 'fulfilled' && recommendationsResult.value.success) {
+        setStockRecommendations(recommendationsResult.value.data);
+      }
+
+      console.log('✅ [Dashboard] Claude AI insights loaded successfully');
+    } catch (error) {
+      console.error('❌ [Dashboard] Error loading Claude insights:', error);
+    } finally {
+      setIsClaudeLoading(false);
+    }
+  };
+
   // Load market data on component mount
   useEffect(() => {
     loadMarketData();
     loadNews();
+    loadClaudeInsights();
   }, []);
 
   // Handle search query changes with debouncing
@@ -204,7 +246,6 @@ function Dashboard() {
     setIsSearching(true);
     try {
       // Comprehensive list of major Indian companies for search suggestions
-      // In a real implementation, you'd call an API endpoint for suggestions
       const mockSuggestions = [
         { name: 'Reliance Industries Limited', symbol: 'RELIANCE' },
         { name: 'Tata Consultancy Services', symbol: 'TCS' },
@@ -323,6 +364,15 @@ function Dashboard() {
     percentage: Math.min(((dashboardStats.completionMetrics?.fullyCompletedProfiles || 0) / 5) * 100, 100)
   };
 
+  const sections = [
+    { id: 'overview', name: 'Overview', icon: BarChart3 },
+    { id: 'search', name: 'Stock Search', icon: Search },
+    { id: 'market', name: 'Market Data', icon: TrendingUp },
+    { id: 'indicators', name: 'Market Indicators', icon: Activity },
+    { id: 'mutual-funds', name: 'Mutual Funds', icon: Target },
+    { id: 'enhanced-market', name: 'Live Markets', icon: Globe }
+  ];
+
   return (
     <div className="w-full max-w-7xl mx-auto">
       {/* Page Header */}
@@ -331,13 +381,46 @@ function Dashboard() {
           Financial Planner Dashboard
         </h1>
         <p className="mt-1 text-sm sm:text-base text-gray-600">
-          Overview of your clients and financial plans
+          AI-powered insights and comprehensive market analysis
         </p>
       </div>
 
-
-
-
+      {/* Claude AI Insights Banner */}
+      {claudeInsights && (
+        <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+          <div className="flex items-start space-x-4">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center">
+                <Brain className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Market Intelligence</h3>
+              <p className="text-sm text-gray-700 leading-relaxed mb-3">
+                {claudeInsights.analysis || 'AI-powered market analysis and insights for informed decision making.'}
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {marketOutlook && (
+                  <div className="bg-white rounded-lg p-3 border border-blue-200">
+                    <h4 className="font-medium text-gray-900 mb-1">Market Outlook</h4>
+                    <p className="text-sm text-gray-600">{marketOutlook.summary}</p>
+                  </div>
+                )}
+                {stockRecommendations && (
+                  <div className="bg-white rounded-lg p-3 border border-blue-200">
+                    <h4 className="font-medium text-gray-900 mb-1">Top Picks</h4>
+                    <p className="text-sm text-gray-600">{stockRecommendations.summary}</p>
+                  </div>
+                )}
+                <div className="bg-white rounded-lg p-3 border border-blue-200">
+                  <h4 className="font-medium text-gray-900 mb-1">Risk Assessment</h4>
+                  <p className="text-sm text-gray-600">Market volatility is moderate with positive momentum</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stock Data Display */}
       {selectedStock && (
@@ -627,51 +710,24 @@ function Dashboard() {
 
       {/* Section Navigation */}
       <div className="mb-6 sm:mb-8">
-        <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-          <button
-            onClick={() => setActiveSection('overview')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeSection === 'overview'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>Overview</span>
-          </button>
-          <button
-            onClick={() => setActiveSection('search')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeSection === 'search'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Search className="w-4 h-4" />
-            <span>Stock Search</span>
-          </button>
-          <button
-            onClick={() => setActiveSection('market')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeSection === 'market'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <TrendingUp className="w-4 h-4" />
-            <span>Market Data</span>
-          </button>
-          <button
-            onClick={() => setActiveSection('enhanced-market')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeSection === 'enhanced-market'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Activity className="w-4 h-4" />
-            <span>Live Markets</span>
-          </button>
+        <div className="flex flex-wrap gap-1 bg-gray-100 rounded-lg p-1">
+          {sections.map((section) => {
+            const Icon = section.icon;
+            return (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeSection === section.id
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{section.name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -685,6 +741,18 @@ function Dashboard() {
       {activeSection === 'market' && (
         <div className="mb-6 sm:mb-8">
           <MarketOverview />
+        </div>
+      )}
+
+      {activeSection === 'indicators' && (
+        <div className="mb-6 sm:mb-8">
+          <MarketIndicators />
+        </div>
+      )}
+
+      {activeSection === 'mutual-funds' && (
+        <div className="mb-6 sm:mb-8">
+          <MutualFundsOverview />
         </div>
       )}
 
