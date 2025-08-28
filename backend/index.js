@@ -231,6 +231,7 @@ app.use('/api/ab-testing-suite-2', require('./routes/abTestingSuite2'));
 app.use('/api/kyc', require('./routes/kyc'));
 app.use('/api/mutual-fund-exit-strategies', require('./routes/mutualFundExitStrategies'));
 app.use('/api/transcriptions', require('./routes/transcriptions'));
+app.use('/api/enhanced-transcriptions', require('./routes/enhancedTranscriptionRoutes'));
 app.use('/api/final-report', require('./routes/finalReport'));
 
 // ============================================================================
@@ -395,6 +396,46 @@ try {
   const vaultRoutes = require('./routes/vaultRoutes');
   console.log('✅ Vault routes file loaded successfully');
   app.use('/api/vault', vaultRoutes);
+  
+  // Add Market Data routes
+  try {
+    console.log('🔍 Attempting to load market data routes...');
+    const marketDataRoutes = require('./routes/marketData');
+    app.use('/api/market-data', marketDataRoutes);
+    console.log('✅ Market Data routes registered: /api/market-data/*');
+    
+    // Log Market Data system availability
+    comprehensiveLogger.logSystemEvent('MARKET_DATA_SYSTEM_ENABLED', {
+      marketDataRoutes: [
+        '/api/market-data/nifty50',
+        '/api/market-data/sensex',
+        '/api/market-data/banknifty',
+        '/api/market-data/overview',
+        '/api/market-data/health'
+      ],
+      features: [
+        'NIFTY 50 Data',
+        'SENSEX Data',
+        'Bank Nifty Data',
+        'Market Overview',
+        'Real-time Market Data',
+        'CORS Proxy for Yahoo Finance'
+      ],
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.log('⚠️ Market Data routes not found - skipping (app will work without market data features)');
+    console.log('Error details:', error.message);
+    logger.warn('Market Data routes not available:', error.message);
+    
+    comprehensiveLogger.logSystemEvent('MARKET_DATA_SYSTEM_DISABLED', {
+      reason: 'Market Data routes file not found',
+      impact: 'App will function normally without market data features',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 
 // ============================================================================
 // BILLING ROUTES

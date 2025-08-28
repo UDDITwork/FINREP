@@ -1,16 +1,18 @@
 /**
  * FILE LOCATION: frontend/src/services/marketDataScraper.js
  * 
- * PURPOSE: Real-time NSE/BSE market data scraping service
+ * PURPOSE: Real-time NSE/BSE market data service using backend proxy
  * 
- * FUNCTIONALITY: Scrape market data from public sources without API keys
+ * FUNCTIONALITY: Get market data through backend proxy to avoid CORS issues
  * - NIFTY 50, SENSEX, Bank Nifty
  * - Top gainers and losers
  * - Most active stocks
  * - Market indices
  */
 
-// Market data scraping service
+import { marketDataAPI } from './marketDataAPI';
+
+// Market data service using backend proxy
 export const marketDataScraper = {
   /**
    * Get NIFTY 50 real-time data
@@ -20,38 +22,29 @@ export const marketDataScraper = {
     try {
       console.log('📊 [Market Scraper] Fetching NIFTY 50 data...');
       
-      // Using Yahoo Finance proxy or public data sources
-      const response = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEI?interval=1m&range=1d');
-      const data = await response.json();
+      // Using backend proxy to avoid CORS issues
+      const response = await marketDataAPI.getNifty50Data();
       
-      if (data.chart && data.chart.result && data.chart.result[0]) {
-        const result = data.chart.result[0];
-        const meta = result.meta;
-        const quote = result.indicators.quote[0];
-        
-        const currentPrice = meta.regularMarketPrice;
-        const previousClose = meta.previousClose;
-        const change = currentPrice - previousClose;
-        const changePercent = (change / previousClose) * 100;
-        
+      if (response.success && response.data) {
+        const data = response.data;
         return {
           success: true,
           data: {
             symbol: 'NIFTY 50',
-            currentPrice: currentPrice.toFixed(2),
-            change: change.toFixed(2),
-            changePercent: changePercent.toFixed(2),
-            previousClose: previousClose.toFixed(2),
-            high: Math.max(...quote.high.filter(Boolean)).toFixed(2),
-            low: Math.min(...quote.low.filter(Boolean)).toFixed(2),
-            volume: quote.volume[quote.volume.length - 1] || 0,
-            timestamp: new Date().toISOString(),
-            source: 'yahoo_finance'
+            currentPrice: data.currentPrice.toFixed(2),
+            change: data.change.toFixed(2),
+            changePercent: data.changePercent.toFixed(2),
+            previousClose: data.previousClose.toFixed(2),
+            high: data.high.toFixed(2),
+            low: data.low.toFixed(2),
+            volume: data.volume || 0,
+            timestamp: data.timestamp,
+            source: 'backend_proxy'
           }
         };
       }
       
-      throw new Error('Invalid data format received');
+      throw new Error('Invalid data format received from backend');
     } catch (error) {
       console.error('❌ [Market Scraper] Error fetching NIFTY 50:', error);
       return this.getFallbackNiftyData();
@@ -66,37 +59,29 @@ export const marketDataScraper = {
     try {
       console.log('📊 [Market Scraper] Fetching SENSEX data...');
       
-      const response = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EBSESN?interval=1m&range=1d');
-      const data = await response.json();
+      // Using backend proxy to avoid CORS issues
+      const response = await marketDataAPI.getSensexData();
       
-      if (data.chart && data.chart.result && data.chart.result[0]) {
-        const result = data.chart.result[0];
-        const meta = result.meta;
-        const quote = result.indicators.quote[0];
-        
-        const currentPrice = meta.regularMarketPrice;
-        const previousClose = meta.previousClose;
-        const change = currentPrice - previousClose;
-        const changePercent = (change / previousClose) * 100;
-        
+      if (response.success && response.data) {
+        const data = response.data;
         return {
           success: true,
           data: {
             symbol: 'SENSEX',
-            currentPrice: currentPrice.toFixed(2),
-            change: change.toFixed(2),
-            changePercent: changePercent.toFixed(2),
-            previousClose: previousClose.toFixed(2),
-            high: Math.max(...quote.high.filter(Boolean)).toFixed(2),
-            low: Math.min(...quote.low.filter(Boolean)).toFixed(2),
-            volume: quote.volume[quote.volume.length - 1] || 0,
-            timestamp: new Date().toISOString(),
-            source: 'yahoo_finance'
+            currentPrice: data.currentPrice.toFixed(2),
+            change: data.change.toFixed(2),
+            changePercent: data.changePercent.toFixed(2),
+            previousClose: data.previousClose.toFixed(2),
+            high: data.high.toFixed(2),
+            low: data.low.toFixed(2),
+            volume: data.volume || 0,
+            timestamp: data.timestamp,
+            source: 'backend_proxy'
           }
         };
       }
       
-      throw new Error('Invalid data format received');
+      throw new Error('Invalid data format received from backend');
     } catch (error) {
       console.error('❌ [Market Scraper] Error fetching SENSEX:', error);
       return this.getFallbackSensexData();
@@ -111,37 +96,29 @@ export const marketDataScraper = {
     try {
       console.log('📊 [Market Scraper] Fetching Bank Nifty data...');
       
-      const response = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5ENSEBANK?interval=1m&range=1d');
-      const data = await response.json();
+      // Using backend proxy to avoid CORS issues
+      const response = await marketDataAPI.getBankNiftyData();
       
-      if (data.chart && data.chart.result && data.chart.result[0]) {
-        const result = data.chart.result[0];
-        const meta = result.meta;
-        const quote = result.indicators.quote[0];
-        
-        const currentPrice = meta.regularMarketPrice;
-        const previousClose = meta.previousClose;
-        const change = currentPrice - previousClose;
-        const changePercent = (change / previousClose) * 100;
-        
+      if (response.success && response.data) {
+        const data = response.data;
         return {
           success: true,
           data: {
             symbol: 'BANK NIFTY',
-            currentPrice: currentPrice.toFixed(2),
-            change: change.toFixed(2),
-            changePercent: changePercent.toFixed(2),
-            previousClose: previousClose.toFixed(2),
-            high: Math.max(...quote.high.filter(Boolean)).toFixed(2),
-            low: Math.min(...quote.low.filter(Boolean)).toFixed(2),
-            volume: quote.volume[quote.volume.length - 1] || 0,
-            timestamp: new Date().toISOString(),
-            source: 'yahoo_finance'
+            currentPrice: data.currentPrice.toFixed(2),
+            change: data.change.toFixed(2),
+            changePercent: data.changePercent.toFixed(2),
+            previousClose: data.previousClose.toFixed(2),
+            high: data.high.toFixed(2),
+            low: data.low.toFixed(2),
+            volume: data.volume || 0,
+            timestamp: data.timestamp,
+            source: 'backend_proxy'
           }
         };
       }
       
-      throw new Error('Invalid data format received');
+      throw new Error('Invalid data format received from backend');
     } catch (error) {
       console.error('❌ [Market Scraper] Error fetching Bank Nifty:', error);
       return this.getFallbackBankNiftyData();
@@ -156,28 +133,63 @@ export const marketDataScraper = {
     try {
       console.log('📊 [Market Scraper] Fetching market overview...');
       
-      const [niftyResult, sensexResult, bankNiftyResult] = await Promise.allSettled([
-        this.getNifty50Data(),
-        this.getSensexData(),
-        this.getBankNiftyData()
-      ]);
+      // Use backend proxy for better performance and to avoid CORS issues
+      const response = await marketDataAPI.getMarketOverview();
+      
+      if (response.success && response.data) {
+        const data = response.data;
+        const overview = {
+          success: true,
+          data: {
+            indices: [
+              data.nifty50 ? {
+                symbol: 'NIFTY 50',
+                currentPrice: data.nifty50.currentPrice.toFixed(2),
+                change: data.nifty50.change.toFixed(2),
+                changePercent: data.nifty50.changePercent.toFixed(2),
+                previousClose: data.nifty50.previousClose.toFixed(2),
+                high: data.nifty50.high.toFixed(2),
+                low: data.nifty50.low.toFixed(2),
+                volume: data.nifty50.volume || 0,
+                timestamp: data.timestamp,
+                source: 'backend_proxy'
+              } : null,
+              data.sensex ? {
+                symbol: 'SENSEX',
+                currentPrice: data.sensex.currentPrice.toFixed(2),
+                change: data.sensex.change.toFixed(2),
+                changePercent: data.sensex.changePercent.toFixed(2),
+                previousClose: data.sensex.previousClose.toFixed(2),
+                high: data.sensex.high.toFixed(2),
+                low: data.sensex.low.toFixed(2),
+                volume: data.sensex.volume || 0,
+                timestamp: data.timestamp,
+                source: 'backend_proxy'
+              } : null,
+              data.bankNifty ? {
+                symbol: 'BANK NIFTY',
+                currentPrice: data.bankNifty.currentPrice.toFixed(2),
+                change: data.bankNifty.change.toFixed(2),
+                changePercent: data.bankNifty.changePercent.toFixed(2),
+                previousClose: data.bankNifty.previousClose.toFixed(2),
+                high: data.bankNifty.high.toFixed(2),
+                low: data.bankNifty.low.toFixed(2),
+                volume: data.bankNifty.volume || 0,
+                timestamp: data.timestamp,
+                source: 'backend_proxy'
+              } : null
+            ].filter(Boolean),
+            marketStatus: this.getMarketStatus(),
+            timestamp: data.timestamp,
+            source: 'backend_proxy'
+          }
+        };
 
-      const overview = {
-        success: true,
-        data: {
-          indices: [
-            niftyResult.status === 'fulfilled' ? niftyResult.value.data : null,
-            sensexResult.status === 'fulfilled' ? sensexResult.value.data : null,
-            bankNiftyResult.status === 'fulfilled' ? bankNiftyResult.value.data : null
-          ].filter(Boolean),
-          marketStatus: this.getMarketStatus(),
-          timestamp: new Date().toISOString(),
-          source: 'market_scraper'
-        }
-      };
-
-      console.log('✅ [Market Scraper] Market overview fetched successfully');
-      return overview;
+        console.log('✅ [Market Scraper] Market overview fetched successfully');
+        return overview;
+      }
+      
+      throw new Error('Invalid data format received from backend');
     } catch (error) {
       console.error('❌ [Market Scraper] Error fetching market overview:', error);
       return this.getFallbackMarketOverview();

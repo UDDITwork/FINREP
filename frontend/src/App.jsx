@@ -26,6 +26,7 @@ import AdminDashboard from './components/AdminDashboard'
 import { MeetingsPage } from './components/meetings'
 import TranscriptionsPage from './components/meetings/TranscriptionsPage'
 import TranscriptionManager from './components/transcriptions/TranscriptionManager'
+import EnhancedTranscriptionsPage from './components/meetings/EnhancedTranscriptionsPage'
 import LOESignaturePage from './components/loe/LOESignaturePage'
 import { CASManagementPage } from './components/casManagement'
 import ABTestingDashboard from './components/abTesting/ABTestingDashboard'
@@ -99,6 +100,7 @@ function App() {
               <Route path="/meetings" element={<MeetingsPage />} />
               <Route path="/transcriptions" element={<TranscriptionsPage />} />
               <Route path="/transcription-manager" element={<TranscriptionManager />} />
+              <Route path="/enhanced-transcriptions" element={<EnhancedTranscriptionsPage />} />
               <Route path="/cas-management" element={<CASManagementPage />} />
               <Route path="/ab-testing" element={<ABTestingDashboard />} />
               <Route path="/ab-testing-suite-2" element={<ABTestingSuite2 />} />

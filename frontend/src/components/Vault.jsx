@@ -167,12 +167,8 @@ function Vault() {
             status: data.status || 'active'
           };
           
-          // Remove empty fields to avoid validation errors
-          Object.keys(processedData).forEach(key => {
-            if (processedData[key] === '' && ['firstName', 'lastName', 'email'].indexOf(key) === -1) {
-              delete processedData[key];
-            }
-          });
+          // Don't remove empty fields - let backend handle validation
+          // This ensures all fields are sent for proper validation
           break;
           
         case 'branding':

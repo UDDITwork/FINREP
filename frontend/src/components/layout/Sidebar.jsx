@@ -73,13 +73,8 @@ function Sidebar() {
       icon: FileText,
     },
     {
-      name: 'Transcriptions',
-      path: '/transcriptions', 
-      icon: FileText,
-    },
-    {
-      name: 'Transcription Manager',
-      path: '/transcription-manager', 
+      name: 'Enhanced Transcriptions',
+      path: '/enhanced-transcriptions', 
       icon: FileText,
     },
     {

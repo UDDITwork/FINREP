@@ -9,7 +9,7 @@
 import api from './api';
 
 // Claude API Configuration
-const CLAUDE_API_KEY = import.meta.env.VITE_CLAUDE_API_KEY;
+const CLAUDE_API_KEY = import.meta.env.CLAUDE_API_KEY;
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 
 // System prompt for Claude to act as a financial analyst

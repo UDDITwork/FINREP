@@ -106,8 +106,8 @@ const FinalReportModal = ({ isOpen, onClose }) => {
   if (showPDFGenerator && selectedClient) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[90vh] overflow-hidden">
-          <div className="flex items-center justify-between p-6 border-b">
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl h-[95vh] overflow-hidden">
+          <div className="flex items-center justify-between p-6 border-b bg-white sticky top-0 z-10">
             <div className="flex items-center space-x-3">
               <button
                 onClick={handleBackToClientList}
@@ -126,7 +126,7 @@ const FinalReportModal = ({ isOpen, onClose }) => {
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
             <ComprehensivePDFGenerator 
               client={selectedClient} 
               onBack={handleBackToClientList}

@@ -1,65 +1,74 @@
-// File: test-final-report-api.js
-// Simple test script to verify Final Report API endpoints
+// Test file for Final Report API endpoints
+// Run this to verify the API is working correctly
 
 const axios = require('axios');
 
 const BASE_URL = 'http://localhost:5000/api';
-const TEST_ADVISOR_ID = '507f1f77bcf86cd799439011'; // Replace with actual advisor ID
-const TEST_CLIENT_ID = '507f1f77bcf86cd799439012'; // Replace with actual client ID
+const TEST_TOKEN = 'your-test-token-here'; // Replace with actual token
+
+const api = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${TEST_TOKEN}`
+  }
+});
 
 async function testFinalReportAPI() {
   console.log('🧪 Testing Final Report API Endpoints...\n');
 
   try {
-    // Test 1: Health Check
-    console.log('1️⃣ Testing Health Check...');
-    const healthResponse = await axios.get(`${BASE_URL}/final-report/health`);
-    console.log('✅ Health Check:', healthResponse.data);
+    // Test 1: Test endpoint
+    console.log('1️⃣ Testing /final-report/test endpoint...');
+    const testResponse = await api.get('/final-report/test');
+    console.log('✅ Test endpoint working:', testResponse.data);
     console.log('');
 
-    // Test 2: Get Clients List
-    console.log('2️⃣ Testing Get Clients...');
-    const clientsResponse = await axios.get(`${BASE_URL}/final-report/clients/${TEST_ADVISOR_ID}`);
-    console.log('✅ Get Clients:', {
+    // Test 2: Get clients for report
+    console.log('2️⃣ Testing /final-report/clients endpoint...');
+    const clientsResponse = await api.get('/final-report/clients');
+    console.log('✅ Clients endpoint working:', {
       success: clientsResponse.data.success,
-      count: clientsResponse.data.count,
-      firstClient: clientsResponse.data.clients?.[0] ? {
-        name: `${clientsResponse.data.clients[0].firstName} ${clientsResponse.data.clients[0].lastName}`,
-        email: clientsResponse.data.clients[0].email,
-        portfolio: clientsResponse.data.clients[0].totalPortfolioValue
-      } : 'No clients found'
+      clientCount: clientsResponse.data.data?.clients?.length || 0,
+      totalClients: clientsResponse.data.data?.totalClients || 0
     });
     console.log('');
 
-    // Test 3: Get Comprehensive Data
-    console.log('3️⃣ Testing Get Comprehensive Data...');
-    const dataResponse = await axios.get(`${BASE_URL}/final-report/data/${TEST_ADVISOR_ID}/${TEST_CLIENT_ID}`);
-    console.log('✅ Get Comprehensive Data:', {
-      success: dataResponse.data.success,
-      reportId: dataResponse.data.data?.header?.reportId,
-      clientName: dataResponse.data.data?.header?.clientName,
-      totalServices: dataResponse.data.data?.summary?.totalServices,
-      activeServices: dataResponse.data.data?.summary?.activeServices,
-      portfolioValue: dataResponse.data.data?.summary?.portfolioValue
-    });
-    console.log('');
+    // Test 3: Test with a sample client ID (if clients exist)
+    if (clientsResponse.data.data?.clients?.length > 0) {
+      const sampleClientId = clientsResponse.data.data.clients[0]._id;
+      console.log(`3️⃣ Testing /final-report/data/${sampleClientId} endpoint...`);
+      
+      const dataResponse = await api.get(`/final-report/data/${sampleClientId}`);
+      console.log('✅ Data endpoint working:', {
+        success: dataResponse.data.success,
+        reportId: dataResponse.data.data?.header?.reportId,
+        totalServices: dataResponse.data.data?.summary?.totalServices,
+        activeServices: dataResponse.data.data?.summary?.activeServices
+      });
+      console.log('');
 
-    console.log('🎉 All tests completed successfully!');
-    console.log('📊 Final Report API is working correctly.');
+      // Test 4: Test summary endpoint
+      console.log(`4️⃣ Testing /final-report/summary/${sampleClientId} endpoint...`);
+      const summaryResponse = await api.get(`/final-report/summary/${sampleClientId}`);
+      console.log('✅ Summary endpoint working:', {
+        success: summaryResponse.data.success,
+        totalServices: summaryResponse.data.data?.totalServices,
+        activeServices: summaryResponse.data.data?.activeServices
+      });
+    } else {
+      console.log('⚠️ No clients found to test data endpoints');
+    }
+
+    console.log('\n🎉 All Final Report API tests completed successfully!');
 
   } catch (error) {
-    console.error('❌ Test failed:', error.message);
-    
-    if (error.response) {
-      console.error('Response status:', error.response.status);
-      console.error('Response data:', error.response.data);
-    }
-    
-    console.log('\n🔧 Troubleshooting tips:');
-    console.log('1. Make sure the backend server is running on port 5000');
-    console.log('2. Check if the advisor and client IDs exist in the database');
-    console.log('3. Verify that the final-report route is properly registered');
-    console.log('4. Check backend console for any error messages');
+    console.error('❌ API Test Failed:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data
+    });
   }
 }
 

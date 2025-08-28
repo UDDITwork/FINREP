@@ -118,6 +118,8 @@ const updateVaultData = async (req, res) => {
 
     logger.info(`Updating vault section: ${section} for advisor: ${advisorId}`);
     logger.debug('Update data received:', JSON.stringify(updateData, null, 2));
+    logger.debug('Raw request body:', req.body);
+    logger.debug('Query parameters:', req.query);
 
     // Find existing vault or create new one
     let vault = await Vault.findOne({ advisorId });
@@ -134,6 +136,9 @@ const updateVaultData = async (req, res) => {
 
     // Clean and validate update data based on section
     let processedData = {};
+
+    logger.debug('Processing section:', section);
+    logger.debug('Original update data:', updateData);
 
     switch (section) {
       case 'advisor':
@@ -208,6 +213,7 @@ const updateVaultData = async (req, res) => {
       }));
 
       logger.error('Validation errors:', validationErrors);
+      logger.error('Full validation error:', error);
 
       return res.status(400).json({
         success: false,
@@ -234,30 +240,35 @@ function cleanAdvisorData(data) {
   if (data.lastName !== undefined) cleaned.lastName = String(data.lastName || '').trim();
   if (data.email !== undefined) cleaned.email = String(data.email || '').toLowerCase().trim();
   
-  // Optional fields - only include if not empty
-  if (data.phoneNumber && String(data.phoneNumber).trim()) {
-    cleaned.phoneNumber = String(data.phoneNumber).trim();
+  // Optional fields - handle empty strings properly
+  if (data.phoneNumber !== undefined) {
+    cleaned.phoneNumber = String(data.phoneNumber || '').trim();
   }
-  if (data.firmName && String(data.firmName).trim()) {
-    cleaned.firmName = String(data.firmName).trim();
+  if (data.firmName !== undefined) {
+    cleaned.firmName = String(data.firmName || '').trim();
   }
-  if (data.sebiRegNumber && String(data.sebiRegNumber).trim()) {
-    cleaned.sebiRegNumber = String(data.sebiRegNumber).toUpperCase().trim();
+  if (data.sebiRegNumber !== undefined) {
+    cleaned.sebiRegNumber = String(data.sebiRegNumber || '').toUpperCase().trim();
   }
-  if (data.revenueModel && String(data.revenueModel).trim()) {
-    cleaned.revenueModel = String(data.revenueModel).trim();
+  if (data.revenueModel !== undefined) {
+    const revenueModel = String(data.revenueModel).trim();
+    if (revenueModel) {
+      cleaned.revenueModel = revenueModel;
+    } else {
+      cleaned.revenueModel = '';
+    }
   }
-  if (data.fpsbNumber && String(data.fpsbNumber).trim()) {
-    cleaned.fpsbNumber = String(data.fpsbNumber).trim();
+  if (data.fpsbNumber !== undefined) {
+    cleaned.fpsbNumber = String(data.fpsbNumber || '').trim();
   }
-  if (data.riaNumber && String(data.riaNumber).trim()) {
-    cleaned.riaNumber = String(data.riaNumber).trim();
+  if (data.riaNumber !== undefined) {
+    cleaned.riaNumber = String(data.riaNumber || '').trim();
   }
-  if (data.arnNumber && String(data.arnNumber).trim()) {
-    cleaned.arnNumber = String(data.arnNumber).toUpperCase().trim();
+  if (data.arnNumber !== undefined) {
+    cleaned.arnNumber = String(data.arnNumber || '').toUpperCase().trim();
   }
-  if (data.amfiRegNumber && String(data.amfiRegNumber).trim()) {
-    cleaned.amfiRegNumber = String(data.amfiRegNumber).trim();
+  if (data.amfiRegNumber !== undefined) {
+    cleaned.amfiRegNumber = String(data.amfiRegNumber || '').trim();
   }
   if (data.status !== undefined) {
     cleaned.status = data.status;

@@ -30,8 +30,8 @@ const vaultSchema = new mongoose.Schema({
     default: '',
     validate: {
       validator: function(v) {
-        // Allow empty string or valid phone number
-        return !v || /^[+]?[\d\s\-\(\)\.]+$/.test(v);
+        // Allow empty string or valid phone number (more permissive)
+        return !v || /^[+]?[\d\s\-\(\)\.]+$/.test(v) || /^\d{10,15}$/.test(v);
       },
       message: 'Please enter a valid phone number'
     }
@@ -51,7 +51,14 @@ const vaultSchema = new mongoose.Schema({
   revenueModel: {
     type: String,
     enum: ['Fee-Only', 'Commission-Based', 'Fee + Commission', ''],
-    default: ''
+    default: '',
+    validate: {
+      validator: function(v) {
+        // Allow empty string or valid enum values
+        return !v || ['Fee-Only', 'Commission-Based', 'Fee + Commission'].includes(v);
+      },
+      message: 'Please select a valid revenue model'
+    }
   },
   fpsbNumber: {
     type: String,
