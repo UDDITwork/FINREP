@@ -1300,6 +1300,29 @@ export const adminAPI = {
       
       throw error;
     }
+  },
+
+  // Debug function to help troubleshoot client ID issues
+  debugClientId: (clientId) => {
+    console.log('🔍 [CLIENT REPORTS API] Debugging client ID:', {
+      original: clientId,
+      type: typeof clientId,
+      isNull: clientId === null,
+      isUndefined: clientId === undefined,
+      isString: typeof clientId === 'string',
+      isObject: typeof clientId === 'object',
+      isArray: Array.isArray(clientId),
+      length: clientId?.length,
+      keys: typeof clientId === 'object' ? Object.keys(clientId || {}) : 'N/A',
+      stringified: JSON.stringify(clientId),
+      extracted: apiUtils.extractClientId(clientId)
+    });
+    
+    return {
+      original: clientId,
+      extracted: apiUtils.extractClientId(clientId),
+      isValid: !!apiUtils.extractClientId(clientId)
+    };
   }
 };
 
@@ -1323,7 +1346,100 @@ export const healthAPI = {
 
 // Utility functions
 export const apiUtils = {
-  // Format currency for API responses
+  // FIXED: Enhanced MongoDB ObjectID extraction
+  extractClientId: (clientId) => {
+    console.log('🔍 [API UTILS] Extracting client ID:', {
+      input: clientId,
+      type: typeof clientId,
+      constructor: clientId?.constructor?.name
+    });
+
+    if (!clientId) {
+      console.warn('⚠️ [API UTILS] No client ID provided');
+      return null;
+    }
+
+    // Handle string IDs (already correct)
+    if (typeof clientId === 'string') {
+      const trimmed = clientId.trim();
+      if (trimmed === '' || trimmed === '[object Object]') {
+        console.error('❌ [API UTILS] Invalid string ID:', trimmed);
+        return null;
+      }
+      return trimmed;
+    }
+    
+    // Handle MongoDB ObjectID objects
+    if (typeof clientId === 'object' && clientId !== null) {
+      // Check for _id property (nested ObjectID)
+      if (clientId._id) {
+        return apiUtils.extractClientId(clientId._id);
+      }
+      
+      // Check for $oid property (MongoDB JSON format)
+      if (clientId.$oid) {
+        return clientId.$oid;
+      }
+      
+      // Check for toHexString method (MongoDB ObjectID)
+      if (typeof clientId.toHexString === 'function') {
+        return clientId.toHexString();
+      }
+      
+      // Try toString but validate result
+      if (typeof clientId.toString === 'function') {
+        const stringValue = clientId.toString();
+        if (stringValue !== '[object Object]' && stringValue.trim() !== '') {
+          return stringValue;
+        }
+      }
+      
+      // Try to access hex property directly
+      if (clientId.id && typeof clientId.id === 'string') {
+        return clientId.id;
+      }
+    }
+    
+    // Handle number IDs
+    if (typeof clientId === 'number') {
+      return clientId.toString();
+    }
+
+    console.error('❌ [API UTILS] Unable to extract client ID:', {
+      clientId,
+      type: typeof clientId,
+      keys: typeof clientId === 'object' ? Object.keys(clientId) : 'N/A'
+    });
+    return null;
+  },
+
+  // FIXED: Enhanced validation with better error messages
+  validateClientId: (clientId) => {
+    const extracted = apiUtils.extractClientId(clientId);
+    if (!extracted) {
+      const errorDetails = {
+        original: clientId,
+        type: typeof clientId,
+        isObjectId: clientId && typeof clientId === 'object' && clientId.constructor?.name === 'ObjectID',
+        stringified: typeof clientId === 'object' ? JSON.stringify(clientId) : String(clientId)
+      };
+      console.error('❌ [API UTILS] Client ID validation failed:', errorDetails);
+      throw new Error(`Invalid client ID: Cannot extract valid string from ${typeof clientId} - ${JSON.stringify(errorDetails)}`);
+    }
+    
+    // Validate extracted ID format (MongoDB ObjectID is 24 hex chars)
+    if (!/^[0-9a-fA-F]{24}$/.test(extracted)) {
+      console.warn('⚠️ [API UTILS] Client ID format warning:', {
+        extracted,
+        length: extracted.length,
+        pattern: /^[0-9a-fA-F]{24}$/.test(extracted)
+      });
+    }
+    
+    return extracted;
+  },
+
+  // Rest of your existing utility functions...
   formatCurrency: (amount) => {
     if (!amount) return '₹0';
     return new Intl.NumberFormat('en-IN', {
@@ -1334,7 +1450,6 @@ export const apiUtils = {
     }).format(amount);
   },
 
-  // Format date for API responses
   formatDate: (date) => {
     if (!date) return 'Not provided';
     return new Date(date).toLocaleDateString('en-IN', {
@@ -1344,23 +1459,19 @@ export const apiUtils = {
     });
   },
 
-  // Calculate percentage
   calculatePercentage: (value, total) => {
     if (!total || total === 0) return 0;
     return Math.round((value / total) * 100);
   },
 
-  // Validate email
   isValidEmail: (email) => {
     return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email);
   },
 
-  // Validate PAN number
   isValidPAN: (pan) => {
     return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
   },
 
-  // Get completion status color
   getCompletionColor: (percentage) => {
     if (percentage >= 80) return 'text-green-600';
     if (percentage >= 60) return 'text-yellow-600';
@@ -1368,7 +1479,6 @@ export const apiUtils = {
     return 'text-red-600';
   },
 
-  // Get financial health color
   getHealthColor: (score) => {
     if (score >= 80) return 'text-green-600';
     if (score >= 60) return 'text-blue-600';
@@ -2089,6 +2199,128 @@ export const transcriptionAPI = {
     });
     
     return response.data;
+  }
+};
+
+// ============================================================================
+// CLIENT REPORTS API FUNCTIONS (Comprehensive Client Reports)
+// ============================================================================
+
+export const clientReportsAPI = {
+  // Get advisor's vault data for report header
+  getAdvisorVaultData: async () => {
+    console.log('🔐 [CLIENT REPORTS API] Fetching advisor vault data...');
+    
+    try {
+      const startTime = Date.now();
+      const response = await api.get('/client-reports/vault');
+      const duration = Date.now() - startTime;
+      
+      console.log('✅ [CLIENT REPORTS API] Vault data fetched:', {
+        success: response.data.success,
+        hasData: !!response.data.data,
+        duration: `${duration}ms`,
+        timestamp: new Date().toISOString()
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ [CLIENT REPORTS API] Vault data fetch failed:', {
+        error: error.message,
+        status: error.response?.status,
+        responseData: error.response?.data
+      });
+      throw error;
+    }
+  },
+
+  // Get client list for advisor
+  getClientList: async () => {
+    console.log('📋 [CLIENT REPORTS API] Fetching client list...');
+    
+    try {
+      const startTime = Date.now();
+      const response = await api.get('/client-reports/clients');
+      const duration = Date.now() - startTime;
+      
+      console.log('✅ [CLIENT REPORTS API] Client list fetched:', {
+        success: response.data.success,
+        clientCount: response.data.data?.clients?.length || 0,
+        duration: `${duration}ms`,
+        timestamp: new Date().toISOString()
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ [CLIENT REPORTS API] Client list fetch failed:', {
+        error: error.message,
+        status: error.response?.status,
+        responseData: error.response?.data
+      });
+      throw error;
+    }
+  },
+
+  // Get comprehensive client report
+  getClientReport: async (clientId) => {
+    console.log(`📊 [CLIENT REPORTS API] Fetching comprehensive report for client: ${clientId}`);
+    
+    try {
+      // Use utility function to safely extract and validate client ID
+      const validatedClientId = apiUtils.validateClientId(clientId);
+      
+      console.log('✅ [CLIENT REPORTS API] Client ID validated:', {
+        original: clientId,
+        validated: validatedClientId,
+        type: typeof validatedClientId
+      });
+      
+      const startTime = Date.now();
+      const response = await api.get(`/client-reports/clients/${validatedClientId}`);
+      const duration = Date.now() - startTime;
+      
+      console.log('✅ [CLIENT REPORTS API] Client report fetched:', {
+        success: response.data.success,
+        clientId: validatedClientId,
+        hasData: !!response.data.data,
+        duration: `${duration}ms`,
+        timestamp: new Date().toISOString()
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ [CLIENT REPORTS API] Client report fetch failed:', {
+        originalClientId: clientId,
+        error: error.message,
+        status: error.response?.status,
+        responseData: error.response?.data,
+        requestUrl: `/client-reports/clients/${clientId}`
+      });
+      throw error;
+    }
+  },
+
+  // Debug function to help troubleshoot client ID issues
+  debugClientId: (clientId) => {
+    console.log('🔍 [CLIENT REPORTS API] Debugging client ID:', {
+      original: clientId,
+      type: typeof clientId,
+      isNull: clientId === null,
+      isUndefined: clientId === undefined,
+      isString: typeof clientId === 'string',
+      isObject: typeof clientId === 'object',
+      isArray: Array.isArray(clientId),
+      length: clientId?.length,
+      keys: typeof clientId === 'object' ? Object.keys(clientId || {}) : 'N/A',
+      stringified: JSON.stringify(clientId),
+      extracted: apiUtils.extractClientId(clientId)
+    });
+    
+    return {
+      original: clientId,
+      extracted: apiUtils.extractClientId(clientId),
+      isValid: !!apiUtils.extractClientId(clientId)
+    };
   }
 };
 

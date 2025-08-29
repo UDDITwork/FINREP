@@ -49,7 +49,7 @@ Format responses in JSON when requested for structured data.`;
  */
 export const getClaudeAnalysis = async (prompt, marketData = {}) => {
   try {
-    console.log('🤖 [Claude API] Requesting market analysis...');
+    console.log('[Claude API] Requesting market analysis...');
     
     const response = await api.post('/claude/analyze', {
       prompt,
@@ -57,7 +57,7 @@ export const getClaudeAnalysis = async (prompt, marketData = {}) => {
       systemPrompt: SYSTEM_PROMPT
     });
     
-    console.log('✅ [Claude API] Market analysis received');
+    console.log('[Claude API] Market analysis received');
     
     return {
       success: true,
@@ -65,7 +65,7 @@ export const getClaudeAnalysis = async (prompt, marketData = {}) => {
       message: response.data.message
     };
   } catch (error) {
-    console.error('❌ [Claude API] Error getting analysis:', error);
+    console.error('[Claude API] Error getting analysis:', error);
     
     return {
       success: false,
@@ -83,14 +83,14 @@ export const getClaudeAnalysis = async (prompt, marketData = {}) => {
  */
 export const getMarketSentiment = async (stocks = []) => {
   try {
-    console.log('📊 [Claude API] Analyzing market sentiment...');
+    console.log('[Claude API] Analyzing market sentiment...');
     
     const response = await api.post('/claude/sentiment', {
       stocks,
       systemPrompt: SYSTEM_PROMPT
     });
     
-    console.log('✅ [Claude API] Sentiment analysis received');
+    console.log('[Claude API] Sentiment analysis received');
     
     return {
       success: true,
@@ -98,7 +98,7 @@ export const getMarketSentiment = async (stocks = []) => {
       message: response.data.message
     };
   } catch (error) {
-    console.error('❌ [Claude API] Error getting sentiment:', error);
+    console.error('[Claude API] Error getting sentiment:', error);
     
     return {
       success: false,
@@ -117,7 +117,7 @@ export const getMarketSentiment = async (stocks = []) => {
  */
 export const getStockRecommendations = async (sector = '', riskProfile = 'medium') => {
   try {
-    console.log('💡 [Claude API] Generating stock recommendations...');
+    console.log('[Claude API] Generating stock recommendations...');
     
     const response = await api.post('/claude/recommendations', {
       sector,
@@ -125,7 +125,7 @@ export const getStockRecommendations = async (sector = '', riskProfile = 'medium
       systemPrompt: SYSTEM_PROMPT
     });
     
-    console.log('✅ [Claude API] Recommendations received');
+    console.log('[Claude API] Recommendations received');
     
     return {
       success: true,
@@ -133,7 +133,7 @@ export const getStockRecommendations = async (sector = '', riskProfile = 'medium
       message: response.data.message
     };
   } catch (error) {
-    console.error('❌ [Claude API] Error getting recommendations:', error);
+    console.error('[Claude API] Error getting recommendations:', error);
     
     return {
       success: false,
@@ -151,14 +151,14 @@ export const getStockRecommendations = async (sector = '', riskProfile = 'medium
  */
 export const getMutualFundAnalysis = async (category = 'equity') => {
   try {
-    console.log('📈 [Claude API] Analyzing mutual funds...');
+    console.log('[Claude API] Analyzing mutual funds...');
     
     const response = await api.post('/claude/mutual-funds', {
       category,
       systemPrompt: SYSTEM_PROMPT
     });
     
-    console.log('✅ [Claude API] Mutual fund analysis received');
+    console.log('[Claude API] Mutual fund analysis received');
     
     return {
       success: true,
@@ -166,7 +166,7 @@ export const getMutualFundAnalysis = async (category = 'equity') => {
       message: response.data.message
     };
   } catch (error) {
-    console.error('❌ [Claude API] Error getting mutual fund analysis:', error);
+    console.error('[Claude API] Error getting mutual fund analysis:', error);
     
     return {
       success: false,
@@ -184,14 +184,14 @@ export const getMutualFundAnalysis = async (category = 'equity') => {
  */
 export const getMarketOutlook = async (timeframe = 'short') => {
   try {
-    console.log('🔮 [Claude API] Generating market outlook...');
+    console.log('[Claude API] Generating market outlook...');
     
     const response = await api.post('/claude/outlook', {
       timeframe,
       systemPrompt: SYSTEM_PROMPT
     });
     
-    console.log('✅ [Claude API] Market outlook received');
+    console.log('[Claude API] Market outlook received');
     
     return {
       success: true,
@@ -199,7 +199,7 @@ export const getMarketOutlook = async (timeframe = 'short') => {
       message: response.data.message
     };
   } catch (error) {
-    console.error('❌ [Claude API] Error getting market outlook:', error);
+    console.error('[Claude API] Error getting market outlook:', error);
     
     return {
       success: false,
@@ -217,14 +217,14 @@ export const getMarketOutlook = async (timeframe = 'short') => {
  */
 export const getTechnicalAnalysis = async (symbol) => {
   try {
-    console.log(`📊 [Claude API] Analyzing technical indicators for ${symbol}...`);
+    console.log(`[Claude API] Analyzing technical indicators for ${symbol}...`);
     
     const response = await api.post('/claude/technical-analysis', {
       symbol,
       systemPrompt: SYSTEM_PROMPT
     });
     
-    console.log('✅ [Claude API] Technical analysis received');
+    console.log('[Claude API] Technical analysis received');
     
     return {
       success: true,
@@ -232,7 +232,7 @@ export const getTechnicalAnalysis = async (symbol) => {
       message: response.data.message
     };
   } catch (error) {
-    console.error('❌ [Claude API] Error getting technical analysis:', error);
+    console.error('[Claude API] Error getting technical analysis:', error);
     
     return {
       success: false,
@@ -250,14 +250,14 @@ export const getTechnicalAnalysis = async (symbol) => {
  */
 export const getPortfolioSuggestions = async (portfolio) => {
   try {
-    console.log('⚖️ [Claude API] Generating portfolio suggestions...');
+    console.log('[Claude API] Generating portfolio suggestions...');
     
     const response = await api.post('/claude/portfolio', {
       portfolio,
       systemPrompt: SYSTEM_PROMPT
     });
     
-    console.log('✅ [Claude API] Portfolio suggestions received');
+    console.log('[Claude API] Portfolio suggestions received');
     
     return {
       success: true,
@@ -265,7 +265,7 @@ export const getPortfolioSuggestions = async (portfolio) => {
       message: response.data.message
     };
   } catch (error) {
-    console.error('❌ [Claude API] Error getting portfolio suggestions:', error);
+    console.error('[Claude API] Error getting portfolio suggestions:', error);
     
     return {
       success: false,

@@ -189,7 +189,8 @@ app.get('/', (req, res) => {
       casIntegration: true,
       abTesting: true,
       loeManagement: true,
-      adminDashboard: true
+      adminDashboard: true,
+      clientReports: true // NEW: Client Reports feature
     }
   };
   
@@ -232,7 +233,49 @@ app.use('/api/kyc', require('./routes/kyc'));
 app.use('/api/mutual-fund-exit-strategies', require('./routes/mutualFundExitStrategies'));
 app.use('/api/transcriptions', require('./routes/transcriptions'));
 app.use('/api/enhanced-transcriptions', require('./routes/enhancedTranscriptionRoutes'));
+app.use('/api/transcripts', require('./routes/transcriptRouter'));
 app.use('/api/final-report', require('./routes/finalReport'));
+
+// ============================================================================
+// 🆕 NEW: CLIENT REPORTS ROUTES (Comprehensive Client Reports)
+// ============================================================================
+
+// Add Client Reports routes for comprehensive client reporting
+try {
+  console.log('🔍 Attempting to load client reports routes...');
+  const clientReportsRoutes = require('./routes/clientReports');
+  console.log('✅ Client reports routes file loaded successfully');
+  app.use('/api/client-reports', clientReportsRoutes);
+  console.log('✅ Client Reports routes registered: /api/client-reports/*');
+  
+  // Log Client Reports system availability
+  comprehensiveLogger.logSystemEvent('CLIENT_REPORTS_SYSTEM_ENABLED', {
+    clientReportsRoutes: [
+      '/api/client-reports/vault',
+      '/api/client-reports/clients',
+      '/api/client-reports/clients/:clientId'
+    ],
+    features: [
+      'Advisor Vault Data',
+      'Client List Management',
+      'Comprehensive Client Reports',
+      'Professional Report Generation'
+    ],
+    timestamp: new Date().toISOString()
+  });
+  
+} catch (error) {
+  console.log('⚠️ Client Reports routes not found - skipping (app will work without client reports)');
+  console.log('Error details:', error.message);
+  logger.warn('Client Reports routes not available:', error.message);
+  
+  comprehensiveLogger.logSystemEvent('CLIENT_REPORTS_SYSTEM_DISABLED', {
+    reason: 'Client Reports routes file not found',
+    impact: 'App will function normally without client reports',
+    error: error.message,
+    timestamp: new Date().toISOString()
+  });
+}
 
 // ============================================================================
 // 🆕 NEW: DEBUG ROUTES (NO AUTHENTICATION)
@@ -549,7 +592,9 @@ comprehensiveLogger.logSystemEvent('API_ROUTES_INITIALIZED', {
     '/api/cas-management', // NEW: CAS Management routes
     '/api/chat', // NEW: AI Chat routes
     '/api/stock-market', // NEW: Stock Market API routes
+    '/api/client-reports', // NEW: Client Reports routes
     '/api/transcriptions', // Transcription routes
+    '/api/transcripts', // NEW: Enhanced Transcript routes
     '/api/final-report' // Final Report routes
   ],
   timestamp: new Date().toISOString()
@@ -622,6 +667,7 @@ app.use((req, res) => {
       abTesting: '/api/ab-testing-suite-2/*',
       chat: '/api/chat/*',
       stockMarket: '/api/stock-market/*', // NEW: Stock Market API routes
+      clientReports: '/api/client-reports/*', // NEW: Client Reports routes
       debug: '/api/debug/*' // NEW: Debug routes
     }
   });
@@ -668,10 +714,19 @@ app.listen(PORT, () => {
   logger.info(`🔗 API Base URL: http://localhost:${PORT}/api`);
   logger.info('Server startup complete ✅');
   
-  // ✅ ENHANCED: Added AI Chat system status to startup log
+  // ✅ ENHANCED: Added AI Chat and Client Reports system status to startup log
   const aiChatAvailable = (() => {
     try {
       require('./routes/chat');
+      return true;
+    } catch {
+      return false;
+    }
+  })();
+  
+  const clientReportsAvailable = (() => {
+    try {
+      require('./routes/clientReports');
       return true;
     } catch {
       return false;
@@ -685,6 +740,7 @@ app.listen(PORT, () => {
     apiBaseUrl: `http://localhost:${PORT}/api`,
     comprehensiveLoggingEnabled: true,
     aiChatSystemEnabled: aiChatAvailable, // NEW: AI Chat status
+    clientReportsSystemEnabled: clientReportsAvailable, // NEW: Client Reports status
     loggingFeatures: [
       'userActivityLogging',
       'performanceLogging', 
@@ -693,7 +749,8 @@ app.listen(PORT, () => {
       'frontendLogIngestion',
       'rateLimitTracking',
       'healthCheckMonitoring',
-      ...(aiChatAvailable ? ['aiChatLogging'] : []) // NEW: Conditional AI Chat logging
+      ...(aiChatAvailable ? ['aiChatLogging'] : []), // NEW: Conditional AI Chat logging
+      ...(clientReportsAvailable ? ['clientReportsLogging'] : []) // NEW: Conditional Client Reports logging
     ],
     timestamp: new Date().toISOString()
   });
@@ -709,6 +766,16 @@ app.listen(PORT, () => {
   } else {
     console.log('🤖 AI CHAT SYSTEM: ⚠️ Disabled (routes not found - app works normally)');
   }
+  
+  // ✅ NEW: Client Reports system status display
+  if (clientReportsAvailable) {
+    console.log('📊 CLIENT REPORTS SYSTEM: ✅ Enabled and ready');
+    console.log('   • Advisor Vault: GET /api/client-reports/vault');
+    console.log('   • Client List: GET /api/client-reports/clients');
+    console.log('   • Client Report: GET /api/client-reports/clients/:id');
+  } else {
+    console.log('📊 CLIENT REPORTS SYSTEM: ⚠️ Disabled (routes not found - app works normally)');
+  }
 });
 
 // ============================================================================
@@ -721,6 +788,11 @@ app.listen(PORT, () => {
 3. AI Chat routes in available endpoints (line ~290)
 4. AI Chat system status in startup log (line ~350)
 5. Conditional logging for AI Chat (line ~370)
+6. Try-catch block for Client Reports routes (line ~220)
+7. Client Reports feature in health status (line ~96)
+8. Client Reports routes in available endpoints (line ~290)
+9. Client Reports system status in startup log (line ~350)
+10. Conditional logging for Client Reports (line ~370)
 
 ❌ WHAT WAS NOT CHANGED (100% PRESERVED):
 1. All existing middleware setup
@@ -748,4 +820,5 @@ app.listen(PORT, () => {
 ✅ 404 handling should work for unknown routes
 ✅ Error handling should work as before
 🆕 AI Chat should work: /api/chat/* (if routes file exists)
+🆕 Client Reports should work: /api/client-reports/* (if routes file exists)
 */

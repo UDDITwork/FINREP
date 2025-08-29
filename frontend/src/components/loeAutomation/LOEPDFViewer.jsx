@@ -31,15 +31,27 @@ const LOEPDFViewer = ({
   const [activeTab, setActiveTab] = useState('view'); // 'view' or 'details'
 
   useEffect(() => {
-    if (isOpen && loeData?.signedPdfUrl) {
-      // Extract filename from signedPdfUrl
-      const filename = loeData.signedPdfUrl.split('/').pop();
-      if (filename) {
-        const url = loeAutomationAPI.getLOEPDFUrl(filename);
-        setPdfUrl(url);
+    if (isOpen && loeData) {
+      // Prefer Cloudinary URL, fallback to local URL
+      const cloudinaryUrl = loeData.cloudinaryPdfUrl;
+      const localUrl = loeData.signedPdfUrl;
+      
+      if (cloudinaryUrl && cloudinaryUrl.startsWith('http')) {
+        // Use Cloudinary URL directly
+        setPdfUrl(cloudinaryUrl);
         setError(null);
+      } else if (localUrl) {
+        // Extract filename from local URL and get full URL
+        const filename = localUrl.split('/').pop();
+        if (filename) {
+          const url = loeAutomationAPI.getLOEPDFUrl(filename);
+          setPdfUrl(url);
+          setError(null);
+        } else {
+          setError('PDF file not found');
+        }
       } else {
-        setError('PDF file not found');
+        setError('No PDF URL available');
       }
     }
   }, [isOpen, loeData]);

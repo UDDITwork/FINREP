@@ -89,7 +89,7 @@ function Sidebar() {
     },
     {
       name: 'Client Reports',
-      path: '/final-report', 
+      path: '/client-reports', 
       icon: FileText,
     },
     {

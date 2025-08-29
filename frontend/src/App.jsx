@@ -41,6 +41,10 @@ import { LOEAutomationDashboard, ClientLOESigningPage } from './components/loeAu
 import Vault from './components/Vault'
 import { FinalReportPage } from './components/finalReport'
 import BillingPage from './components/billing/BillingPage'
+import ClientReportsPage from './components/clientReports/ClientReportsPage'
+import ClientDetailReport from './components/clientReports/ClientDetailReport'
+import AuthCheck from './components/clientReports/AuthCheck'
+import DebugApiTest from './components/DebugApiTest'
 
 function App() {
   return (
@@ -114,6 +118,10 @@ function App() {
               <Route path="/vault" element={<Vault />} />
               <Route path="/final-report" element={<FinalReportPage />} />
               <Route path="/billing" element={<BillingPage />} />
+              <Route path="/client-reports" element={<ClientReportsPage />} />
+              <Route path="/client-reports/:clientId" element={<ClientDetailReport />} />
+              <Route path="/auth-check" element={<AuthCheck />} />
+              <Route path="/debug-test" element={<DebugApiTest />} />
             </Route>
             
             {/* Redirect any unknown routes to home */}

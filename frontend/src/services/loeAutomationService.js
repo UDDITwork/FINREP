@@ -129,13 +129,15 @@ export const loeAutomationAPI = {
     return response.data;
   },
 
-  // Download/View LOE PDF file
+  // Download/View LOE PDF file with Cloudinary fallback
   downloadLOEPDF: async (filename) => {
     console.log('📄 [LOE Automation] Downloading LOE PDF:', { filename });
     
     try {
+      // First try to get the PDF via API (which will redirect to Cloudinary if available)
       const response = await api.get(`/loe-automation/pdf/${filename}`, {
-        responseType: 'blob'
+        responseType: 'blob',
+        maxRedirects: 5 // Allow redirects to Cloudinary
       });
       
       // Create blob URL for viewing/downloading
@@ -161,11 +163,16 @@ export const loeAutomationAPI = {
     }
   },
 
-  // Get PDF URL for viewing
-  getLOEPDFUrl: (filename) => {
-    // Use environment-aware API URL for production compatibility
-    const baseUrl = import.meta.env.VITE_API_URL || '/api';
-    return `${baseUrl}/loe-automation/pdf/${filename}`;
+  // Get PDF URL for viewing (prefer Cloudinary, fallback to local)
+  getLOEPDFUrl: (filename, cloudinaryUrl = null) => {
+    // Use Cloudinary URL if available (primary)
+    if (cloudinaryUrl && cloudinaryUrl.startsWith('http')) {
+      return cloudinaryUrl;
+    }
+    
+    // Fallback to local storage via API route
+    // This ensures proper authentication and error handling
+    return `/api/loe-automation/pdf/${filename}`;
   }
 };
 

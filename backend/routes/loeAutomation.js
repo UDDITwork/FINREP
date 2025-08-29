@@ -55,29 +55,84 @@ router.get('/client/:accessToken',
   loeAutomationController.getClientLOEData
 );
 
-// Serve LOE PDF files
+// Serve LOE PDF files with Cloudinary fallback
 router.get('/pdf/:filename', 
   logLOEAutomationRequest('Serve LOE PDF file'), 
-  (req, res) => {
+  async (req, res) => {
     const { filename } = req.params;
-    const filePath = path.join(__dirname, '../uploads/loe', filename);
     
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
-      logger.error('LOE PDF file not found', { filename, filePath });
-      return res.status(404).json({
+    try {
+      // First, try to find the LOE record to get Cloudinary URL
+      const Meeting = require('../models/Meeting');
+      const LOEAutomation = require('../models/LOEAutomation');
+      
+      // Look for LOE records with this filename
+      const loeRecord = await LOEAutomation.findOne({
+        $or: [
+          { 'signedPdfUrl': { $regex: filename } },
+          { 'cloudinaryPdfUrl': { $exists: true, $ne: null } }
+        ]
+      }).populate('advisorId', 'firstName lastName');
+      
+      // If Cloudinary URL exists, redirect to it
+      if (loeRecord?.cloudinaryPdfUrl) {
+        logger.info('🔄 Redirecting to Cloudinary PDF', {
+          filename,
+          cloudinaryUrl: loeRecord.cloudinaryPdfUrl
+        });
+        return res.redirect(loeRecord.cloudinaryPdfUrl);
+      }
+      
+      // Fallback to local file
+      const filePath = path.join(__dirname, '../uploads/loe', filename);
+      
+      // Debug logging
+      console.log('🔍 [LOE PDF Route] Fallback to local file:', {
+        filename,
+        filePath,
+        fileExists: fs.existsSync(filePath),
+        hasCloudinaryUrl: !!loeRecord?.cloudinaryPdfUrl
+      });
+      
+      // Check if local file exists
+      if (!fs.existsSync(filePath)) {
+        logger.error('LOE PDF file not found in local storage', { 
+          filename, 
+          filePath,
+          hasCloudinaryUrl: !!loeRecord?.cloudinaryPdfUrl
+        });
+        return res.status(404).json({
+          success: false,
+          error: 'PDF file not found',
+          debug: {
+            filename,
+            filePath,
+            hasCloudinaryUrl: !!loeRecord?.cloudinaryPdfUrl,
+            cloudinaryUrl: loeRecord?.cloudinaryPdfUrl || 'none'
+          }
+        });
+      }
+      
+      // Set appropriate headers for PDF
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      
+      // Stream the local file
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+      
+    } catch (error) {
+      logger.error('❌ Error serving LOE PDF', {
+        filename,
+        error: error.message
+      });
+      
+      res.status(500).json({
         success: false,
-        error: 'PDF file not found'
+        error: 'Failed to serve PDF file',
+        details: error.message
       });
     }
-    
-    // Set appropriate headers for PDF
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    
-    // Stream the file
-    const fileStream = fs.createReadStream(filePath);
-    fileStream.pipe(res);
   }
 );
 

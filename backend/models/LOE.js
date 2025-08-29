@@ -89,6 +89,7 @@ const loeSchema = new mongoose.Schema({
   
   // Generated PDF URL after signing
   signedPdfUrl: String,
+  cloudinaryPdfUrl: String, // Cloudinary URL for global access
   
   // Email tracking
   emailsSent: [{

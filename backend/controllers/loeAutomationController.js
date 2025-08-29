@@ -13,6 +13,7 @@ const { sendEmail, createEmailTransporter } = require('../utils/emailService');
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
+const cloudinaryService = require('../services/cloudinaryService');
 
 // DEBUG: Check if models are loaded correctly
 console.log('🔍 DEBUG Models Loaded:', {
@@ -575,12 +576,38 @@ const submitClientSignature = async (req, res) => {
     // Save signature
     await loe.saveSignature(signature, ipAddress || req.ip, userAgent || req.get('User-Agent'));
 
-    // Generate signed PDF
+    // Generate signed PDF using Cloudinary service
     let pdfUrl = null;
+    let cloudinaryUrl = null;
     try {
       pdfUrl = await generateSignedLOEPDF(loe);
-      loe.signedPdfUrl = pdfUrl;
-      await loe.save();
+      
+      // Update LOE record with PDF URLs
+      if (pdfUrl) {
+        if (pdfUrl.startsWith('http')) {
+          // Cloudinary URL
+          cloudinaryUrl = pdfUrl;
+          loe.cloudinaryPdfUrl = cloudinaryUrl;
+          // Extract filename for local fallback
+          const fileName = pdfUrl.split('/').pop();
+          loe.signedPdfUrl = `/uploads/loe/${fileName}`;
+        } else {
+          // Local URL
+          loe.signedPdfUrl = pdfUrl;
+        }
+        
+        // Mark LOE as having a signed PDF
+        loe.hasSignedPdf = true;
+        loe.pdfGeneratedAt = new Date();
+        
+        await loe.save();
+        
+        logger.info('✅ Signed PDF generated and stored successfully', {
+          loeId: loe._id,
+          cloudinaryUrl: !!cloudinaryUrl,
+          localUrl: !!loe.signedPdfUrl
+        });
+      }
     } catch (pdfError) {
       logger.error('Failed to generate signed PDF', {
         loeId: loe._id,
@@ -1031,10 +1058,22 @@ const generateSignedLOEPDF = async (loe) => {
 
     // Save the PDF
     const pdfBytes = await pdfDoc.save();
-    fs.writeFileSync(filePath, pdfBytes);
+    
+    // Upload to Cloudinary service (handles both local and cloud storage)
+    const uploadResult = await cloudinaryService.uploadPDF(pdfBytes, fileName, {
+      advisorId: loe.advisorId,
+      clientId: loe.clientId,
+      loeId: loe._id
+    });
 
-    const pdfUrl = `/uploads/loe/${fileName}`;
-    return pdfUrl;
+    if (uploadResult.success) {
+      // Return Cloudinary URL if available, otherwise local URL
+      return uploadResult.cloudUrl || uploadResult.localUrl;
+    } else {
+      // Fallback to local storage only
+      fs.writeFileSync(filePath, pdfBytes);
+      return `/uploads/loe/${fileName}`;
+    }
 
   } catch (error) {
     logger.error('Failed to generate signed PDF', {

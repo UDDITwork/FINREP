@@ -6,6 +6,7 @@
  * for investment recommendations.
  */
 
+
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Star, Award, Target, Zap, BarChart3, DollarSign, Percent, ArrowUpRight, ArrowDownRight, Minus, Filter } from 'lucide-react';
 import { getMutualFunds } from '../../services/stockMarketAPI';
