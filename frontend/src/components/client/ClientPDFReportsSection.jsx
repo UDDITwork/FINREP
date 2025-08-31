@@ -311,7 +311,7 @@ const ClientPDFReportsSection = ({ clientId, clientName, onOpenPlanModal }) => {
                   }
                   secondary={
                     <Box component="span" sx={{ marginTop: 1, display: 'block' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 1 }}>
+                      <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 1 }}>
                         <Typography variant="caption" component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <TimeIcon sx={{ fontSize: 14 }} />
                           Generated: {new Date(report.generatedAt).toLocaleString()}

@@ -237,6 +237,7 @@ app.use('/api/enhanced-transcriptions', require('./routes/enhancedTranscriptionR
 app.use('/api/transcripts', require('./routes/transcriptRouter'));
 app.use('/api/final-report', require('./routes/finalReport'));
 app.use('/api/estate-planning', require('./routes/estatePlanning'));
+app.use('/api/tax-planning', require('./routes/taxPlanning'));
 
 // ============================================================================
 // 🆕 NEW: CLIENT REPORTS ROUTES (Comprehensive Client Reports)

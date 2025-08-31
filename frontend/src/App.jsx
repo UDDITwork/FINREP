@@ -46,6 +46,7 @@ import ClientDetailReport from './components/clientReports/ClientDetailReport'
 import AuthCheck from './components/clientReports/AuthCheck'
 import DebugApiTest from './components/DebugApiTest'
 import EstatePlanningPage from './components/estatePlanning/EstatePlanningPage'
+import TaxPlanningPage from './components/taxPlanning/TaxPlanningPage'
 
 function App() {
   return (
@@ -103,6 +104,7 @@ function App() {
               <Route path="/clients" element={<ClientsPage />} />
               <Route path="/clients/:clientId" element={<ClientDetailView />} />
               <Route path="/estate-planning/:clientId" element={<EstatePlanningPage />} />
+              <Route path="/tax-planning/:clientId" element={<TaxPlanningPage />} />
               <Route path="/meetings" element={<MeetingsPage />} />
               <Route path="/transcriptions" element={<TranscriptionsPage />} />
               <Route path="/transcription-manager" element={<TranscriptionManager />} />

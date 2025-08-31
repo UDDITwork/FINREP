@@ -1313,6 +1313,16 @@ function ClientDetailView() {
                   <Building className="h-4 w-4 mr-1" />
                   Estate Planning
                 </button>
+                <button
+                  onClick={() => {
+                    console.log('💰 [ClientDetailView] Opening Tax Planning for client:', clientId);
+                    navigate(`/tax-planning/${clientId}`);
+                  }}
+                  className="flex items-center px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <Calculator className="h-4 w-4 mr-1" />
+                  Tax Planning
+                </button>
               </div>
             </div>
 
