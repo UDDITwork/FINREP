@@ -398,9 +398,9 @@ function EstatePlanningPage() {
     };
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Family & Beneficiaries Information</h3>
+          <h3 className="text-xl font-semibold text-gray-900">Family & Beneficiaries Information</h3>
           <button
             onClick={handleSaveFamilyData}
             disabled={saving}
@@ -412,7 +412,7 @@ function EstatePlanningPage() {
         </div>
 
         {/* Spouse Information */}
-        <div className="bg-white rounded-lg border p-6">
+        <div className="bg-white rounded-lg border p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <Heart className="w-5 h-5 text-pink-500" />
             <h4 className="text-lg font-medium">Spouse Information</h4>
@@ -495,7 +495,7 @@ function EstatePlanningPage() {
         </div>
 
         {/* Children Information */}
-        <div className="bg-white rounded-lg border p-6">
+        <div className="bg-white rounded-lg border p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Baby className="w-5 h-5 text-blue-500" />
@@ -602,7 +602,7 @@ function EstatePlanningPage() {
         </div>
 
         {/* Beneficiaries Information */}
-        <div className="bg-white rounded-lg border p-6">
+        <div className="bg-white rounded-lg border p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <UserCheck className="w-5 h-5 text-green-500" />
@@ -773,7 +773,7 @@ function EstatePlanningPage() {
     };
 
     const PropertyForm = ({ property, index, onSave, onCancel }) => (
-      <div className="bg-white rounded-lg border p-6">
+      <div className="bg-white rounded-lg border p-8">
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-lg font-medium">Property {index + 1} Details</h4>
           <button
@@ -784,7 +784,7 @@ function EstatePlanningPage() {
           </button>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Property Type & Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -1171,9 +1171,9 @@ function EstatePlanningPage() {
     );
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Real Estate Properties</h3>
+          <h3 className="text-xl font-semibold text-gray-900">Real Estate Properties</h3>
           <div className="flex gap-3">
             <button
               onClick={addProperty}
@@ -1195,7 +1195,7 @@ function EstatePlanningPage() {
 
         {/* Properties List */}
         {properties.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border">
+          <div className="text-center py-12 bg-white rounded-lg border shadow-sm">
             <Home className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Properties Added</h3>
             <p className="text-gray-600 mb-4">Start by adding your real estate properties to track their details and value.</p>
@@ -1210,7 +1210,7 @@ function EstatePlanningPage() {
         ) : (
           <div className="space-y-4">
             {properties.map((property, index) => (
-              <div key={index} className="bg-white rounded-lg border p-6">
+              <div key={index} className="bg-white rounded-lg border p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h4 className="text-lg font-medium text-gray-900">
@@ -1288,7 +1288,7 @@ function EstatePlanningPage() {
         {/* Property Form Modal */}
         {showAddProperty && editingProperty !== null && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
               <PropertyForm
                 property={properties[editingProperty]}
                 index={editingProperty}
@@ -1355,9 +1355,9 @@ function EstatePlanningPage() {
     };
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Legal Documents Management</h3>
+          <h3 className="text-xl font-semibold text-gray-900">Legal Documents Management</h3>
           <button
             onClick={handleSaveLegalDocs}
             disabled={saving}
@@ -1781,9 +1781,9 @@ function EstatePlanningPage() {
     };
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Estate Planning Preferences</h3>
+          <h3 className="text-xl font-semibold text-gray-900">Estate Planning Preferences</h3>
           <button
             onClick={handleSavePreferences}
             disabled={saving}
@@ -2149,9 +2149,9 @@ function EstatePlanningPage() {
     };
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">Will Creation & Management</h3>
+          <h3 className="text-xl font-semibold text-gray-900">Will Creation & Management</h3>
           <button
             onClick={handleSaveWill}
             disabled={saving}
@@ -2334,23 +2334,26 @@ function EstatePlanningPage() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="bg-white border-b">
+      <div className="bg-white border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8">
+          <nav className="flex flex-wrap gap-2 py-4">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === tab.id
-                      ? 'border-purple-500 text-purple-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200
+                    ${activeTab === tab.id
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 border border-transparent'
+                    }
+                  `}
                 >
-                  <Icon className="h-4 w-4 mr-2" />
-                  {tab.label}
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                 </button>
               );
             })}
@@ -2359,7 +2362,7 @@ function EstatePlanningPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'overview' && (
           <OverviewTab
             personalInfo={personalInfo}
