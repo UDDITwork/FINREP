@@ -326,18 +326,125 @@ const generateAIRecommendations = async (req, res) => {
       timestamp: new Date().toISOString()
     });
 
-    // Get client tax planning data
-    const taxPlanningResponse = await getClientTaxPlanningData(req, res);
-    if (!taxPlanningResponse.success) {
-      return res.status(400).json(taxPlanningResponse);
+    // Get client data directly (avoid double response)
+    const client = await Client.findOne({
+      _id: clientId,
+      advisor: advisorId
+    }).lean();
+
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        message: 'Client not found or access denied'
+      });
     }
 
-    const { taxPlanningData } = taxPlanningResponse.data;
+    // Get related data
+    const financialPlans = await FinancialPlan.find({
+      clientId: clientId,
+      advisorId: advisorId
+    }).sort({ createdAt: -1 }).lean();
 
-    // Generate AI recommendations using Claude API
-    const aiRecommendations = await generateClaudeTaxRecommendations(taxPlanningData);
+    const clientInvitation = await ClientInvitation.findOne({
+      clientData: clientId
+    }).lean();
+
+    const estateInformation = await EstateInformation.findOne({
+      clientId: clientId
+    }).lean();
+
+    // Aggregate tax planning data
+    console.log('📊 [Tax Planning AI] Aggregating tax planning data...');
+    const taxPlanningData = await aggregateTaxPlanningData(
+      client,
+      financialPlans,
+      clientInvitation,
+      estateInformation,
+      null
+    );
+    console.log('✅ [Tax Planning AI] Tax planning data aggregated:', {
+      hasPersonalInfo: !!taxPlanningData.personalInfo,
+      hasIncomeAnalysis: !!taxPlanningData.incomeAnalysis,
+      hasTaxSavingInvestments: !!taxPlanningData.taxSavingInvestments,
+      dataCompleteness: taxPlanningData.dataCompleteness
+    });
+
+    // Generate AI recommendations using Claude API with fallback
+    console.log('🤖 [Tax Planning AI] Generating Claude recommendations...');
+    let aiRecommendations;
+    try {
+      aiRecommendations = await generateClaudeTaxRecommendations(taxPlanningData);
+      console.log('✅ [Tax Planning AI] Claude recommendations generated:', {
+        recommendationsCount: aiRecommendations.recommendations?.length || 0,
+        totalSavings: aiRecommendations.totalPotentialSavings || 0
+      });
+    } catch (claudeError) {
+      console.error('❌ [Tax Planning AI] Claude API failed, using fallback:', claudeError.message);
+      
+      // Check if it's a credit exhaustion error
+      if (claudeError.message.includes('credits exhausted')) {
+        console.log('💳 [Tax Planning AI] Claude API credits exhausted - using fallback recommendations');
+        aiRecommendations = getFallbackRecommendations();
+        aiRecommendations.creditExhausted = true;
+        aiRecommendations.creditExhaustedMessage = 'Claude API credits exhausted. Showing fallback recommendations.';
+      } else {
+        console.log('🔄 [Tax Planning AI] Claude API error - using fallback recommendations');
+        aiRecommendations = getFallbackRecommendations();
+        aiRecommendations.apiError = true;
+        aiRecommendations.apiErrorMessage = claudeError.message;
+      }
+      
+      console.log('✅ [Tax Planning AI] Fallback recommendations generated:', {
+        recommendationsCount: aiRecommendations.recommendations?.length || 0,
+        totalSavings: aiRecommendations.totalPotentialSavings || 0,
+        creditExhausted: aiRecommendations.creditExhausted || false,
+        apiError: aiRecommendations.apiError || false
+      });
+    }
+
+    // Normalize AI recommendations to match schema enums
+    console.log('🔧 [Tax Planning AI] Normalizing AI recommendations...');
+    const normalizedRecommendations = aiRecommendations.recommendations?.map(rec => {
+      // Map categories to valid enum values
+      const categoryMapping = {
+        'data_completion': 'compliance',
+        'health_insurance': 'deduction_optimization',
+        'retirement_planning': 'investment_strategy',
+        'deduction_optimization': 'deduction_optimization',
+        'investment_strategy': 'investment_strategy',
+        'capital_gains': 'capital_gains',
+        'business_tax': 'business_tax',
+        'estate_planning': 'estate_planning',
+        'compliance': 'compliance'
+      };
+      
+      // Map priorities to valid enum values
+      const priorityMapping = {
+        'critical': 'high',
+        'high': 'high',
+        'medium': 'medium',
+        'low': 'low'
+      };
+      
+      return {
+        ...rec,
+        category: categoryMapping[rec.category] || 'compliance',
+        priority: priorityMapping[rec.priority] || 'medium'
+      };
+    }) || [];
+    
+    const normalizedAiRecommendations = {
+      ...aiRecommendations,
+      recommendations: normalizedRecommendations
+    };
+    
+    console.log('✅ [Tax Planning AI] Recommendations normalized:', {
+      originalCount: aiRecommendations.recommendations?.length || 0,
+      normalizedCount: normalizedRecommendations.length
+    });
 
     // Save or update tax planning with AI recommendations
+    console.log('💾 [Tax Planning AI] Saving tax planning data...');
     const taxPlanning = await TaxPlanning.findOneAndUpdate(
       { 
         clientId: clientId,
@@ -352,20 +459,20 @@ const generateAIRecommendations = async (req, res) => {
           aadharNumber: taxPlanningData.personalInfo.aadharNumber,
           address: taxPlanningData.personalInfo.address,
           dateOfBirth: taxPlanningData.personalInfo.dateOfBirth,
-          maritalStatus: taxPlanningData.personalInfo.maritalStatus,
+          maritalStatus: taxPlanningData.personalInfo.maritalStatus?.toLowerCase() || 'single',
           numberOfDependents: taxPlanningData.personalInfo.numberOfDependents
         },
         incomeAnalysis: {
           totalAnnualIncome: taxPlanningData.incomeAnalysis.annualIncome,
           monthlyIncome: taxPlanningData.incomeAnalysis.totalMonthlyIncome,
-          incomeType: taxPlanningData.incomeAnalysis.incomeType,
+          incomeType: taxPlanningData.incomeAnalysis.incomeType?.toLowerCase() || 'salaried',
           employerBusinessName: taxPlanningData.incomeAnalysis.employerBusinessName,
           additionalIncome: taxPlanningData.incomeAnalysis.additionalIncome
         },
         taxSavingInvestments: taxPlanningData.taxSavingInvestments,
         capitalGainsAnalysis: taxPlanningData.capitalGainsAnalysis,
         businessTaxConsiderations: taxPlanningData.businessTaxConsiderations,
-        aiRecommendations: aiRecommendations,
+        aiRecommendations: normalizedAiRecommendations,
         createdBy: advisorId,
         updatedBy: advisorId
       },
@@ -375,6 +482,20 @@ const generateAIRecommendations = async (req, res) => {
         runValidators: true 
       }
     );
+    console.log('✅ [Tax Planning AI] Tax planning data saved:', taxPlanning._id);
+
+    // Generate visualization data for BEFORE vs AFTER comparison
+    console.log('📊 [Tax Planning AI] Generating visualization data...');
+    const visualizationData = generateTaxPlanningVisualization(
+      taxPlanningData,
+      normalizedAiRecommendations,
+      taxPlanning
+    );
+    console.log('✅ [Tax Planning AI] Visualization data generated:', {
+      hasBeforeAfter: !!visualizationData.beforeAfterComparison,
+      hasCharts: !!visualizationData.charts,
+      totalSavings: visualizationData.beforeAfterComparison?.totalSavings || 0
+    });
 
     console.log('✅ [Tax Planning AI] Recommendations generated and saved:', {
       clientId,
@@ -387,13 +508,39 @@ const generateAIRecommendations = async (req, res) => {
       success: true,
       message: 'AI tax planning recommendations generated successfully',
       data: {
-        taxPlanning,
-        aiRecommendations
+        taxPlanning: {
+          ...taxPlanning.toObject(),
+          aiRecommendations: normalizedAiRecommendations
+        },
+        visualizationData: visualizationData,
+        // Include error information if applicable
+        ...(aiRecommendations.creditExhausted && {
+          warning: {
+            type: 'credit_exhausted',
+            message: aiRecommendations.creditExhaustedMessage,
+            showFallback: true
+          }
+        }),
+        ...(aiRecommendations.apiError && !aiRecommendations.creditExhausted && {
+          warning: {
+            type: 'api_error',
+            message: aiRecommendations.apiErrorMessage,
+            showFallback: true
+          }
+        })
       }
     });
 
   } catch (error) {
     console.error('❌ [Tax Planning AI] Error generating recommendations:', error);
+    console.error('❌ [Tax Planning AI] Error details:', {
+      message: error.message,
+      stack: error.stack,
+      clientId: req.params.clientId,
+      advisorId: req.advisor?.id,
+      timestamp: new Date().toISOString()
+    });
+    
     logger.error('Tax Planning AI Recommendations Error', {
       error: error.message,
       stack: error.stack,
@@ -404,7 +551,12 @@ const generateAIRecommendations = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to generate AI recommendations',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? {
+        clientId: req.params.clientId,
+        advisorId: req.advisor?.id,
+        timestamp: new Date().toISOString()
+      } : undefined
     });
   }
 };
@@ -414,14 +566,20 @@ const generateAIRecommendations = async (req, res) => {
  */
 const generateClaudeTaxRecommendations = async (taxPlanningData) => {
   try {
+    console.log('🔑 [Claude] Checking API key...');
     const claudeApiKey = process.env.CLAUDE_API_KEY;
     if (!claudeApiKey) {
-      throw new Error('Claude API key not configured');
+      console.error('❌ [Claude] API key not configured');
+      throw new Error('Claude API key not configured. Please set CLAUDE_API_KEY environment variable.');
     }
+    if (!claudeApiKey.startsWith('sk-ant-')) {
+      console.error('❌ [Claude] API key format appears incorrect');
+      throw new Error('Claude API key format appears incorrect. Should start with "sk-ant-"');
+    }
+    console.log('✅ [Claude] API key found and format validated');
 
     // Prepare comprehensive prompt for Claude
-    const prompt = `
-You are a tax planning expert AI assistant. Analyze the following client data and provide comprehensive tax planning recommendations.
+    const prompt = `You are a tax planning expert AI assistant. Analyze the following client data and provide comprehensive tax planning recommendations.
 
 CLIENT DATA:
 Personal Information:
@@ -455,23 +613,25 @@ Business/Professional Income: ₹${taxPlanningData.businessTaxConsiderations.bus
 
 Data Completeness: ${taxPlanningData.dataCompleteness}%
 
-Please provide comprehensive tax planning recommendations in the following JSON format:
+IMPORTANT: You must respond with ONLY a valid JSON object. Do not include any text before or after the JSON. The response must be parseable JSON.
+
+Provide comprehensive tax planning recommendations in this exact JSON format:
 
 {
   "recommendations": [
     {
-      "category": "deduction_optimization|investment_strategy|capital_gains|business_tax|estate_planning|compliance",
-      "priority": "high|medium|low",
-      "title": "Brief recommendation title",
-      "description": "Detailed explanation of the recommendation",
-      "potentialSavings": 0,
-      "implementationSteps": ["Step 1", "Step 2", "Step 3"],
+      "category": "deduction_optimization",
+      "priority": "high",
+      "title": "Maximize Section 80C Deductions",
+      "description": "Detailed explanation of the recommendation with specific steps and benefits",
+      "potentialSavings": 15000,
+      "implementationSteps": ["Step 1: Review current investments", "Step 2: Calculate shortfall", "Step 3: Invest in suitable instruments"],
       "deadline": "2024-12-31",
-      "riskLevel": "low|medium|high"
+      "riskLevel": "low"
     }
   ],
-  "summary": "Overall tax planning strategy summary",
-  "totalPotentialSavings": 0,
+  "summary": "Overall tax planning strategy summary focusing on key opportunities",
+  "totalPotentialSavings": 15000,
   "confidenceScore": 85
 }
 
@@ -483,66 +643,140 @@ Focus on:
 5. Compliance requirements and deadlines
 6. Risk assessment for each recommendation
 
-Provide specific, actionable recommendations with realistic savings estimates.
-`;
+Provide 3-5 specific, actionable recommendations with realistic savings estimates. Return ONLY the JSON object.`;
 
-    // Call Claude API
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': claudeApiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-3-sonnet-20240229',
-        max_tokens: 4000,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
-      })
-    });
+    // Call Claude API with timeout
+    console.log('🌐 [Claude] Making API call...');
+    console.log('🔑 [Claude] Using API key:', claudeApiKey ? 'Present' : 'Missing');
+    console.log('📝 [Claude] Prompt length:', prompt.length);
+    
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+    
+    let response;
+    try {
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': claudeApiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-sonnet-20241022',
+          max_tokens: 4000,
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ]
+        }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
+      console.log('📡 [Claude] API response status:', response.status);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ [Claude] API error:', response.status, errorText);
+        
+        // Parse error response to get specific error details
+        let errorDetails;
+        try {
+          errorDetails = JSON.parse(errorText);
+        } catch (parseError) {
+          errorDetails = { error: { message: errorText } };
+        }
+        
+        // Handle specific Claude API errors
+        if (response.status === 401) {
+          throw new Error('Claude API authentication failed. Please check your API key.');
+        } else if (response.status === 402) {
+          throw new Error('Claude API credits exhausted. Please add credits to your account.');
+        } else if (response.status === 429) {
+          throw new Error('Claude API rate limit exceeded. Please try again later.');
+        } else if (response.status === 500) {
+          throw new Error('Claude API server error. Please try again later.');
+        } else if (response.status === 503) {
+          throw new Error('Claude API service unavailable. Please try again later.');
+        } else {
+          const errorMessage = errorDetails?.error?.message || errorDetails?.error || errorText;
+          throw new Error(`Claude API error (${response.status}): ${errorMessage}`);
+        }
+      }
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error('❌ [Claude] API call timed out after 60 seconds');
+        throw new Error('Claude API call timed out. Please try again.');
+      }
+      console.error('❌ [Claude] Fetch error:', fetchError);
+      throw new Error(`Claude API fetch error: ${fetchError.message}`);
     }
 
     const claudeResponse = await response.json();
+    console.log('✅ [Claude] API response received');
+    console.log('📊 [Claude] Response structure:', {
+      hasContent: !!claudeResponse.content,
+      contentLength: claudeResponse.content?.length || 0,
+      hasUsage: !!claudeResponse.usage,
+      hasStopReason: !!claudeResponse.stop_reason
+    });
+    
+    // Validate response structure
+    if (!claudeResponse.content || !Array.isArray(claudeResponse.content) || claudeResponse.content.length === 0) {
+      console.error('❌ [Claude] Invalid response structure:', claudeResponse);
+      throw new Error('Invalid Claude API response structure - missing content array');
+    }
+    
     const content = claudeResponse.content[0].text;
+    console.log('📝 [Claude] Response content length:', content.length);
+    console.log('📄 [Claude] Raw response preview:', content.substring(0, 200) + '...');
 
     // Parse Claude's response
     let recommendations;
     try {
-      // Extract JSON from Claude's response
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      console.log('🔍 [Claude] Parsing response...');
+      
+      // Try to find JSON in the response - look for the main JSON object
+      let jsonMatch = content.match(/\{[\s\S]*\}/);
+      
+      // If no match, try to find JSON between code blocks
+      if (!jsonMatch) {
+        jsonMatch = content.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+        if (jsonMatch) {
+          jsonMatch = [jsonMatch[1]];
+        }
+      }
+      
+      // If still no match, try to find JSON after "```" or similar markers
+      if (!jsonMatch) {
+        jsonMatch = content.match(/```\s*(\{[\s\S]*?\})\s*```/);
+        if (jsonMatch) {
+          jsonMatch = [jsonMatch[1]];
+        }
+      }
+      
       if (jsonMatch) {
+        console.log('🔍 [Claude] Found JSON match, parsing...');
         recommendations = JSON.parse(jsonMatch[0]);
+        console.log('✅ [Claude] Successfully parsed recommendations:', {
+          recommendationsCount: recommendations.recommendations?.length || 0,
+          hasSummary: !!recommendations.summary,
+          totalSavings: recommendations.totalPotentialSavings || 0
+        });
       } else {
+        console.error('❌ [Claude] No valid JSON found in response');
+        console.log('📄 [Claude] Full response:', content);
         throw new Error('No valid JSON found in Claude response');
       }
     } catch (parseError) {
       console.error('❌ [Claude] Error parsing response:', parseError);
-      // Fallback recommendations
-      recommendations = {
-        recommendations: [
-          {
-            category: 'deduction_optimization',
-            priority: 'high',
-            title: 'Maximize Section 80C Deductions',
-            description: 'Consider increasing PPF, EPF, or ELSS investments to reach the ₹1.5L limit for maximum tax savings.',
-            potentialSavings: 15000,
-            implementationSteps: ['Review current 80C investments', 'Calculate shortfall', 'Invest in suitable instruments'],
-            deadline: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            riskLevel: 'low'
-          }
-        ],
-        summary: 'Focus on maximizing tax deductions and optimizing investment strategy for better tax efficiency.',
-        totalPotentialSavings: 15000,
-        confidenceScore: 75
-      };
+      console.log('📄 [Claude] Full response for debugging:', content);
+      throw new Error(`Failed to parse Claude response: ${parseError.message}. Response: ${content.substring(0, 500)}`);
     }
 
     return {
@@ -552,27 +786,68 @@ Provide specific, actionable recommendations with realistic savings estimates.
 
   } catch (error) {
     console.error('❌ [Claude Tax Planning] Error:', error);
-    
-    // Return fallback recommendations
-    return {
-      generatedAt: new Date(),
-      recommendations: [
-        {
-          category: 'deduction_optimization',
-          priority: 'high',
-          title: 'Review Tax-Saving Investments',
-          description: 'Analyze current tax-saving investments and identify opportunities to maximize deductions.',
-          potentialSavings: 10000,
-          implementationSteps: ['Review 80C investments', 'Check 80D health insurance', 'Consider NPS additional contribution'],
-          deadline: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          riskLevel: 'low'
-        }
-      ],
-      summary: 'Basic tax planning recommendations based on available data. Please review and customize as needed.',
-      totalPotentialSavings: 10000,
-      confidenceScore: 60
-    };
+    throw error; // Re-throw the error to be handled by the calling function
   }
+};
+
+/**
+ * Get fallback tax planning recommendations when Claude API fails
+ */
+const getFallbackRecommendations = () => {
+  console.log('🔄 [Fallback] Generating fallback recommendations');
+  return {
+    generatedAt: new Date(),
+    recommendations: [
+      {
+        category: 'deduction_optimization',
+        priority: 'high',
+        title: 'Maximize Section 80C Deductions',
+        description: 'Consider increasing PPF, EPF, or ELSS investments to reach the ₹1.5L limit for maximum tax savings.',
+        potentialSavings: 15000,
+        implementationSteps: [
+          'Review current 80C investments',
+          'Calculate shortfall to reach ₹1.5L limit',
+          'Invest in suitable instruments (PPF, EPF, ELSS)',
+          'Complete investments before March 31st'
+        ],
+        deadline: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        riskLevel: 'low'
+      },
+      {
+        category: 'deduction_optimization',
+        priority: 'medium',
+        title: 'Optimize Health Insurance Deductions',
+        description: 'Review and potentially increase health insurance coverage to maximize Section 80D deductions.',
+        potentialSavings: 8000,
+        implementationSteps: [
+          'Review current health insurance coverage',
+          'Check if parents are covered under senior citizen category',
+          'Consider additional coverage if needed',
+          'Ensure timely premium payments'
+        ],
+        deadline: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        riskLevel: 'low'
+      },
+      {
+        category: 'investment_strategy',
+        priority: 'medium',
+        title: 'Consider NPS Additional Contribution',
+        description: 'Evaluate additional NPS contribution under Section 80CCD(1B) for additional ₹50,000 deduction.',
+        potentialSavings: 5000,
+        implementationSteps: [
+          'Check current NPS contribution',
+          'Evaluate additional ₹50,000 contribution',
+          'Consider long-term retirement planning benefits',
+          'Complete contribution before financial year end'
+        ],
+        deadline: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        riskLevel: 'medium'
+      }
+    ],
+    summary: 'Basic tax planning recommendations based on available data. Focus on maximizing tax deductions and optimizing investment strategy for better tax efficiency.',
+    totalPotentialSavings: 28000,
+    confidenceScore: 75
+  };
 };
 
 /**
@@ -602,7 +877,7 @@ const saveManualAdvisorInputs = async (req, res) => {
       });
     }
 
-    // Update tax planning with manual inputs
+    // Update tax planning with manual inputs (preserve existing AI recommendations)
     const taxPlanning = await TaxPlanning.findOneAndUpdate(
       { 
         clientId: clientId,
@@ -714,6 +989,342 @@ const getTaxPlanningHistory = async (req, res) => {
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
+};
+
+/**
+ * Generate comprehensive tax planning visualization data
+ */
+const generateTaxPlanningVisualization = (taxPlanningData, aiRecommendations, taxPlanning) => {
+  try {
+    console.log('📊 [Visualization] Generating BEFORE vs AFTER comparison...');
+    
+    // Calculate current tax scenario
+    const currentScenario = calculateCurrentTaxScenario(taxPlanningData);
+    
+    // Calculate optimized tax scenario
+    const optimizedScenario = calculateOptimizedTaxScenario(taxPlanningData, aiRecommendations);
+    
+    // Generate chart data
+    const charts = generateChartData(currentScenario, optimizedScenario, aiRecommendations);
+    
+    // Generate implementation timeline
+    const implementationTimeline = generateImplementationTimeline(aiRecommendations);
+    
+    return {
+      beforeAfterComparison: {
+        current: currentScenario,
+        optimized: optimizedScenario,
+        totalSavings: currentScenario.totalTaxLiability - optimizedScenario.totalTaxLiability,
+        savingsPercentage: ((currentScenario.totalTaxLiability - optimizedScenario.totalTaxLiability) / currentScenario.totalTaxLiability * 100).toFixed(1)
+      },
+      charts: charts,
+      implementationTimeline: implementationTimeline,
+      summary: {
+        totalRecommendations: aiRecommendations.recommendations?.length || 0,
+        highPriorityRecommendations: aiRecommendations.recommendations?.filter(r => r.priority === 'high').length || 0,
+        estimatedImplementationTime: calculateImplementationTime(aiRecommendations),
+        riskLevel: calculateOverallRiskLevel(aiRecommendations)
+      }
+    };
+    
+  } catch (error) {
+    console.error('❌ [Visualization] Error generating visualization data:', error);
+    return {
+      beforeAfterComparison: null,
+      charts: null,
+      implementationTimeline: null,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Calculate current tax scenario
+ */
+const calculateCurrentTaxScenario = (taxPlanningData) => {
+  const annualIncome = taxPlanningData.incomeAnalysis.annualIncome || 0;
+  const currentDeductions = calculateCurrentDeductions(taxPlanningData);
+  const taxableIncome = Math.max(0, annualIncome - currentDeductions);
+  const taxLiability = calculateTaxLiability(taxableIncome, taxPlanningData.personalInfo);
+  
+  return {
+    annualIncome: annualIncome,
+    currentDeductions: currentDeductions,
+    taxableIncome: taxableIncome,
+    totalTaxLiability: taxLiability,
+    effectiveTaxRate: annualIncome > 0 ? (taxLiability / annualIncome * 100).toFixed(2) : 0,
+    deductionUtilization: {
+      section80C: Math.min(currentDeductions.section80C, 150000),
+      section80D: Math.min(currentDeductions.section80D, 25000),
+      section80CCD1B: Math.min(currentDeductions.section80CCD1B, 50000),
+      total: currentDeductions.total
+    }
+  };
+};
+
+/**
+ * Calculate optimized tax scenario
+ */
+const calculateOptimizedTaxScenario = (taxPlanningData, aiRecommendations) => {
+  const annualIncome = taxPlanningData.incomeAnalysis.annualIncome || 0;
+  const currentDeductions = calculateCurrentDeductions(taxPlanningData);
+  const additionalDeductions = calculateAdditionalDeductions(aiRecommendations);
+  const optimizedDeductions = {
+    section80C: Math.min(currentDeductions.section80C + additionalDeductions.section80C, 150000),
+    section80D: Math.min(currentDeductions.section80D + additionalDeductions.section80D, 25000),
+    section80CCD1B: Math.min(currentDeductions.section80CCD1B + additionalDeductions.section80CCD1B, 50000),
+    total: currentDeductions.total + additionalDeductions.total
+  };
+  
+  const taxableIncome = Math.max(0, annualIncome - optimizedDeductions.total);
+  const taxLiability = calculateTaxLiability(taxableIncome, taxPlanningData.personalInfo);
+  
+  return {
+    annualIncome: annualIncome,
+    optimizedDeductions: optimizedDeductions,
+    additionalDeductions: additionalDeductions,
+    taxableIncome: taxableIncome,
+    totalTaxLiability: taxLiability,
+    effectiveTaxRate: annualIncome > 0 ? (taxLiability / annualIncome * 100).toFixed(2) : 0,
+    deductionUtilization: {
+      section80C: optimizedDeductions.section80C,
+      section80D: optimizedDeductions.section80D,
+      section80CCD1B: optimizedDeductions.section80CCD1B,
+      total: optimizedDeductions.total
+    }
+  };
+};
+
+/**
+ * Calculate current deductions from client data
+ */
+const calculateCurrentDeductions = (taxPlanningData) => {
+  const investments = taxPlanningData.taxSavingInvestments;
+  
+  const section80C = Math.min(
+    (investments.section80C.ppf || 0) +
+    (investments.section80C.epf || 0) +
+    (investments.section80C.elss || 0) +
+    (investments.section80C.nsc || 0) +
+    (investments.section80C.lifeInsurance || 0) +
+    (investments.section80C.tuitionFees || 0) +
+    (investments.section80C.principalRepayment || 0),
+    150000
+  );
+  
+  const section80D = Math.min(
+    (investments.section80D.selfFamily || 0) +
+    (investments.section80D.parents || 0) +
+    (investments.section80D.seniorCitizen || 0),
+    25000
+  );
+  
+  const section80CCD1B = Math.min(investments.section80CCD1B.npsAdditional || 0, 50000);
+  
+  return {
+    section80C: section80C,
+    section80D: section80D,
+    section80CCD1B: section80CCD1B,
+    total: section80C + section80D + section80CCD1B
+  };
+};
+
+/**
+ * Calculate additional deductions from AI recommendations
+ */
+const calculateAdditionalDeductions = (aiRecommendations) => {
+  let additionalDeductions = {
+    section80C: 0,
+    section80D: 0,
+    section80CCD1B: 0,
+    total: 0
+  };
+  
+  aiRecommendations.recommendations?.forEach(rec => {
+    if (rec.category === 'deduction_optimization') {
+      if (rec.title.toLowerCase().includes('80c') || rec.title.toLowerCase().includes('ppf') || rec.title.toLowerCase().includes('elss')) {
+        additionalDeductions.section80C += rec.potentialSavings || 0;
+      } else if (rec.title.toLowerCase().includes('80d') || rec.title.toLowerCase().includes('health')) {
+        additionalDeductions.section80D += rec.potentialSavings || 0;
+      } else if (rec.title.toLowerCase().includes('nps') || rec.title.toLowerCase().includes('80ccd')) {
+        additionalDeductions.section80CCD1B += rec.potentialSavings || 0;
+      }
+    }
+  });
+  
+  additionalDeductions.total = additionalDeductions.section80C + additionalDeductions.section80D + additionalDeductions.section80CCD1B;
+  
+  return additionalDeductions;
+};
+
+/**
+ * Calculate tax liability based on income and personal info
+ */
+const calculateTaxLiability = (taxableIncome, personalInfo) => {
+  const age = personalInfo?.dateOfBirth ? 
+    new Date().getFullYear() - new Date(personalInfo.dateOfBirth).getFullYear() : 30;
+  
+  let tax = 0;
+  
+  if (age >= 80) {
+    // Super Senior Citizen (80+ years)
+    if (taxableIncome > 1000000) tax += (taxableIncome - 1000000) * 0.3;
+    if (taxableIncome > 500000) tax += Math.min(taxableIncome - 500000, 500000) * 0.2;
+  } else if (age >= 60) {
+    // Senior Citizen (60-79 years)
+    if (taxableIncome > 1000000) tax += (taxableIncome - 1000000) * 0.3;
+    if (taxableIncome > 500000) tax += Math.min(taxableIncome - 500000, 500000) * 0.2;
+    if (taxableIncome > 300000) tax += Math.min(taxableIncome - 300000, 200000) * 0.1;
+  } else {
+    // Normal taxpayer
+    if (taxableIncome > 1000000) tax += (taxableIncome - 1000000) * 0.3;
+    if (taxableIncome > 500000) tax += Math.min(taxableIncome - 500000, 500000) * 0.2;
+    if (taxableIncome > 250000) tax += Math.min(taxableIncome - 250000, 250000) * 0.1;
+  }
+  
+  // Apply rebate 87A if applicable
+  if (taxableIncome <= 500000) {
+    tax = Math.max(0, tax - 12500);
+  }
+  
+  // Add 4% cess
+  tax += tax * 0.04;
+  
+  return Math.round(tax);
+};
+
+/**
+ * Generate chart data for visualizations
+ */
+const generateChartData = (currentScenario, optimizedScenario, aiRecommendations) => {
+  return {
+    taxLiabilityComparison: {
+      type: 'bar',
+      title: 'Tax Liability: Before vs After',
+      data: {
+        labels: ['Current Tax', 'Optimized Tax', 'Savings'],
+        datasets: [{
+          label: 'Amount (₹)',
+          data: [
+            currentScenario.totalTaxLiability,
+            optimizedScenario.totalTaxLiability,
+            currentScenario.totalTaxLiability - optimizedScenario.totalTaxLiability
+          ],
+          backgroundColor: ['#ef4444', '#10b981', '#3b82f6'],
+          borderColor: ['#dc2626', '#059669', '#2563eb'],
+          borderWidth: 2
+        }]
+      }
+    },
+    deductionUtilization: {
+      type: 'doughnut',
+      title: 'Deduction Utilization',
+      data: {
+        labels: ['Section 80C', 'Section 80D', 'Section 80CCD(1B)', 'Unused'],
+        datasets: [{
+          data: [
+            optimizedScenario.deductionUtilization.section80C,
+            optimizedScenario.deductionUtilization.section80D,
+            optimizedScenario.deductionUtilization.section80CCD1B,
+            Math.max(0, 225000 - optimizedScenario.deductionUtilization.total)
+          ],
+          backgroundColor: ['#8b5cf6', '#06b6d4', '#f59e0b', '#e5e7eb'],
+          borderWidth: 2
+        }]
+      }
+    },
+    savingsBreakdown: {
+      type: 'pie',
+      title: 'Savings by Category',
+      data: {
+        labels: aiRecommendations.recommendations?.map(r => r.title) || [],
+        datasets: [{
+          data: aiRecommendations.recommendations?.map(r => r.potentialSavings) || [],
+          backgroundColor: [
+            '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', 
+            '#3b82f6', '#8b5cf6', '#ec4899', '#84cc16', '#f59e0b'
+          ],
+          borderWidth: 2
+        }]
+      }
+    },
+    implementationTimeline: {
+      type: 'line',
+      title: 'Implementation Timeline',
+      data: {
+        labels: ['Month 1', 'Month 2', 'Month 3', 'Month 6', 'Month 12'],
+        datasets: [{
+          label: 'Cumulative Savings (₹)',
+          data: [0, 5000, 15000, 25000, 35000], // This would be calculated based on recommendations
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.4
+        }]
+      }
+    }
+  };
+};
+
+/**
+ * Generate implementation timeline
+ */
+const generateImplementationTimeline = (aiRecommendations) => {
+  const timeline = [];
+  const currentDate = new Date();
+  
+  aiRecommendations.recommendations?.forEach((rec, index) => {
+    const deadline = rec.deadline ? new Date(rec.deadline) : new Date(currentDate.getTime() + (30 * (index + 1) * 24 * 60 * 60 * 1000));
+    
+    timeline.push({
+      id: index + 1,
+      title: rec.title,
+      description: rec.description,
+      priority: rec.priority,
+      deadline: deadline.toISOString().split('T')[0],
+      potentialSavings: rec.potentialSavings,
+      status: 'pending',
+      category: rec.category,
+      riskLevel: rec.riskLevel
+    });
+  });
+  
+  return timeline.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+};
+
+/**
+ * Calculate implementation time
+ */
+const calculateImplementationTime = (aiRecommendations) => {
+  const recommendations = aiRecommendations.recommendations || [];
+  if (recommendations.length === 0) return '0 months';
+  
+  const deadlines = recommendations.map(r => r.deadline).filter(d => d);
+  if (deadlines.length === 0) return '3-6 months';
+  
+  const maxDeadline = new Date(Math.max(...deadlines.map(d => new Date(d))));
+  const currentDate = new Date();
+  const diffMonths = (maxDeadline.getFullYear() - currentDate.getFullYear()) * 12 + 
+                     (maxDeadline.getMonth() - currentDate.getMonth());
+  
+  return `${Math.max(1, diffMonths)} months`;
+};
+
+/**
+ * Calculate overall risk level
+ */
+const calculateOverallRiskLevel = (aiRecommendations) => {
+  const recommendations = aiRecommendations.recommendations || [];
+  if (recommendations.length === 0) return 'low';
+  
+  const riskCounts = recommendations.reduce((acc, rec) => {
+    acc[rec.riskLevel] = (acc[rec.riskLevel] || 0) + 1;
+    return acc;
+  }, {});
+  
+  if (riskCounts.high > 0) return 'high';
+  if (riskCounts.medium > 0) return 'medium';
+  return 'low';
 };
 
 module.exports = {

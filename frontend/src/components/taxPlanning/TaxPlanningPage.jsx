@@ -137,9 +137,13 @@ function TaxPlanningPage() {
       });
       
       if (response.data.success) {
-        setExistingTaxPlanning(response.data.data.taxPlanning);
+        const taxPlanningData = response.data.data.taxPlanning;
+        setExistingTaxPlanning(taxPlanningData);
         toast.success('AI recommendations generated successfully!');
-        console.log('✅ [Tax Planning AI] Recommendations generated');
+        console.log('✅ [Tax Planning AI] Recommendations generated:', {
+          recommendationsCount: taxPlanningData.aiRecommendations?.recommendations?.length || 0,
+          totalSavings: taxPlanningData.aiRecommendations?.totalPotentialSavings || 0
+        });
       } else {
         throw new Error(response.data.message || 'Failed to generate AI recommendations');
       }
@@ -162,9 +166,12 @@ function TaxPlanningPage() {
       });
       
       if (response.data.success) {
-        setExistingTaxPlanning(response.data.data.taxPlanning);
+        const updatedTaxPlanning = response.data.data.taxPlanning;
+        setExistingTaxPlanning(updatedTaxPlanning);
         toast.success('Manual inputs saved successfully!');
-        console.log('✅ [Tax Planning Manual] Inputs saved');
+        console.log('✅ [Tax Planning Manual] Inputs saved:', {
+          recommendationsCount: updatedTaxPlanning.manualAdvisorInputs?.recommendations?.length || 0
+        });
       } else {
         throw new Error(response.data.message || 'Failed to save manual inputs');
       }
@@ -240,44 +247,46 @@ function TaxPlanningPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
+            <div className="flex items-center min-w-0 flex-1">
               <button
                 onClick={() => navigate(-1)}
-                className="mr-4 p-2 text-gray-400 hover:text-gray-600"
+                className="mr-4 p-2 text-gray-400 hover:text-gray-600 flex-shrink-0"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <div className="flex items-center">
-                <Calculator className="h-8 w-8 text-green-600 mr-3" />
-                <div>
-                  <h1 className="text-xl font-semibold text-gray-900">Tax Planning</h1>
-                  <p className="text-sm text-gray-500">{clientInfo?.name || 'Loading...'}</p>
+              <div className="flex items-center min-w-0">
+                <Calculator className="h-8 w-8 text-green-600 mr-3 flex-shrink-0" />
+                <div className="min-w-0">
+                  <h1 className="text-xl font-semibold text-gray-900 truncate">Tax Planning</h1>
+                  <p className="text-sm text-gray-500 truncate">{clientInfo?.name || 'Loading...'}</p>
                 </div>
               </div>
             </div>
             
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 flex-shrink-0">
               <button
                 onClick={generateAIRecommendations}
                 disabled={generatingAI}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="hidden sm:flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
               >
                 {generatingAI ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
                   <Brain className="h-4 w-4 mr-2" />
                 )}
-                Generate AI Recommendations
+                <span className="hidden lg:inline">Generate AI Recommendations</span>
+                <span className="lg:hidden">AI Recs</span>
               </button>
               
               <button
                 onClick={fetchTaxPlanningData}
-                className="p-2 text-gray-400 hover:text-gray-600"
+                className="p-2 text-gray-400 hover:text-gray-600 flex-shrink-0"
+                title="Refresh data"
               >
                 <RefreshCw className="h-5 w-5" />
               </button>
@@ -311,21 +320,22 @@ function TaxPlanningPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow-sm border">
           <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8 px-6">
+            <nav className="-mb-px flex space-x-2 sm:space-x-4 lg:space-x-8 px-4 sm:px-6 overflow-x-auto">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm ${
+                    className={`flex items-center py-4 px-1 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
                       activeTab === tab.id
                         ? 'border-green-500 text-green-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    <Icon className="h-4 w-4 mr-2" />
-                    {tab.label}
+                    <Icon className="h-4 w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                   </button>
                 );
               })}
@@ -333,25 +343,25 @@ function TaxPlanningPage() {
           </div>
 
           {/* Tab Content */}
-          <div className="p-6">
+          <div className="p-4 sm:p-6 overflow-x-auto">
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 {/* Personal Information Card */}
-                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <User className="h-5 w-5 mr-2" />
                     Personal Information
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="min-w-0">
                       <label className="block text-sm font-medium text-gray-700">PAN Number</label>
-                      <p className="text-gray-900">{personalInfo?.panNumber || 'Not provided'}</p>
+                      <p className="text-gray-900 truncate">{personalInfo?.panNumber || 'Not provided'}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="block text-sm font-medium text-gray-700">Marital Status</label>
-                      <p className="text-gray-900">{personalInfo?.maritalStatus || 'Not specified'}</p>
+                      <p className="text-gray-900 truncate">{personalInfo?.maritalStatus || 'Not specified'}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="block text-sm font-medium text-gray-700">Dependents</label>
                       <p className="text-gray-900">{personalInfo?.numberOfDependents || 0}</p>
                     </div>
@@ -359,76 +369,76 @@ function TaxPlanningPage() {
                 </div>
 
                 {/* Income Analysis Card */}
-                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <DollarSign className="h-5 w-5 mr-2" />
                     Income Analysis
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-green-50 p-4 rounded border border-green-200">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-green-50 p-4 rounded border border-green-200 min-w-0">
                       <p className="text-sm text-green-700">Annual Income</p>
-                      <p className="text-xl font-bold text-green-800">{formatCurrency(incomeAnalysis?.annualIncome || 0)}</p>
+                      <p className="text-lg sm:text-xl font-bold text-green-800 truncate">{formatCurrency(incomeAnalysis?.annualIncome || 0)}</p>
                     </div>
-                    <div className="bg-blue-50 p-4 rounded border border-blue-200">
+                    <div className="bg-blue-50 p-4 rounded border border-blue-200 min-w-0">
                       <p className="text-sm text-blue-700">Monthly Income</p>
-                      <p className="text-xl font-bold text-blue-800">{formatCurrency(incomeAnalysis?.totalMonthlyIncome || 0)}</p>
+                      <p className="text-lg sm:text-xl font-bold text-blue-800 truncate">{formatCurrency(incomeAnalysis?.totalMonthlyIncome || 0)}</p>
                     </div>
-                    <div className="bg-purple-50 p-4 rounded border border-purple-200">
+                    <div className="bg-purple-50 p-4 rounded border border-purple-200 min-w-0">
                       <p className="text-sm text-purple-700">Income Type</p>
-                      <p className="text-lg font-bold text-purple-800">{incomeAnalysis?.incomeType || 'Not specified'}</p>
+                      <p className="text-base sm:text-lg font-bold text-purple-800 truncate">{incomeAnalysis?.incomeType || 'Not specified'}</p>
                     </div>
-                    <div className="bg-orange-50 p-4 rounded border border-orange-200">
+                    <div className="bg-orange-50 p-4 rounded border border-orange-200 min-w-0">
                       <p className="text-sm text-orange-700">Additional Income</p>
-                      <p className="text-xl font-bold text-orange-800">{formatCurrency(incomeAnalysis?.additionalIncome || 0)}</p>
+                      <p className="text-lg sm:text-xl font-bold text-orange-800 truncate">{formatCurrency(incomeAnalysis?.additionalIncome || 0)}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Tax-Saving Investments Card */}
-                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <TrendingUp className="h-5 w-5 mr-2" />
                     Current Tax-Saving Investments
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="min-w-0">
                       <label className="block text-sm font-medium text-gray-700">Section 80C (PPF)</label>
-                      <p className="text-lg font-bold text-green-600">{formatCurrency(taxSavingInvestments?.section80C?.ppf || 0)}</p>
+                      <p className="text-base sm:text-lg font-bold text-green-600 truncate">{formatCurrency(taxSavingInvestments?.section80C?.ppf || 0)}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="block text-sm font-medium text-gray-700">Section 80C (EPF)</label>
-                      <p className="text-lg font-bold text-green-600">{formatCurrency(taxSavingInvestments?.section80C?.epf || 0)}</p>
+                      <p className="text-base sm:text-lg font-bold text-green-600 truncate">{formatCurrency(taxSavingInvestments?.section80C?.epf || 0)}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="block text-sm font-medium text-gray-700">Section 80C (ELSS)</label>
-                      <p className="text-lg font-bold text-green-600">{formatCurrency(taxSavingInvestments?.section80C?.elss || 0)}</p>
+                      <p className="text-base sm:text-lg font-bold text-green-600 truncate">{formatCurrency(taxSavingInvestments?.section80C?.elss || 0)}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="block text-sm font-medium text-gray-700">Section 80D (Health Insurance)</label>
-                      <p className="text-lg font-bold text-blue-600">{formatCurrency(taxSavingInvestments?.section80D?.selfFamily || 0)}</p>
+                      <p className="text-base sm:text-lg font-bold text-blue-600 truncate">{formatCurrency(taxSavingInvestments?.section80D?.selfFamily || 0)}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="block text-sm font-medium text-gray-700">Section 80CCD(1B) (NPS)</label>
-                      <p className="text-lg font-bold text-purple-600">{formatCurrency(taxSavingInvestments?.section80CCD1B?.npsAdditional || 0)}</p>
+                      <p className="text-base sm:text-lg font-bold text-purple-600 truncate">{formatCurrency(taxSavingInvestments?.section80CCD1B?.npsAdditional || 0)}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="block text-sm font-medium text-gray-700">Section 24B (Home Loan Interest)</label>
-                      <p className="text-lg font-bold text-orange-600">{formatCurrency(taxSavingInvestments?.section24B?.homeLoanInterest || 0)}</p>
+                      <p className="text-base sm:text-lg font-bold text-orange-600 truncate">{formatCurrency(taxSavingInvestments?.section24B?.homeLoanInterest || 0)}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Data Completeness */}
-                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Completeness</h3>
                   <div className="flex items-center">
-                    <div className="flex-1 bg-gray-200 rounded-full h-3 mr-4">
+                    <div className="flex-1 bg-gray-200 rounded-full h-3 mr-4 min-w-0">
                       <div 
                         className="bg-blue-600 h-3 rounded-full transition-all duration-300" 
                         style={{ width: `${dataCompleteness || 0}%` }}
                       ></div>
                     </div>
-                    <span className="text-lg font-bold text-blue-600">{dataCompleteness || 0}%</span>
+                    <span className="text-lg font-bold text-blue-600 flex-shrink-0">{dataCompleteness || 0}%</span>
                   </div>
                   <p className="text-sm text-gray-600 mt-2">
                     Complete client information for better tax planning recommendations
@@ -439,30 +449,30 @@ function TaxPlanningPage() {
 
             {activeTab === 'income' && (
               <div className="space-y-6">
-                <div className="bg-green-50 p-6 rounded-lg border border-green-200">
+                <div className="bg-green-50 p-4 sm:p-6 rounded-lg border border-green-200">
                   <h3 className="text-lg font-semibold text-green-900 mb-4">Income Analysis</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-white p-4 rounded border">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-white p-4 rounded border min-w-0">
                       <h4 className="font-medium text-gray-900">Monthly Income</h4>
-                      <p className="text-2xl font-bold text-green-600">
+                      <p className="text-xl sm:text-2xl font-bold text-green-600 truncate">
                         {formatCurrency(incomeAnalysis?.monthlyIncome || 0)}
                       </p>
                     </div>
-                    <div className="bg-white p-4 rounded border">
+                    <div className="bg-white p-4 rounded border min-w-0">
                       <h4 className="font-medium text-gray-900">Annual Income</h4>
-                      <p className="text-2xl font-bold text-green-600">
+                      <p className="text-xl sm:text-2xl font-bold text-green-600 truncate">
                         {formatCurrency(incomeAnalysis?.annualIncome || 0)}
                       </p>
                     </div>
-                    <div className="bg-white p-4 rounded border">
+                    <div className="bg-white p-4 rounded border min-w-0">
                       <h4 className="font-medium text-gray-900">Income Type</h4>
-                      <p className="text-lg text-gray-700">
+                      <p className="text-base sm:text-lg text-gray-700 truncate">
                         {incomeAnalysis?.incomeType || 'Not specified'}
                       </p>
                     </div>
-                    <div className="bg-white p-4 rounded border">
+                    <div className="bg-white p-4 rounded border min-w-0">
                       <h4 className="font-medium text-gray-900">Additional Income</h4>
-                      <p className="text-lg font-bold text-blue-600">
+                      <p className="text-base sm:text-lg font-bold text-blue-600 truncate">
                         {formatCurrency(incomeAnalysis?.additionalIncome || 0)}
                       </p>
                     </div>
@@ -472,35 +482,362 @@ function TaxPlanningPage() {
             )}
 
             {activeTab === 'deductions' && (
-              <DeductionsTab
-                taxSavingInvestments={taxSavingInvestments}
-                formatCurrency={formatCurrency}
-                formatPercentage={formatPercentage}
-              />
+              <div className="space-y-6">
+                <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <TrendingDown className="h-5 w-5 mr-2" />
+                    Tax Deductions Analysis
+                  </h3>
+                  
+                  {/* Section 80C Analysis */}
+                  <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-800 mb-3">Section 80C Deductions (₹1.5L Limit)</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="bg-green-50 p-4 rounded border border-green-200 min-w-0">
+                        <label className="block text-sm font-medium text-green-700">PPF</label>
+                        <p className="text-base sm:text-lg font-bold text-green-800 truncate">{formatCurrency(taxSavingInvestments?.section80C?.ppf || 0)}</p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded border border-green-200 min-w-0">
+                        <label className="block text-sm font-medium text-green-700">EPF</label>
+                        <p className="text-base sm:text-lg font-bold text-green-800 truncate">{formatCurrency(taxSavingInvestments?.section80C?.epf || 0)}</p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded border border-green-200 min-w-0">
+                        <label className="block text-sm font-medium text-green-700">ELSS</label>
+                        <p className="text-base sm:text-lg font-bold text-green-800 truncate">{formatCurrency(taxSavingInvestments?.section80C?.elss || 0)}</p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded border border-green-200 min-w-0">
+                        <label className="block text-sm font-medium text-green-700">NSC</label>
+                        <p className="text-base sm:text-lg font-bold text-green-800 truncate">{formatCurrency(taxSavingInvestments?.section80C?.nsc || 0)}</p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded border border-green-200 min-w-0">
+                        <label className="block text-sm font-medium text-green-700">Life Insurance</label>
+                        <p className="text-base sm:text-lg font-bold text-green-800 truncate">{formatCurrency(taxSavingInvestments?.section80C?.lifeInsurance || 0)}</p>
+                      </div>
+                      <div className="bg-green-50 p-4 rounded border border-green-200 min-w-0">
+                        <label className="block text-sm font-medium text-green-700">Principal Repayment</label>
+                        <p className="text-base sm:text-lg font-bold text-green-800 truncate">{formatCurrency(taxSavingInvestments?.section80C?.principalRepayment || 0)}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-blue-800 text-sm sm:text-base">Total 80C Utilization:</span>
+                        <span className="text-base sm:text-lg font-bold text-blue-900 truncate ml-2">
+                          {formatCurrency(taxSavingInvestments?.section80C?.total80C || 0)} / ₹1,50,000
+                        </span>
+                      </div>
+                      <div className="mt-2">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full" 
+                            style={{ width: `${Math.min(((taxSavingInvestments?.section80C?.total80C || 0) / 150000) * 100, 100)}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-sm text-blue-600 mt-1">
+                          {(((taxSavingInvestments?.section80C?.total80C || 0) / 150000) * 100).toFixed(1)}% utilized
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 80D Analysis */}
+                  <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-800 mb-3">Section 80D - Medical Insurance</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="bg-blue-50 p-4 rounded border border-blue-200 min-w-0">
+                        <label className="block text-sm font-medium text-blue-700">Self & Family</label>
+                        <p className="text-base sm:text-lg font-bold text-blue-800 truncate">{formatCurrency(taxSavingInvestments?.section80D?.selfFamily || 0)}</p>
+                      </div>
+                      <div className="bg-blue-50 p-4 rounded border border-blue-200 min-w-0">
+                        <label className="block text-sm font-medium text-blue-700">Parents</label>
+                        <p className="text-base sm:text-lg font-bold text-blue-800 truncate">{formatCurrency(taxSavingInvestments?.section80D?.parents || 0)}</p>
+                      </div>
+                      <div className="bg-blue-50 p-4 rounded border border-blue-200 min-w-0">
+                        <label className="block text-sm font-medium text-blue-700">Senior Citizen</label>
+                        <p className="text-base sm:text-lg font-bold text-blue-800 truncate">{formatCurrency(taxSavingInvestments?.section80D?.seniorCitizen || 0)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Other Deductions */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="bg-purple-50 p-4 rounded border border-purple-200 min-w-0">
+                      <h4 className="font-semibold text-purple-800 mb-2 text-sm sm:text-base">Section 80CCD(1B) - NPS Additional</h4>
+                      <p className="text-base sm:text-lg font-bold text-purple-900 truncate">{formatCurrency(taxSavingInvestments?.section80CCD1B?.npsAdditional || 0)}</p>
+                      <p className="text-sm text-purple-600">Limit: ₹50,000</p>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded border border-orange-200 min-w-0">
+                      <h4 className="font-semibold text-orange-800 mb-2 text-sm sm:text-base">Section 24B - Home Loan Interest</h4>
+                      <p className="text-base sm:text-lg font-bold text-orange-900 truncate">{formatCurrency(taxSavingInvestments?.section24B?.homeLoanInterest || 0)}</p>
+                      <p className="text-sm text-orange-600">Limit: ₹2,00,000</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {activeTab === 'capital-gains' && (
-              <CapitalGainsTab
-                capitalGainsAnalysis={capitalGainsAnalysis}
-                formatCurrency={formatCurrency}
-                formatPercentage={formatPercentage}
-              />
+              <div className="space-y-6">
+                <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <TrendingUp className="h-5 w-5 mr-2" />
+                    Capital Gains Analysis
+                  </h3>
+                  
+                  {/* Equity Investments */}
+                  <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-800 mb-3">Equity Investments</h4>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                      <div className="bg-green-50 p-4 rounded border border-green-200 min-w-0">
+                        <h5 className="font-semibold text-green-800 mb-2">Direct Stocks</h5>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-green-700 text-sm">Current Value:</span>
+                            <span className="font-bold text-green-800 text-sm truncate ml-2">{formatCurrency(capitalGainsAnalysis?.equityInvestments?.directStocks?.currentValue || 0)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-green-700 text-sm">Purchase Value:</span>
+                            <span className="font-bold text-green-800 text-sm truncate ml-2">{formatCurrency(capitalGainsAnalysis?.equityInvestments?.directStocks?.purchaseValue || 0)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-green-700 text-sm">LTCG:</span>
+                            <span className="font-bold text-green-800 text-sm truncate ml-2">{formatCurrency(capitalGainsAnalysis?.equityInvestments?.directStocks?.ltcg || 0)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-green-700 text-sm">STCG:</span>
+                            <span className="font-bold text-green-800 text-sm truncate ml-2">{formatCurrency(capitalGainsAnalysis?.equityInvestments?.directStocks?.stcg || 0)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-blue-50 p-4 rounded border border-blue-200 min-w-0">
+                        <h5 className="font-semibold text-blue-800 mb-2">Mutual Funds</h5>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-blue-700 text-sm">Current Value:</span>
+                            <span className="font-bold text-blue-800 text-sm truncate ml-2">{formatCurrency(capitalGainsAnalysis?.equityInvestments?.mutualFunds?.currentValue || 0)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-blue-700 text-sm">Purchase Value:</span>
+                            <span className="font-bold text-blue-800 text-sm truncate ml-2">{formatCurrency(capitalGainsAnalysis?.equityInvestments?.mutualFunds?.purchaseValue || 0)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-blue-700 text-sm">LTCG:</span>
+                            <span className="font-bold text-blue-800 text-sm truncate ml-2">{formatCurrency(capitalGainsAnalysis?.equityInvestments?.mutualFunds?.ltcg || 0)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-blue-700 text-sm">STCG:</span>
+                            <span className="font-bold text-blue-800 text-sm truncate ml-2">{formatCurrency(capitalGainsAnalysis?.equityInvestments?.mutualFunds?.stcg || 0)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Debt Investments */}
+                  <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-800 mb-3">Debt Investments</h4>
+                    <div className="bg-purple-50 p-4 rounded border border-purple-200">
+                      <h5 className="font-semibold text-purple-800 mb-2">Bonds & Debentures</h5>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-purple-700">Current Value:</span>
+                          <span className="font-bold text-purple-800">{formatCurrency(capitalGainsAnalysis?.debtInvestments?.bondsDebentures?.currentValue || 0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-purple-700">Purchase Value:</span>
+                          <span className="font-bold text-purple-800">{formatCurrency(capitalGainsAnalysis?.debtInvestments?.bondsDebentures?.purchaseValue || 0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-purple-700">LTCG:</span>
+                          <span className="font-bold text-purple-800">{formatCurrency(capitalGainsAnalysis?.debtInvestments?.bondsDebentures?.ltcg || 0)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-purple-700">STCG:</span>
+                          <span className="font-bold text-purple-800">{formatCurrency(capitalGainsAnalysis?.debtInvestments?.bondsDebentures?.stcg || 0)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Real Estate */}
+                  <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-800 mb-3">Real Estate Properties</h4>
+                    {capitalGainsAnalysis?.realEstate?.properties && capitalGainsAnalysis.realEstate.properties.length > 0 ? (
+                      <div className="space-y-3">
+                        {capitalGainsAnalysis.realEstate.properties.map((property, index) => (
+                          <div key={index} className="bg-orange-50 p-4 rounded border border-orange-200">
+                            <h5 className="font-semibold text-orange-800 mb-2">{property.propertyType || 'Property'}</h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-orange-700">Current Value:</span>
+                                  <span className="font-bold text-orange-800">{formatCurrency(property.currentValue || 0)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-orange-700">Purchase Value:</span>
+                                  <span className="font-bold text-orange-800">{formatCurrency(property.purchaseValue || 0)}</span>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-orange-700">LTCG:</span>
+                                  <span className="font-bold text-orange-800">{formatCurrency(property.ltcg || 0)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-orange-700">Holding Period:</span>
+                                  <span className="font-bold text-orange-800">{property.holdingPeriod || 'N/A'}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 p-4 rounded border border-gray-200 text-center">
+                        <p className="text-gray-600">No real estate properties found</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Summary */}
+                  <div className="bg-gray-50 p-4 rounded border border-gray-200">
+                    <h4 className="font-semibold text-gray-800 mb-3">Capital Gains Summary</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600">Total Long Term Capital Gains</p>
+                        <p className="text-xl font-bold text-green-600">{formatCurrency(capitalGainsAnalysis?.totalLTCG || 0)}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600">Total Short Term Capital Gains</p>
+                        <p className="text-xl font-bold text-blue-600">{formatCurrency(capitalGainsAnalysis?.totalSTCG || 0)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {activeTab === 'business' && (
-              <BusinessTab
-                businessTaxConsiderations={businessTaxConsiderations}
-                formatCurrency={formatCurrency}
-              />
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Briefcase className="h-5 w-5 mr-2" />
+                    Business Tax Considerations
+                  </h3>
+                  
+                  {/* Business Income */}
+                  <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-800 mb-3">Business Income</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-green-50 p-4 rounded border border-green-200">
+                        <h5 className="font-semibold text-green-800 mb-2">Business Income</h5>
+                        <p className="text-2xl font-bold text-green-900">{formatCurrency(businessTaxConsiderations?.businessIncome || 0)}</p>
+                        <p className="text-sm text-green-600 mt-1">Annual business income</p>
+                      </div>
+                      <div className="bg-blue-50 p-4 rounded border border-blue-200">
+                        <h5 className="font-semibold text-blue-800 mb-2">Business Expenses</h5>
+                        <p className="text-2xl font-bold text-blue-900">{formatCurrency(businessTaxConsiderations?.businessExpenses || 0)}</p>
+                        <p className="text-sm text-blue-600 mt-1">Deductible business expenses</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Professional Income */}
+                  <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-800 mb-3">Professional Income</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-purple-50 p-4 rounded border border-purple-200">
+                        <h5 className="font-semibold text-purple-800 mb-2">Professional Income</h5>
+                        <p className="text-2xl font-bold text-purple-900">{formatCurrency(businessTaxConsiderations?.professionalIncome || 0)}</p>
+                        <p className="text-sm text-purple-600 mt-1">Annual professional income</p>
+                      </div>
+                      <div className="bg-orange-50 p-4 rounded border border-orange-200">
+                        <h5 className="font-semibold text-orange-800 mb-2">Professional Expenses</h5>
+                        <p className="text-2xl font-bold text-orange-900">{formatCurrency(businessTaxConsiderations?.professionalExpenses || 0)}</p>
+                        <p className="text-sm text-orange-600 mt-1">Deductible professional expenses</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Depreciation */}
+                  <div className="mb-6">
+                    <h4 className="text-md font-semibold text-gray-800 mb-3">Depreciation</h4>
+                    <div className="bg-gray-50 p-4 rounded border border-gray-200">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-gray-800">Total Depreciation</span>
+                        <span className="text-xl font-bold text-gray-900">{formatCurrency(businessTaxConsiderations?.depreciation || 0)}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">Depreciation on business assets</p>
+                    </div>
+                  </div>
+
+                  {/* Presumptive Tax */}
+                  {businessTaxConsiderations?.presumptiveTax?.applicable && (
+                    <div className="mb-6">
+                      <h4 className="text-md font-semibold text-gray-800 mb-3">Presumptive Tax</h4>
+                      <div className="bg-yellow-50 p-4 rounded border border-yellow-200">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-yellow-700">Section:</span>
+                            <span className="font-bold text-yellow-800">{businessTaxConsiderations.presumptiveTax.section || 'N/A'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-yellow-700">Presumptive Income:</span>
+                            <span className="font-bold text-yellow-800">{formatCurrency(businessTaxConsiderations.presumptiveTax.income || 0)}</span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-yellow-600 mt-2">
+                          Presumptive taxation scheme is applicable for this business
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tax Calculation Summary */}
+                  <div className="bg-gray-50 p-4 rounded border border-gray-200">
+                    <h4 className="font-semibold text-gray-800 mb-3">Tax Calculation Summary</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">Total Business Income:</span>
+                        <span className="font-bold text-gray-900">{formatCurrency((businessTaxConsiderations?.businessIncome || 0) + (businessTaxConsiderations?.professionalIncome || 0))}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-700">Total Deductible Expenses:</span>
+                        <span className="font-bold text-gray-900">{formatCurrency((businessTaxConsiderations?.businessExpenses || 0) + (businessTaxConsiderations?.professionalExpenses || 0) + (businessTaxConsiderations?.depreciation || 0))}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-2">
+                        <span className="font-medium text-gray-800">Net Taxable Business Income:</span>
+                        <span className="text-lg font-bold text-green-600">
+                          {formatCurrency(
+                            ((businessTaxConsiderations?.businessIncome || 0) + (businessTaxConsiderations?.professionalIncome || 0)) - 
+                            ((businessTaxConsiderations?.businessExpenses || 0) + (businessTaxConsiderations?.professionalExpenses || 0) + (businessTaxConsiderations?.depreciation || 0))
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {activeTab === 'ai-recommendations' && (
               <div className="space-y-6">
-                <div className="bg-white p-6 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <Brain className="h-5 w-5 mr-2" />
-                    AI Tax Planning Recommendations
-                  </h3>
+                <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                      <Brain className="h-5 w-5 mr-2" />
+                      AI Tax Planning Recommendations
+                    </h3>
+                    {existingTaxPlanning?.aiRecommendations && (
+                      <button
+                        onClick={fetchTaxPlanningData}
+                        className="p-2 text-gray-400 hover:text-gray-600"
+                        title="Refresh recommendations"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                   
                   {existingTaxPlanning?.aiRecommendations ? (
                     <div className="space-y-4">
@@ -508,7 +845,7 @@ function TaxPlanningPage() {
                       <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                         <h4 className="font-semibold text-blue-900 mb-2">AI Analysis Summary</h4>
                         <p className="text-blue-800">{existingTaxPlanning.aiRecommendations.summary}</p>
-                        <div className="mt-3 flex items-center justify-between">
+                        <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <span className="text-sm text-blue-600">
                             Confidence Score: {existingTaxPlanning.aiRecommendations.confidenceScore}%
                           </span>
@@ -523,30 +860,35 @@ function TaxPlanningPage() {
                         <h4 className="font-semibold text-gray-900">Detailed Recommendations</h4>
                         {existingTaxPlanning.aiRecommendations.recommendations?.map((rec, index) => (
                           <div key={index} className="bg-gray-50 p-4 rounded-lg border">
-                            <div className="flex items-start justify-between mb-2">
+                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 gap-2">
                               <h5 className="font-medium text-gray-900">{rec.title}</h5>
-                              <span className={`px-2 py-1 text-xs font-medium rounded ${
-                                rec.priority === 'high' ? 'bg-red-100 text-red-800' :
-                                rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-green-100 text-green-800'
-                              }`}>
-                                {rec.priority} priority
-                              </span>
-                            </div>
-                            <p className="text-gray-700 mb-3">{rec.description}</p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700">Potential Savings</label>
-                                <p className="text-lg font-bold text-green-600">{formatCurrency(rec.potentialSavings || 0)}</p>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700">Risk Level</label>
+                              <div className="flex gap-2">
+                                <span className={`px-2 py-1 text-xs font-medium rounded ${
+                                  rec.priority === 'high' ? 'bg-red-100 text-red-800' :
+                                  rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {rec.priority} priority
+                                </span>
                                 <span className={`px-2 py-1 text-xs font-medium rounded ${
                                   rec.riskLevel === 'low' ? 'bg-green-100 text-green-800' :
                                   rec.riskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
                                   'bg-red-100 text-red-800'
                                 }`}>
-                                  {rec.riskLevel}
+                                  {rec.riskLevel} risk
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-gray-700 mb-3">{rec.description}</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">Potential Savings</label>
+                                <p className="text-lg font-bold text-green-600">{formatCurrency(rec.potentialSavings || 0)}</p>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700">Category</label>
+                                <span className="text-sm text-gray-600 capitalize">
+                                  {rec.category?.replace('_', ' ') || 'General'}
                                 </span>
                               </div>
                             </div>
@@ -595,7 +937,7 @@ function TaxPlanningPage() {
 
             {activeTab === 'manual-inputs' && (
               <div className="space-y-6">
-                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <Edit className="h-5 w-5 mr-2" />
                     Manual Advisor Inputs
@@ -626,14 +968,14 @@ function TaxPlanningPage() {
                     {/* Recommendation Form */}
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <h4 className="font-semibold text-gray-900 mb-4">Add New Tax Planning Recommendation</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Recommendation Title</label>
                           <input
                             type="text"
                             name="title"
                             required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                             placeholder="e.g., Maximize Section 80C Deductions"
                           />
                         </div>
@@ -642,20 +984,20 @@ function TaxPlanningPage() {
                           <select
                             name="priority"
                             required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                           >
                             <option value="high">High</option>
                             <option value="medium">Medium</option>
                             <option value="low">Low</option>
                           </select>
                         </div>
-                        <div className="md:col-span-2">
+                        <div className="sm:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                           <textarea
                             name="description"
                             required
                             rows={3}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                             placeholder="Detailed description of the tax planning recommendation..."
                           />
                         </div>
@@ -664,7 +1006,7 @@ function TaxPlanningPage() {
                           <textarea
                             name="rationale"
                             rows={2}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                             placeholder="Why this recommendation is suitable for the client..."
                           />
                         </div>
@@ -673,7 +1015,7 @@ function TaxPlanningPage() {
                           <textarea
                             name="expectedOutcome"
                             rows={2}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                             placeholder="Expected tax savings or benefits..."
                           />
                         </div>
@@ -682,7 +1024,7 @@ function TaxPlanningPage() {
                           <textarea
                             name="implementationNotes"
                             rows={2}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                             placeholder="Step-by-step implementation guidance..."
                           />
                         </div>
@@ -691,7 +1033,7 @@ function TaxPlanningPage() {
                           <input
                             type="text"
                             name="timeline"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                             placeholder="e.g., Before March 31, 2024"
                           />
                         </div>
@@ -700,7 +1042,7 @@ function TaxPlanningPage() {
                           <input
                             type="text"
                             name="responsible"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                             placeholder="e.g., Client, Advisor, CA"
                           />
                         </div>
@@ -713,7 +1055,7 @@ function TaxPlanningPage() {
                       <textarea
                         name="notes"
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         placeholder="Any additional notes or considerations..."
                       />
                     </div>
@@ -724,7 +1066,7 @@ function TaxPlanningPage() {
                       <textarea
                         name="followUpActions"
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         placeholder="List follow-up actions (one per line)..."
                       />
                     </div>
@@ -735,7 +1077,7 @@ function TaxPlanningPage() {
                       <textarea
                         name="clientInstructions"
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         placeholder="Specific instructions for the client..."
                       />
                     </div>
@@ -745,14 +1087,15 @@ function TaxPlanningPage() {
                       <button
                         type="submit"
                         disabled={saving}
-                        className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                        className="flex items-center px-4 sm:px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm sm:text-base"
                       >
                         {saving ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
                         ) : (
                           <Save className="h-4 w-4 mr-2" />
                         )}
-                        Save Manual Inputs
+                        <span className="hidden sm:inline">Save Manual Inputs</span>
+                        <span className="sm:hidden">Save</span>
                       </button>
                     </div>
                   </form>
@@ -796,9 +1139,16 @@ function TaxPlanningPage() {
 
             {activeTab === 'compliance' && (
               <div className="space-y-6">
-                <div className="bg-white p-6 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Compliance & Filing</h3>
-                  <p className="text-gray-600">Compliance and filing information will be displayed here.</p>
+                <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <FileCheck className="h-5 w-5 mr-2" />
+                    Compliance & Filing
+                  </h3>
+                  <div className="text-center py-8">
+                    <FileCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">Compliance Dashboard</h4>
+                    <p className="text-gray-600">Tax compliance and filing information will be displayed here.</p>
+                  </div>
                 </div>
               </div>
             )}
