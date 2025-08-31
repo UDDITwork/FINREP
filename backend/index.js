@@ -225,6 +225,7 @@ app.use('/api/clients', require('./routes/clients'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/plans', require('./routes/plans'));
 app.use('/api/meetings', require('./routes/meetings'));
+app.use('/api/client-invitations', require('./routes/clientInvitations'));
 app.use('/api/loe', require('./routes/loe'));
 app.use('/api/loe-automation', require('./routes/loeAutomation'));
 app.use('/api/logs', require('./routes/logging'));
@@ -235,6 +236,7 @@ app.use('/api/transcriptions', require('./routes/transcriptions'));
 app.use('/api/enhanced-transcriptions', require('./routes/enhancedTranscriptionRoutes'));
 app.use('/api/transcripts', require('./routes/transcriptRouter'));
 app.use('/api/final-report', require('./routes/finalReport'));
+app.use('/api/estate-planning', require('./routes/estatePlanning'));
 
 // ============================================================================
 // 🆕 NEW: CLIENT REPORTS ROUTES (Comprehensive Client Reports)
@@ -430,6 +432,49 @@ try {
   });
 }
 
+// 🆕 NEW: ESTATE PLANNING ROUTES
+// ============================================================================
+
+// Add Estate Planning routes
+try {
+  console.log('🔍 Attempting to load estate planning routes...');
+  const estatePlanningRoutes = require('./routes/estatePlanning');
+  console.log('✅ Estate planning routes file loaded successfully');
+  app.use('/api/estate-planning', estatePlanningRoutes);
+  console.log('✅ Estate Planning API routes registered: /api/estate-planning/*');
+  
+  // Log Estate Planning system availability
+  comprehensiveLogger.logSystemEvent('ESTATE_PLANNING_SYSTEM_ENABLED', {
+    estatePlanningRoutes: [
+      '/api/estate-planning/client/:clientId'
+    ],
+    features: [
+      'Comprehensive Estate Planning Analysis',
+      'Financial Assets Analysis',
+      'Liabilities Assessment',
+      'Income & Cash Flow Analysis',
+      'Investment Portfolio Review',
+      'Risk Assessment',
+      'Personalized Recommendations',
+      'CAS Data Integration'
+    ],
+    timestamp: new Date().toISOString()
+  });
+  
+} catch (error) {
+  console.log('⚠️ Estate Planning routes not found - skipping (app will work without estate planning features)');
+  console.log('Error details:', error.message);
+  logger.warn('Estate Planning routes not available:', error.message);
+  
+  // Log that Estate Planning system is not available (but app continues working)
+  comprehensiveLogger.logSystemEvent('ESTATE_PLANNING_SYSTEM_DISABLED', {
+    reason: 'Estate Planning routes file not found',
+    impact: 'App will function normally without estate planning features',
+    error: error.message,
+    timestamp: new Date().toISOString()
+  });
+}
+
 // 🆕 NEW: VAULT ROUTES (Branding & Professional Details)
 // ============================================================================
 
@@ -595,7 +640,8 @@ comprehensiveLogger.logSystemEvent('API_ROUTES_INITIALIZED', {
     '/api/client-reports', // NEW: Client Reports routes
     '/api/transcriptions', // Transcription routes
     '/api/transcripts', // NEW: Enhanced Transcript routes
-    '/api/final-report' // Final Report routes
+    '/api/final-report', // Final Report routes
+    '/api/estate-planning' // NEW: Estate Planning routes
   ],
   timestamp: new Date().toISOString()
 });
@@ -662,6 +708,7 @@ app.use((req, res) => {
       admin: '/api/admin/*',
       plans: '/api/plans/*',
       meetings: '/api/meetings/*',
+      clientInvitations: '/api/client-invitations/*', // NEW: Client Invitations routes
       loe: '/api/loe/*',
       logs: '/api/logs/*',
       abTesting: '/api/ab-testing-suite-2/*',

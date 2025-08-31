@@ -11,7 +11,8 @@
     "test-cas-init": "node test-cas-parsing.js init",
     "test-cas-files": "node test-cas-parsing.js files",
     "lint": "eslint .",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "test:estate": "jest --testPathPattern=estate"
   },
   "dependencies": {
     "axios": "^1.11.0",
@@ -44,7 +45,12 @@
     "pdfjs-dist": "^5.3.93",
     "pdfreader": "^3.0.7",
     "winston": "^3.17.0",
-    "xss": "^1.0.14"
+    "xss": "^1.0.14",
+    "uuid": "^9.0.0",
+    "prom-client": "^15.0.0",
+    "pdfkit": "^0.13.0",
+    "exceljs": "^4.3.0",
+    "archiver": "^6.0.1"
   },
   "devDependencies": {
     "@types/node": "^20.5.0",

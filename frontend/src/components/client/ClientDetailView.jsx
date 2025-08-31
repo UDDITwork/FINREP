@@ -1275,33 +1275,45 @@ function ClientDetailView() {
                 <TrendingUp className="h-5 w-5 mr-2" />
                 Financial Planning Strategies
               </h2>
-              <button
-                onClick={() => {
-                  console.group('🚀 [ClientDetailView] Opening Plan Creation Modal');
-                  console.log('📋 Modal Trigger Data:', {
-                    clientId,
-                    clientName: clientName || `${client?.firstName} ${client?.lastName}`,
-                    hasClient: !!client,
-                    clientKeys: client ? Object.keys(client).slice(0, 10) : [],
-                    timestamp: new Date().toISOString()
-                  });
-                  console.log('👤 Client Data Being Passed:', {
-                    firstName: client?.firstName,
-                    lastName: client?.lastName,
-                    email: client?.email,
-                    hasFinancialData: !!(client?.totalMonthlyIncome || client?.totalMonthlyExpenses),
-                    hasAssets: !!client?.assets,
-                    hasDebts: !!client?.debtsAndLiabilities,
-                    dataSize: client ? JSON.stringify(client).length : 0
-                  });
-                  console.groupEnd();
-                  setShowPlanModal(true);
-                }}
-                className="flex items-center px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Create New Plan
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => {
+                    console.group('🚀 [ClientDetailView] Opening Plan Creation Modal');
+                    console.log('📋 Modal Trigger Data:', {
+                      clientId,
+                      clientName: clientName || `${client?.firstName} ${client?.lastName}`,
+                      hasClient: !!client,
+                      clientKeys: client ? Object.keys(client).slice(0, 10) : [],
+                      timestamp: new Date().toISOString()
+                    });
+                    console.log('👤 Client Data Being Passed:', {
+                      firstName: client?.firstName,
+                      lastName: client?.lastName,
+                      email: client?.email,
+                      hasFinancialData: !!(client?.totalMonthlyIncome || client?.totalMonthlyExpenses),
+                      hasAssets: !!client?.assets,
+                      hasDebts: !!client?.debtsAndLiabilities,
+                      dataSize: client ? JSON.stringify(client).length : 0
+                    });
+                    console.groupEnd();
+                    setShowPlanModal(true);
+                  }}
+                  className="flex items-center px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Create New Plan
+                </button>
+                <button
+                  onClick={() => {
+                    console.log('🏛️ [ClientDetailView] Opening Estate Planning for client:', clientId);
+                    navigate(`/estate-planning/${clientId}`);
+                  }}
+                  className="flex items-center px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <Building className="h-4 w-4 mr-1" />
+                  Estate Planning
+                </button>
+              </div>
             </div>
 
             <PlanHistory 

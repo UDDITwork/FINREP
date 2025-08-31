@@ -310,8 +310,8 @@ const ClientPDFReportsSection = ({ clientId, clientName, onOpenPlanModal }) => {
                     </Box>
                   }
                   secondary={
-                    <div style={{ marginTop: 8 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
+                    <Box component="span" sx={{ marginTop: 1, display: 'block' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, marginBottom: 1 }}>
                         <Typography variant="caption" component="span" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                           <TimeIcon sx={{ fontSize: 14 }} />
                           Generated: {new Date(report.generatedAt).toLocaleString()}
@@ -319,7 +319,7 @@ const ClientPDFReportsSection = ({ clientId, clientName, onOpenPlanModal }) => {
                         <Typography variant="caption" component="span">
                           Size: {formatFileSize(report.fileSize)}
                         </Typography>
-                      </div>
+                      </Box>
                       
                       {report.metadata?.contentSummary && (
                         <Typography variant="caption" component="span" display="block" color="text.secondary">
@@ -328,7 +328,7 @@ const ClientPDFReportsSection = ({ clientId, clientName, onOpenPlanModal }) => {
                           AI Recommendations: {report.metadata.contentSummary.hasRecommendations ? 'Yes' : 'No'}
                         </Typography>
                       )}
-                    </div>
+                    </Box>
                   }
                 />
                 <ListItemSecondaryAction>

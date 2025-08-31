@@ -466,6 +466,94 @@ export const clientAPI = {
     return response.data;
   },
 
+  // Get estate planning data for client
+  getEstatePlanningData: async (clientId) => {
+    console.log('🏛️ FETCHING ESTATE PLANNING DATA:', { clientId });
+    
+    const response = await api.get(`/estate-planning/client/${clientId}`);
+    
+    console.log('✅ ESTATE PLANNING DATA FETCHED:', {
+      clientId,
+      hasPersonalInfo: !!response.data.data?.clientInfo,
+      hasEstateData: !!response.data.data?.estatePlanningData,
+      hasRecommendations: !!response.data.data?.estatePlanningData?.recommendations
+    });
+    
+    return response.data;
+  },
+
+  // Get comprehensive estate information for client
+  getEstateInformation: async (clientId) => {
+    console.log('🏛️ FETCHING ESTATE INFORMATION:', { clientId });
+    
+    const response = await api.get(`/estate-planning/client/${clientId}/information`);
+    
+    console.log('✅ ESTATE INFORMATION FETCHED:', {
+      clientId,
+      hasEstateInfo: !!response.data.data?.estateInformation,
+      hasFamilyStructure: !!response.data.data?.estateInformation?.familyStructure,
+      hasRealEstate: response.data.data?.estateInformation?.realEstateProperties?.length > 0
+    });
+    
+    return response.data;
+  },
+
+  // Create or update estate information for client
+  saveEstateInformation: async (clientId, estateData) => {
+    console.log('🏛️ SAVING ESTATE INFORMATION:', { 
+      clientId, 
+      hasFamilyStructure: !!estateData.familyStructure,
+      hasRealEstate: estateData.realEstateProperties?.length > 0,
+      hasLegalDocs: !!estateData.legalDocumentsStatus
+    });
+    
+    const response = await api.post(`/estate-planning/client/${clientId}/information`, estateData);
+    
+    console.log('✅ ESTATE INFORMATION SAVED:', {
+      clientId,
+      estateInfoId: response.data.data?.estateInformation?._id,
+      success: response.data.success
+    });
+    
+    return response.data;
+  },
+
+  // Get will content for client
+  getWill: async (clientId) => {
+    console.log('📜 FETCHING WILL:', { clientId });
+    
+    const response = await api.get(`/estate-planning/client/${clientId}/will`);
+    
+    console.log('✅ WILL FETCHED:', {
+      clientId,
+      hasWill: !!response.data.data?.willDetails,
+      willType: response.data.data?.willDetails?.willType,
+      contentLength: response.data.data?.willDetails?.willContent?.length || 0
+    });
+    
+    return response.data;
+  },
+
+  // Create or update will content for client
+  saveWill: async (clientId, willData) => {
+    console.log('📜 SAVING WILL:', { 
+      clientId, 
+      willType: willData.willType,
+      hasContent: !!willData.willContent,
+      contentLength: willData.willContent?.length || 0
+    });
+    
+    const response = await api.post(`/estate-planning/client/${clientId}/will`, willData);
+    
+    console.log('✅ WILL SAVED:', {
+      clientId,
+      willType: response.data.data?.willDetails?.willType,
+      success: response.data.success
+    });
+    
+    return response.data;
+  },
+
   // Send client invitation with enhanced tracking
   sendInvitation: async (invitationData) => {
     console.log('📧 SENDING CLIENT INVITATION:', {
