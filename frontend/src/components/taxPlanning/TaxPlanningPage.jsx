@@ -9,6 +9,20 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Filler
+} from 'chart.js';
+import { Bar, Doughnut, Pie, Line } from 'react-chartjs-2';
+import {
   Calculator,
   User,
   DollarSign,
@@ -86,6 +100,20 @@ import {
   Sparkles
 } from 'lucide-react';
 
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Filler
+);
+
 function TaxPlanningPage() {
   const { clientId } = useParams();
   const navigate = useNavigate();
@@ -94,6 +122,7 @@ function TaxPlanningPage() {
   const [error, setError] = useState(null);
   const [taxData, setTaxData] = useState(null);
   const [existingTaxPlanning, setExistingTaxPlanning] = useState(null);
+  const [visualizationData, setVisualizationData] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [saving, setSaving] = useState(false);
   const [generatingAI, setGeneratingAI] = useState(false);
@@ -138,11 +167,14 @@ function TaxPlanningPage() {
       
       if (response.data.success) {
         const taxPlanningData = response.data.data.taxPlanning;
+        const visualizationData = response.data.data.visualizationData;
         setExistingTaxPlanning(taxPlanningData);
+        setVisualizationData(visualizationData);
         toast.success('AI recommendations generated successfully!');
         console.log('✅ [Tax Planning AI] Recommendations generated:', {
           recommendationsCount: taxPlanningData.aiRecommendations?.recommendations?.length || 0,
-          totalSavings: taxPlanningData.aiRecommendations?.totalPotentialSavings || 0
+          totalSavings: taxPlanningData.aiRecommendations?.totalPotentialSavings || 0,
+          hasVisualizationData: !!visualizationData
         });
       } else {
         throw new Error(response.data.message || 'Failed to generate AI recommendations');
@@ -242,6 +274,7 @@ function TaxPlanningPage() {
     { id: 'capital-gains', label: 'Capital Gains', icon: TrendingUp },
     { id: 'business', label: 'Business Tax', icon: Briefcase },
     { id: 'ai-recommendations', label: 'AI Recommendations', icon: Bot },
+    { id: 'visualizations', label: 'Before vs After', icon: BarChart3 },
     { id: 'manual-inputs', label: 'Manual Inputs', icon: Edit },
     { id: 'compliance', label: 'Compliance', icon: FileCheck }
   ];
@@ -932,6 +965,298 @@ function TaxPlanningPage() {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'visualizations' && (
+              <div className="space-y-6">
+                {visualizationData ? (
+                  <>
+                    {/* Before vs After Summary */}
+                    {visualizationData.beforeAfterComparison && (
+                      <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <BarChart3 className="h-5 w-5 mr-2" />
+                          Tax Planning Impact Summary
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-red-600">Current Tax Liability</p>
+                                <p className="text-2xl font-bold text-red-700">
+                                  ₹{visualizationData.beforeAfterComparison.current?.totalTaxLiability?.toLocaleString() || 0}
+                                </p>
+                              </div>
+                              <TrendingUp className="h-8 w-8 text-red-500" />
+                            </div>
+                          </div>
+                          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-green-600">Optimized Tax Liability</p>
+                                <p className="text-2xl font-bold text-green-700">
+                                  ₹{visualizationData.beforeAfterComparison.optimized?.totalTaxLiability?.toLocaleString() || 0}
+                                </p>
+                              </div>
+                              <TrendingDown className="h-8 w-8 text-green-500" />
+                            </div>
+                          </div>
+                          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-blue-600">Total Savings</p>
+                                <p className="text-2xl font-bold text-blue-700">
+                                  ₹{visualizationData.beforeAfterComparison.totalSavings?.toLocaleString() || 0}
+                                </p>
+                                <p className="text-sm text-blue-600">
+                                  ({visualizationData.beforeAfterComparison.savingsPercentage}% reduction)
+                                </p>
+                              </div>
+                              <DollarSign className="h-8 w-8 text-blue-500" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Charts Grid */}
+                    {visualizationData.charts && (
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Tax Liability Comparison Chart */}
+                        {visualizationData.charts.taxLiabilityComparison && (
+                          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                            <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                              {visualizationData.charts.taxLiabilityComparison.title}
+                            </h4>
+                            <div className="h-64">
+                              <Bar
+                                data={visualizationData.charts.taxLiabilityComparison.data}
+                                options={{
+                                  responsive: true,
+                                  maintainAspectRatio: false,
+                                  plugins: {
+                                    legend: {
+                                      position: 'top',
+                                    },
+                                    title: {
+                                      display: false,
+                                    },
+                                  },
+                                  scales: {
+                                    y: {
+                                      beginAtZero: true,
+                                      ticks: {
+                                        callback: function(value) {
+                                          return '₹' + value.toLocaleString();
+                                        }
+                                      }
+                                    }
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Deduction Utilization Chart */}
+                        {visualizationData.charts.deductionUtilization && (
+                          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                            <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                              {visualizationData.charts.deductionUtilization.title}
+                            </h4>
+                            <div className="h-64">
+                              <Doughnut
+                                data={visualizationData.charts.deductionUtilization.data}
+                                options={{
+                                  responsive: true,
+                                  maintainAspectRatio: false,
+                                  plugins: {
+                                    legend: {
+                                      position: 'bottom',
+                                    },
+                                    tooltip: {
+                                      callbacks: {
+                                        label: function(context) {
+                                          return context.label + ': ₹' + context.parsed.toLocaleString();
+                                        }
+                                      }
+                                    }
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Savings Breakdown Chart */}
+                        {visualizationData.charts.savingsBreakdown && (
+                          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                            <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                              {visualizationData.charts.savingsBreakdown.title}
+                            </h4>
+                            <div className="h-64">
+                              <Pie
+                                data={visualizationData.charts.savingsBreakdown.data}
+                                options={{
+                                  responsive: true,
+                                  maintainAspectRatio: false,
+                                  plugins: {
+                                    legend: {
+                                      position: 'bottom',
+                                    },
+                                    tooltip: {
+                                      callbacks: {
+                                        label: function(context) {
+                                          return context.label + ': ₹' + context.parsed.toLocaleString();
+                                        }
+                                      }
+                                    }
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Implementation Timeline Chart */}
+                        {visualizationData.charts.implementationTimeline && (
+                          <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                            <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                              {visualizationData.charts.implementationTimeline.title}
+                            </h4>
+                            <div className="h-64">
+                              <Line
+                                data={visualizationData.charts.implementationTimeline.data}
+                                options={{
+                                  responsive: true,
+                                  maintainAspectRatio: false,
+                                  plugins: {
+                                    legend: {
+                                      position: 'top',
+                                    },
+                                  },
+                                  scales: {
+                                    y: {
+                                      beginAtZero: true,
+                                      ticks: {
+                                        callback: function(value) {
+                                          return '₹' + value.toLocaleString();
+                                        }
+                                      }
+                                    }
+                                  }
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Implementation Timeline */}
+                    {visualizationData.implementationTimeline && (
+                      <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <Calendar className="h-5 w-5 mr-2" />
+                          Implementation Timeline
+                        </h3>
+                        <div className="space-y-3">
+                          {visualizationData.implementationTimeline.map((item, index) => (
+                            <div key={item.id} className="flex items-center p-3 bg-gray-50 rounded-lg">
+                              <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                <span className="text-sm font-medium text-blue-600">{index + 1}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="text-sm font-medium text-gray-900 truncate">{item.title}</h4>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-sm text-green-600 font-medium">
+                                      ₹{item.potentialSavings?.toLocaleString()}
+                                    </span>
+                                    <span className={`px-2 py-1 text-xs rounded-full ${
+                                      item.priority === 'high' ? 'bg-red-100 text-red-800' :
+                                      item.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                      'bg-green-100 text-green-800'
+                                    }`}>
+                                      {item.priority}
+                                    </span>
+                                  </div>
+                                </div>
+                                <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                                <div className="flex items-center mt-2 text-xs text-gray-500">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  Deadline: {new Date(item.deadline).toLocaleDateString()}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Summary Stats */}
+                    {visualizationData.summary && (
+                      <div className="bg-white p-4 sm:p-6 rounded-lg border border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <Target className="h-5 w-5 mr-2" />
+                          Implementation Summary
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div className="text-center p-4 bg-blue-50 rounded-lg">
+                            <div className="text-2xl font-bold text-blue-600">
+                              {visualizationData.summary.totalRecommendations}
+                            </div>
+                            <div className="text-sm text-blue-600">Total Recommendations</div>
+                          </div>
+                          <div className="text-center p-4 bg-red-50 rounded-lg">
+                            <div className="text-2xl font-bold text-red-600">
+                              {visualizationData.summary.highPriorityRecommendations}
+                            </div>
+                            <div className="text-sm text-red-600">High Priority</div>
+                          </div>
+                          <div className="text-center p-4 bg-green-50 rounded-lg">
+                            <div className="text-2xl font-bold text-green-600">
+                              {visualizationData.summary.estimatedImplementationTime}
+                            </div>
+                            <div className="text-sm text-green-600">Implementation Time</div>
+                          </div>
+                          <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                            <div className="text-2xl font-bold text-yellow-600 capitalize">
+                              {visualizationData.summary.riskLevel}
+                            </div>
+                            <div className="text-sm text-yellow-600">Risk Level</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="bg-white p-8 rounded-lg border border-gray-200 text-center">
+                    <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Visualization Data Available</h3>
+                    <p className="text-gray-600 mb-4">
+                      Generate AI recommendations first to see before vs after tax planning visualizations.
+                    </p>
+                    <button
+                      onClick={generateAIRecommendations}
+                      disabled={generatingAI}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center mx-auto"
+                    >
+                      {generatingAI ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Bot className="h-4 w-4 mr-2" />
+                          Generate AI Recommendations
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

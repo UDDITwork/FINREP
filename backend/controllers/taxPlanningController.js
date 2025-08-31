@@ -578,8 +578,47 @@ const generateClaudeTaxRecommendations = async (taxPlanningData) => {
     }
     console.log('✅ [Claude] API key found and format validated');
 
+    // Get current date and tax year information (dynamic calculation)
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // 0-based to 1-based
+    const currentDay = currentDate.getDate();
+    
+    // Calculate financial year dynamically
+    // If current month is April (4) to March (3), FY is current year to next year
+    // If current month is Jan (1) to March (3), FY is previous year to current year
+    let financialYearStart, financialYearEnd, nextFinancialYearEnd;
+    
+    if (currentMonth >= 4) {
+      // April to December: FY is current year to next year
+      financialYearStart = currentYear;
+      financialYearEnd = `${currentYear + 1}-03-31`;
+      nextFinancialYearEnd = `${currentYear + 2}-03-31`;
+    } else {
+      // January to March: FY is previous year to current year
+      financialYearStart = currentYear - 1;
+      financialYearEnd = `${currentYear}-03-31`;
+      nextFinancialYearEnd = `${currentYear + 1}-03-31`;
+    }
+    
+    // Calculate days remaining in current financial year
+    const fyEndDate = new Date(financialYearEnd);
+    const daysRemaining = Math.ceil((fyEndDate - currentDate) / (1000 * 60 * 60 * 24));
+    
+    // Calculate months remaining
+    const monthsRemaining = Math.ceil(daysRemaining / 30);
+    
     // Prepare comprehensive prompt for Claude
     const prompt = `You are a tax planning expert AI assistant. Analyze the following client data and provide comprehensive tax planning recommendations.
+
+IMPORTANT: Current Date Information (Auto-calculated):
+- Today's Date: ${currentDate.toISOString().split('T')[0]} (${currentDate.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })})
+- Current Financial Year: ${financialYearStart}-${financialYearStart + 1}
+- Financial Year End: ${financialYearEnd}
+- Next Financial Year End: ${nextFinancialYearEnd}
+- Current Month: ${currentMonth} (${currentDate.toLocaleDateString('en-IN', { month: 'long' })})
+- Days Remaining in Current FY: ${daysRemaining} days
+- Months Remaining in Current FY: ${monthsRemaining} months
 
 CLIENT DATA:
 Personal Information:
@@ -635,19 +674,38 @@ Provide comprehensive tax planning recommendations in this exact JSON format:
   "confidenceScore": 85
 }
 
+CRITICAL: Use the current date information provided above to set appropriate deadlines:
+- For current financial year (${financialYearStart}-${financialYearStart + 1}): Set deadlines before ${financialYearEnd}
+- For next financial year: Set deadlines before ${nextFinancialYearEnd}
+- Consider the current month (${currentMonth}) and remaining time (${monthsRemaining} months) when setting realistic timelines
+- NEVER recommend deadlines in the past (before ${currentDate.toISOString().split('T')[0]})
+- For urgent tax-saving investments: If ${monthsRemaining} months or less remain, recommend deadlines within 1-2 months from today
+- For long-term planning: If ${monthsRemaining} months or more remain, recommend deadlines for current financial year end
+- Always consider the urgency based on remaining time in current financial year
+
 Focus on:
 1. Maximizing tax deductions under various sections (80C, 80D, 80E, 24B, etc.)
 2. Optimizing capital gains tax through proper timing and tax-loss harvesting
 3. Business tax optimization if applicable
 4. Estate tax planning strategies
-5. Compliance requirements and deadlines
+5. Compliance requirements and deadlines (using current date context)
 6. Risk assessment for each recommendation
 
-Provide 3-5 specific, actionable recommendations with realistic savings estimates. Return ONLY the JSON object.`;
+Provide 3-5 specific, actionable recommendations with realistic savings estimates and appropriate deadlines based on current date. Return ONLY the JSON object.`;
 
     // Call Claude API with timeout
     console.log('🌐 [Claude] Making API call...');
     console.log('🔑 [Claude] Using API key:', claudeApiKey ? 'Present' : 'Missing');
+    console.log('📅 [Claude] Dynamic date context:', {
+      currentDate: currentDate.toISOString().split('T')[0],
+      currentYear: currentYear,
+      currentMonth: currentMonth,
+      financialYear: `${financialYearStart}-${financialYearStart + 1}`,
+      financialYearEnd: financialYearEnd,
+      nextFinancialYearEnd: nextFinancialYearEnd,
+      daysRemaining: daysRemaining,
+      monthsRemaining: monthsRemaining
+    });
     console.log('📝 [Claude] Prompt length:', prompt.length);
     
     // Create AbortController for timeout
