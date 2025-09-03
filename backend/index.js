@@ -238,6 +238,7 @@ app.use('/api/transcripts', require('./routes/transcriptRouter'));
 app.use('/api/final-report', require('./routes/finalReport'));
 app.use('/api/estate-planning', require('./routes/estatePlanning'));
 app.use('/api/tax-planning', require('./routes/taxPlanning'));
+app.use('/api/mutual-fund-recommend', require('./routes/mutualFundRecommend'));
 
 // ============================================================================
 // 🆕 NEW: CLIENT REPORTS ROUTES (Comprehensive Client Reports)

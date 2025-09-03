@@ -2498,7 +2498,91 @@ export const finalReportAPI = {
   }
 };
 
+// ============================================================================
+// MUTUAL FUND RECOMMEND API FUNCTIONS
+// ============================================================================
 
+export const mutualFundRecommendAPI = {
+  // Get all recommendations for a specific client
+  getClientRecommendations: async (clientId) => {
+    try {
+      const response = await api.get(`/mutual-fund-recommend/client/${clientId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching client recommendations:', error);
+      throw error;
+    }
+  },
+
+  // Create a new mutual fund recommendation
+  createRecommendation: async (recommendationData) => {
+    try {
+      const response = await api.post(`/mutual-fund-recommend`, recommendationData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating recommendation:', error);
+      throw error;
+    }
+  },
+
+  // Update an existing recommendation
+  updateRecommendation: async (id, updateData) => {
+    try {
+      const response = await api.put(`/mutual-fund-recommend/${id}`, updateData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating recommendation:', error);
+      throw error;
+    }
+  },
+
+  // Delete a recommendation
+  deleteRecommendation: async (id) => {
+    try {
+      const response = await api.delete(`/mutual-fund-recommend/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting recommendation:', error);
+      throw error;
+    }
+  },
+
+  // Get a specific recommendation by ID
+  getRecommendationById: async (id) => {
+    try {
+      const response = await api.get(`/mutual-fund-recommend/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching recommendation:', error);
+      throw error;
+    }
+  },
+
+  // Get recommendations summary for the advisor
+  getRecommendationsSummary: async () => {
+    try {
+      const response = await api.get(`/mutual-fund-recommend/summary`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching recommendations summary:', error);
+      throw error;
+    }
+  },
+
+  // Fetch mutual fund details from Claude AI
+  fetchFundDetails: async (fundName, fundHouseName) => {
+    try {
+      const response = await api.post(`/mutual-fund-recommend/claude/fund-details`, {
+        fundName,
+        fundHouseName
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching fund details from Claude AI:', error);
+      throw error;
+    }
+  }
+};
 
 // Export default API instance for custom requests
 export default api;

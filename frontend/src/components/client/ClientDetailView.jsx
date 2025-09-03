@@ -1323,6 +1323,16 @@ function ClientDetailView() {
                   <Calculator className="h-4 w-4 mr-1" />
                   Tax Planning
                 </button>
+                <button
+                  onClick={() => {
+                    console.log('📈 [ClientDetailView] Opening Mutual Fund Recommendations for client:', clientId);
+                    navigate(`/mutualfund-recommend/${clientId}?clientName=${encodeURIComponent(clientName)}`);
+                  }}
+                  className="flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <TrendingUp className="h-4 w-4 mr-1" />
+                  +Suggest Mutual Funds
+                </button>
               </div>
             </div>
 
