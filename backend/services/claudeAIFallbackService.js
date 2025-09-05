@@ -121,46 +121,20 @@ class ClaudeAIFallbackService {
   }
 
   /**
-   * Generate fallback response for news data
+   * Generate fallback response for news data - TEMPORARILY DISABLED
    * @param {Object} originalError - Original API error
    * @returns {Promise<Object>} Fallback data
    */
   async getNewsFallback(originalError = null) {
-    const prompt = this.buildNewsPrompt(originalError);
+    console.log(`🚫 [Claude AI] News fallback temporarily disabled`);
     
-    try {
-      console.log(`🤖 [Claude AI] Generating news fallback`);
-      
-      const response = await this.client.post('', {
-        model: this.model,
-        max_tokens: 2000,
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
-      });
-
-      const fallbackData = this.parseNewsResponse(response.data.content[0].text);
-      
-      console.log(`✅ [Claude AI] News fallback generated successfully`);
-      return {
-        success: true,
-        data: fallbackData,
-        source: 'claude_ai_fallback',
-        originalError: originalError?.message || 'API unavailable'
-      };
-      
-    } catch (error) {
-      console.error(`❌ [Claude AI] Error generating news fallback:`, error.message);
-      return {
-        success: false,
-        data: null,
-        error: error.message,
-        source: 'claude_ai_fallback'
-      };
-    }
+    // Return empty news data instead of calling Claude
+    return {
+      success: true,
+      data: [],
+      source: 'disabled',
+      originalError: 'News service temporarily disabled'
+    };
   }
 
   /**

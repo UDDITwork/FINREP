@@ -120,13 +120,13 @@ function Dashboard() {
     }
   };
 
-  // Load news data
+  // Load news data - TEMPORARILY DISABLED
   const loadNews = async () => {
     setIsNewsLoading(true);
     try {
-      console.log('[Dashboard] Loading news data...');
+      console.log('[Dashboard] News loading temporarily disabled');
       
-      // Use curated financial news instead of API calls
+      // TEMPORARILY DISABLED - Return empty news array
       const curatedNews = [
         {
           title: "NIFTY 50 Hits New All-Time High Amid Strong Institutional Flows",
@@ -226,7 +226,7 @@ function Dashboard() {
   // Load market data on component mount
   useEffect(() => {
     loadMarketData();
-    loadNews();
+    // loadNews(); // TEMPORARILY DISABLED
     loadClaudeInsights();
   }, []);
 

@@ -9,6 +9,35 @@
  */
 
 const axios = require('axios');
+const path = require('path');
+const fs = require('fs');
+
+// Load environment variables from backend/.env file
+function loadEnvFile() {
+  const envPath = path.join(__dirname, 'backend', '.env');
+  
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    const envLines = envContent.split('\n');
+    
+    envLines.forEach(line => {
+      const [key, ...valueParts] = line.split('=');
+      if (key && valueParts.length > 0) {
+        const value = valueParts.join('=').trim();
+        if (!process.env[key]) {
+          process.env[key] = value;
+        }
+      }
+    });
+    
+    console.log('✅ Loaded environment variables from backend/.env');
+  } else {
+    console.log('⚠️ backend/.env file not found, using system environment variables');
+  }
+}
+
+// Load environment variables
+loadEnvFile();
 
 // Configuration
 const BASE_URL = 'http://localhost:5000'; // Adjust if your backend runs on different port

@@ -4,6 +4,35 @@
  */
 
 const axios = require('axios');
+const path = require('path');
+const fs = require('fs');
+
+// Load environment variables from backend/.env file
+function loadEnvFile() {
+  const envPath = path.join(__dirname, 'backend', '.env');
+  
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    const envLines = envContent.split('\n');
+    
+    envLines.forEach(line => {
+      const [key, ...valueParts] = line.split('=');
+      if (key && valueParts.length > 0) {
+        const value = valueParts.join('=').trim();
+        if (!process.env[key]) {
+          process.env[key] = value;
+        }
+      }
+    });
+    
+    console.log('✅ Loaded environment variables from backend/.env');
+  } else {
+    console.log('⚠️ backend/.env file not found, using system environment variables');
+  }
+}
+
+// Load environment variables
+loadEnvFile();
 
 // Test configuration
 const DIGIO_API_URL = 'https://api.digio.in';
@@ -26,28 +55,19 @@ const TEST_DATA = {
 
 let accessToken = null;
 
-async function getDigioAccessToken() {
+async function getDigioBasicAuth() {
   try {
-    console.log('🔐 Getting Digio access token...');
+    console.log('🔐 Setting up Digio Basic Authentication...');
+    console.log('📋 Using CLIENT_ID:', CLIENT_ID);
     
-    const response = await axios.post(`${DIGIO_API_URL}/v2/client/auth_token`, {
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (response.data && response.data.access_token) {
-      accessToken = response.data.access_token;
-      console.log('✅ Access token obtained');
-      return accessToken;
-    } else {
-      throw new Error('Failed to get access token: ' + JSON.stringify(response.data));
-    }
+    // Create Basic Auth header
+    const credentials = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
+    const basicAuth = `Basic ${credentials}`;
+    
+    console.log('✅ Basic Auth header created');
+    return basicAuth;
   } catch (error) {
-    console.error('❌ Failed to get access token:', error.response?.data || error.message);
+    console.error('❌ Failed to create Basic Auth:', error.message);
     throw error;
   }
 }
@@ -57,13 +77,17 @@ async function createKYCRequest() {
     console.log('🚀 Creating KYC request for Abhishek Rajput...');
     console.log('📋 Request data:', JSON.stringify(TEST_DATA, null, 2));
     
+    // Get Basic Auth header
+    const basicAuth = await getDigioBasicAuth();
+    
     const response = await axios.post(
       `${DIGIO_API_URL}/client/kyc/v2/request/with_template`,
       TEST_DATA,
       {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
+          'Accept': 'application/json',
+          'Authorization': basicAuth
         }
       }
     );
@@ -118,8 +142,8 @@ async function runTest() {
       return;
     }
 
-    // Step 1: Get access token
-    await getDigioAccessToken();
+    // Step 1: Setup Basic Auth (no separate token needed)
+    console.log('✅ Using HTTP Basic Authentication');
 
     // Step 2: Create KYC request
     const result = await createKYCRequest();
@@ -141,4 +165,4 @@ if (require.main === module) {
   runTest().catch(console.error);
 }
 
-module.exports = { runTest, getDigioAccessToken, createKYCRequest };
+module.exports = { runTest, getDigioBasicAuth, createKYCRequest };

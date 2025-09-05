@@ -57,48 +57,23 @@ class DigioService {
     this.tokenExpiry = null;
   }
 
-  // Generate access token for Digio API
-  async getAccessToken() {
-    try {
-      if (this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry) {
-        return this.accessToken;
-      }
-
-      const response = await axios.post(`${this.baseURL}/v2/client/auth_token`, {
-        client_id: this.clientId,
-        client_secret: this.clientSecret
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.data && response.data.access_token) {
-        this.accessToken = response.data.access_token;
-        this.tokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // Assuming 1 hour validity
-        return this.accessToken;
-      } else {
-        throw new Error('Failed to get access token from Digio');
-      }
-    } catch (error) {
-      console.error('Error getting Digio access token:', error.message);
-      throw new Error('Authentication failed with Digio API');
-    }
-  }
-
-  // Get headers with authentication
-  async getHeaders() {
-    const token = await this.getAccessToken();
+  // Get headers with Basic Authentication
+  getHeaders() {
+    // Create Basic Auth header
+    const credentials = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
+    const basicAuth = `Basic ${credentials}`;
+    
     return {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Accept': 'application/json',
+      'Authorization': basicAuth
     };
   }
 
   // New method to create a KYC workflow request using a template
   async createKYCWorkflowRequest(customerIdentifier, customerName, referenceId, transactionId, templateName = 'SURENDRA', notifyCustomer = false, generateAccessToken = true) {
     try {
-      const headers = await this.getHeaders();
+      const headers = this.getHeaders();
       
       // Validate required parameters according to Digio API specs
       if (!customerIdentifier || !customerName) {
@@ -158,7 +133,7 @@ class DigioService {
   // Get verification status for a template-based request
   async getVerificationStatus(digioRequestId) {
     try {
-      const headers = await this.getHeaders();
+      const headers = this.getHeaders();
       
       const response = await axios.post(
         `${this.baseURL}/client/kyc/v2/${digioRequestId}/response`,
