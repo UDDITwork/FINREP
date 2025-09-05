@@ -3,40 +3,8 @@
  * 
  * PURPOSE: MongoDB schema for storing KYC (Know Your Customer) verification data
  * 
- * FUNCTIONALITY:
- * - Defines the data structure for KYC verification records
- * - Stores verification status for both Aadhar and PAN documents
- * - Tracks Digio API request IDs and access tokens
- * - Maintains verification history and attempt counts
- * - Implements automatic overall status calculation
- * 
- * DATA STRUCTURE:
- * - clientId: Links to Client model (ObjectId)
- * - advisorId: Links to Advisor model (ObjectId) 
- * - aadharStatus: Enum ['not_started', 'requested', 'in_progress', 'verified', 'failed']
- * - panStatus: Enum ['not_started', 'requested', 'in_progress', 'verified', 'failed']
- * - overallStatus: Auto-calculated based on individual document statuses
- * - aadharVerificationId: Digio API request ID for Aadhar verification
- * - panVerificationId: Digio API request ID for PAN verification
- * - verificationAttempts: Count of verification attempts
- * - lastVerificationAttempt: Timestamp of last verification attempt
- * 
- * CONNECTIVITY:
- * - Connected to Client model via clientId reference
- * - Connected to Advisor model via advisorId reference
- * - Receives data from KYC controller operations
- * - Sends data to frontend via KYC API endpoints
- * 
- * API INTERACTIONS:
- * - Receives: Verification status updates from Digio webhooks
- * - Sends: KYC status data to frontend components
- * - Stores: Digio request IDs and access tokens for SDK integration
- * 
- * DATA FLOW:
- * 1. Controller creates/updates KYC records
- * 2. Webhook handler updates status from Digio events
- * 3. Frontend fetches status via API endpoints
- * 4. Status changes trigger automatic overall status recalculation
+
+
  */
 
 const mongoose = require('mongoose');

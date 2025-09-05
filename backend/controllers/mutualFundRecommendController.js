@@ -88,8 +88,18 @@ const getClientRecommendations = async (req, res) => {
  */
 const createRecommendation = async (req, res) => {
   try {
+    // 🐛 DEBUG: Log incoming request details
+    console.log(`🔍 [CONTROLLER DEBUG] createRecommendation called:`, {
+      hasAdvisor: !!req.advisor,
+      advisorId: req.advisor?.id,
+      hasBody: !!req.body,
+      bodyKeys: req.body ? Object.keys(req.body) : 'NO_BODY',
+      timestamp: new Date().toISOString()
+    });
+
     // Check if user is authenticated
     if (!req.advisor || !req.advisor.id) {
+      console.log(`❌ [CONTROLLER DEBUG] Authentication failed: no advisor`);
       return res.status(401).json({
         success: false,
         message: 'Authentication required'
@@ -126,13 +136,28 @@ const createRecommendation = async (req, res) => {
     }
 
     // Verify client ownership
+    console.log(`🔍 [CONTROLLER DEBUG] Looking for client: clientId=${clientId}, advisorId=${advisorId}`);
+    logger.info(`Looking for client with ID: ${clientId} and advisorId: ${advisorId}`);
+    
     const client = await Client.findOne({ _id: clientId, advisorId });
+    console.log(`🔍 [CONTROLLER DEBUG] Client lookup result:`, {
+      found: !!client,
+      clientId,
+      advisorId,
+      clientName: client ? `${client.firstName} ${client.lastName}` : 'NOT_FOUND'
+    });
+    
     if (!client) {
+      console.log(`❌ [CONTROLLER DEBUG] Client not found: clientId=${clientId}, advisorId=${advisorId}`);
+      logger.warn(`Client not found: clientId=${clientId}, advisorId=${advisorId}`);
       return res.status(404).json({
         success: false,
         message: 'Client not found or access denied'
       });
     }
+    
+    console.log(`✅ [CONTROLLER DEBUG] Client found: ${client.firstName} ${client.lastName}`);
+    logger.info(`Found client: ${client.firstName} ${client.lastName}`);
 
     // Validate dates
     const startDate = new Date(sipStartDate);

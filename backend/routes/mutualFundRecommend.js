@@ -52,6 +52,22 @@ router.use((req, res, next) => {
   next();
 });
 
+// 🐛 DEBUG: Add minimal debugging for POST route issues (non-intrusive)
+router.use((req, res, next) => {
+  // Only log for POST requests to avoid spam
+  if (req.method === 'POST') {
+    console.log(`🔍 [DEBUG] POST Request to ${req.originalUrl}:`, {
+      hasAdvisor: !!req.advisor,
+      advisorId: req.advisor?.id,
+      hasBody: !!req.body,
+      bodyKeys: req.body ? Object.keys(req.body) : 'NO_BODY',
+      contentType: req.headers['content-type'],
+      timestamp: new Date().toISOString()
+    });
+  }
+  next();
+});
+
 /**
  * GET /client/:clientId
  * Get all mutual fund recommendations for a specific client
@@ -229,6 +245,26 @@ router.get('/:id', async (req, res) => {
       error: error.message
     });
   }
+});
+
+// 🧪 TEST: Simple endpoint to verify route accessibility (non-intrusive)
+router.get('/debug/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Mutual Fund Recommend routes are accessible!',
+    timestamp: new Date().toISOString(),
+    hasAdvisor: !!req.advisor,
+    advisorId: req.advisor?.id,
+    availableEndpoints: [
+      'GET /client/:clientId',
+      'POST /',
+      'PUT /:id',
+      'DELETE /:id', 
+      'GET /summary',
+      'POST /claude/fund-details',
+      'GET /:id'
+    ]
+  });
 });
 
 // Export the router

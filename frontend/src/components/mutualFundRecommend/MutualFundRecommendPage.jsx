@@ -76,11 +76,13 @@ const MutualFundRecommendPage = () => {
       return;
     }
 
+    console.log('MutualFundRecommendPage - clientId from URL:', clientId);
+    
     // Extract client name from URL or localStorage if available
     const urlParams = new URLSearchParams(window.location.search);
     const name = urlParams.get('clientName') || 'Client';
     setClientName(name);
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [isAuthenticated, authLoading, navigate, clientId]);
 
   // Add new recommendation section
   const addRecommendation = () => {
@@ -190,6 +192,7 @@ const MutualFundRecommendPage = () => {
       return;
     }
 
+    console.log('Submitting recommendations with clientId:', clientId);
     setSubmitting(true);
 
     try {

@@ -3,48 +3,7 @@
  * 
  * PURPOSE: Main component for KYC verification interface and workflow management
  * 
- * FUNCTIONALITY:
- * - Provides main KYC verification interface for advisors
- * - Manages client selection and KYC workflow initiation
- * - Integrates with KYCWorkflow component for Digio SDK handling
- * - Displays real-time KYC status updates
- * - Handles workflow state transitions and error states
- * 
- * COMPONENT INTEGRATION:
- * - ClientList: Displays selectable client grid with KYC status
- * - KYCWorkflow: Manages Digio SDK integration and verification flow
- * - KYCStatus: Shows detailed status information and action buttons
- * 
- * DATA FLOW:
- * - Receives: Client data from KYC service API calls
- * - Processes: Client selection, workflow initiation, status updates
- * - Sends: API requests for KYC operations via kycService
- * - Displays: Real-time KYC status and workflow progress
- * 
- * STATE MANAGEMENT:
- * - activeStep: Controls UI flow (client-selection, workflow, status)
- * - selectedClient: Currently selected client for KYC verification
- * - kycStatus: Current KYC verification status for selected client
- * - loading: Loading states for API operations
- * 
- * API INTERACTIONS:
- * - Calls kycService.getClientsForKYC() for client list
- * - Calls kycService.getKYCStatus() for status updates
- * - Calls kycService.startKYCWorkflow() for workflow initiation
- * - Receives real-time updates via component props and state
- * 
- * USER EXPERIENCE FLOW:
- * 1. Advisor sees list of their clients with KYC status
- * 2. Advisor selects a client for KYC verification
- * 3. System displays current KYC status and action buttons
- * 4. Advisor initiates KYC workflow via Digio SDK
- * 5. Real-time status updates show verification progress
- * 
- * ERROR HANDLING:
- * - Displays user-friendly error messages for API failures
- * - Implements retry mechanisms for failed operations
- * - Graceful degradation when services are unavailable
- * - Loading states prevent multiple simultaneous operations
+Loading states prevent multiple simultaneous operations
  */
 
 import React, { useState, useEffect } from 'react';

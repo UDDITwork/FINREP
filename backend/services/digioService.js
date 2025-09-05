@@ -96,19 +96,38 @@ class DigioService {
   }
 
   // New method to create a KYC workflow request using a template
-  async createKYCWorkflowRequest(customerIdentifier, customerName, referenceId, transactionId, templateName = 'DIGILOCKER_AADHAAR_PAN', notifyCustomer = true, generateAccessToken = true) {
+  async createKYCWorkflowRequest(customerIdentifier, customerName, referenceId, transactionId, templateName = 'SURENDRA', notifyCustomer = false, generateAccessToken = true) {
     try {
       const headers = await this.getHeaders();
+      
+      // Validate required parameters according to Digio API specs
+      if (!customerIdentifier || !customerName) {
+        throw new Error('customer_identifier and customer_name are required');
+      }
+      
+      if (customerName.length > 100) {
+        throw new Error('customer_name must be 100 characters or less');
+      }
+      
+      if (referenceId && !/^[0-9A-Za-z\_\-\/]{0,}$/.test(referenceId)) {
+        throw new Error('reference_id must contain only alphanumeric characters, underscores, hyphens, and forward slashes');
+      }
+      
+      if (transactionId && !/^[0-9A-Za-z\_\-\/]{0,}$/.test(transactionId)) {
+        throw new Error('transaction_id must contain only alphanumeric characters, underscores, hyphens, and forward slashes');
+      }
       
       const payload = {
         customer_identifier: customerIdentifier,
         customer_name: customerName,
         template_name: templateName,
         notify_customer: notifyCustomer,
-        generate_access_token: generateAccessToken,
+        customer_notification_mode: 'SMS', // Required parameter
         reference_id: referenceId,
         transaction_id: transactionId,
-        expire_in_days: 10
+        expire_in_days: 10, // Default 10 days, valid range 1-90
+        generate_access_token: generateAccessToken,
+        generate_deeplink_info: true // Required parameter
       };
 
       const response = await axios.post(
@@ -121,7 +140,7 @@ class DigioService {
         return {
           success: true,
           digioRequestId: response.data.id,
-          accessToken: response.data.access_token?.id, // Access token for SDK
+          accessToken: response.data.access_token, // Fixed: Direct access to access_token object
           message: 'KYC workflow request created successfully'
         };
       } else {

@@ -3,49 +3,7 @@
  * 
  * PURPOSE: Status display and action management component for KYC verification
  * 
- * FUNCTIONALITY:
- * - Displays detailed KYC verification status for selected client
- * - Shows individual Aadhar and PAN verification progress
- * - Provides action buttons for workflow initiation and reset
- * - Implements visual status indicators with color coding
- * - Handles KYC reset functionality for failed verifications
- * 
- * STATUS DISPLAY:
- * - Overall KYC verification status with progress indicators
- * - Individual document status (Aadhar, PAN) with icons
- * - Verification attempt count and last attempt timestamp
- * - Color-coded status indicators for quick visual assessment
- * 
- * ACTION BUTTONS:
- * - "Start KYC Verification": Initiates new verification workflow
- * - "Retry KYC Verification": Restarts failed verification process
- * - "Reset KYC Status": Clears verification status for retry
- * - Status-dependent button visibility and functionality
- * 
- * DATA FLOW:
- * - Receives: Client data and KYC status from parent component
- * - Processes: Status display logic and action button states
- * - Sends: Action requests via callback functions to parent
- * - Displays: Real-time status updates and progress information
- * 
- * COMPONENT INTEGRATION:
- * - Receives props: client (object), kycStatus (object), onStartWorkflow (function)
- * - Sends: Action requests via callback functions
- * - Integrates: With parent KYCVerification component
- * 
- * STATUS MAPPING:
- * - not_started: Gray indicator with "Not Started" text
- * - requested: Yellow indicator with "Requested" text
- * - in_progress: Blue indicator with "In Progress" text
- * - verified: Green indicator with "Verified" text
- * - failed: Red indicator with "Failed" text
- * 
- * VISUAL DESIGN:
- * - Progress bars for overall completion status
- * - Icon-based status indicators for each document type
- * - Color-coded status representation for accessibility
- * - Responsive layout for different screen sizes
- * 
+
  * USER INTERACTIONS:
  * - Click action buttons to initiate KYC operations
  * - View detailed status information for each document
