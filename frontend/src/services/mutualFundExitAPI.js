@@ -213,7 +213,9 @@ class MutualFundExitAPI {
       'financialGoalAssessment',
       'riskAnalysis',
       'executionActionPlan',
-      'costBenefitAnalysis'
+      'costBenefitAnalysis',
+      'advisorCertification',
+      'clientAcknowledgment'
     ];
 
     const missingFields = requiredFields.filter(field => !strategyData[field]);
@@ -233,14 +235,124 @@ class MutualFundExitAPI {
       throw new Error('Units must be greater than 0');
     }
 
+    if (!strategyData.primaryExitAnalysis.exitRationale) {
+      throw new Error('Exit rationale is required');
+    }
+
+    if (!strategyData.primaryExitAnalysis.detailedReason) {
+      throw new Error('Detailed reason is required');
+    }
+
+    if (!strategyData.primaryExitAnalysis.performanceAnalysis) {
+      throw new Error('Performance analysis is required');
+    }
+
     // Validate timing strategy
     if (!strategyData.timingStrategy.recommendedExitDate) {
       throw new Error('Recommended exit date is required');
     }
 
+    if (!strategyData.timingStrategy.marketConditions) {
+      throw new Error('Market conditions are required');
+    }
+
+    if (!strategyData.timingStrategy.urgency) {
+      throw new Error('Urgency level is required');
+    }
+
     // Validate tax implications
     if (!strategyData.taxImplications.holdingPeriod) {
       throw new Error('Holding period is required');
+    }
+
+    if (strategyData.taxImplications.taxRate === undefined || strategyData.taxImplications.taxRate === null) {
+      throw new Error('Tax rate is required');
+    }
+
+    if (strategyData.taxImplications.taxAmount === undefined || strategyData.taxImplications.taxAmount === null) {
+      throw new Error('Tax amount is required');
+    }
+
+    if (!strategyData.taxImplications.taxOptimization) {
+      throw new Error('Tax optimization strategy is required');
+    }
+
+    // Validate alternative investment strategy
+    if (!strategyData.alternativeInvestmentStrategy.portfolioRebalancing) {
+      throw new Error('Portfolio rebalancing strategy is required');
+    }
+
+    if (!strategyData.alternativeInvestmentStrategy.riskAdjustment) {
+      throw new Error('Risk adjustment strategy is required');
+    }
+
+    if (!strategyData.alternativeInvestmentStrategy.diversificationBenefits) {
+      throw new Error('Diversification benefits are required');
+    }
+
+    // Validate financial goal assessment
+    if (!strategyData.financialGoalAssessment.goalImpact) {
+      throw new Error('Goal impact analysis is required');
+    }
+
+    if (!strategyData.financialGoalAssessment.timelineAdjustment) {
+      throw new Error('Timeline adjustment is required');
+    }
+
+    if (!strategyData.financialGoalAssessment.riskTolerance) {
+      throw new Error('Risk tolerance is required');
+    }
+
+    if (!strategyData.financialGoalAssessment.liquidityNeeds) {
+      throw new Error('Liquidity needs are required');
+    }
+
+    // Validate risk analysis
+    if (!strategyData.riskAnalysis.currentRiskLevel) {
+      throw new Error('Current risk level is required');
+    }
+
+    if (!strategyData.riskAnalysis.mitigationStrategies) {
+      throw new Error('Mitigation strategies are required');
+    }
+
+    if (!strategyData.riskAnalysis.stressTestResults) {
+      throw new Error('Stress test results are required');
+    }
+
+    // Validate execution action plan
+    if (!strategyData.executionActionPlan.steps || strategyData.executionActionPlan.steps.length === 0) {
+      throw new Error('At least one execution step is required');
+    }
+
+    // Validate cost-benefit analysis
+    if (strategyData.costBenefitAnalysis.exitLoad === undefined || strategyData.costBenefitAnalysis.exitLoad === null) {
+      throw new Error('Exit load is required');
+    }
+
+    if (strategyData.costBenefitAnalysis.transactionCosts === undefined || strategyData.costBenefitAnalysis.transactionCosts === null) {
+      throw new Error('Transaction costs are required');
+    }
+
+    if (strategyData.costBenefitAnalysis.taxSavings === undefined || strategyData.costBenefitAnalysis.taxSavings === null) {
+      throw new Error('Tax savings are required');
+    }
+
+    if (strategyData.costBenefitAnalysis.opportunityCost === undefined || strategyData.costBenefitAnalysis.opportunityCost === null) {
+      throw new Error('Opportunity cost is required');
+    }
+
+    if (strategyData.costBenefitAnalysis.netBenefit === undefined || strategyData.costBenefitAnalysis.netBenefit === null) {
+      throw new Error('Net benefit is required');
+    }
+
+    // Validate advisor certification
+    if (!strategyData.advisorCertification.certifiedBy) {
+      throw new Error('Certified by advisor is required');
+    }
+
+    if (!strategyData.advisorCertification.certificationDate) {
+      throw new Error('Certification date is required');
     }
 
     return true;
