@@ -15,6 +15,7 @@
     "test:estate": "jest --testPathPattern=estate"
   },
   "dependencies": {
+    "archiver": "^6.0.1",
     "axios": "^1.11.0",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
@@ -23,6 +24,7 @@
     "crypto": "^1.0.1",
     "date-fns": "^2.30.0",
     "dotenv": "^17.2.1",
+    "exceljs": "^4.3.0",
     "express": "^5.1.0",
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^6.11.2",
@@ -32,7 +34,8 @@
     "joi": "^17.9.2",
     "jsonwebtoken": "^9.0.2",
     "moment": "^2.29.4",
-    "mongoose": "^8.18.0",
+    "mongodb-memory-server": "^10.2.0",
+    "mongoose": "^8.18.1",
     "morgan": "^1.10.1",
     "multer": "^2.0.1",
     "node-cache": "^5.1.2",
@@ -43,14 +46,12 @@
     "pdf-parse": "^1.1.1",
     "pdf2json": "^3.1.6",
     "pdfjs-dist": "^5.3.93",
-    "pdfreader": "^3.0.7",
-    "winston": "^3.17.0",
-    "xss": "^1.0.14",
-    "uuid": "^9.0.0",
-    "prom-client": "^15.0.0",
     "pdfkit": "^0.13.0",
-    "exceljs": "^4.3.0",
-    "archiver": "^6.0.1"
+    "pdfreader": "^3.0.7",
+    "prom-client": "^15.0.0",
+    "uuid": "^9.0.0",
+    "winston": "^3.17.0",
+    "xss": "^1.0.14"
   },
   "devDependencies": {
     "@types/node": "^20.5.0",

@@ -29,7 +29,7 @@ if exist package.json (
 
 REM Check if backend server is running
 echo 🔍 Checking backend server...
-curl -s http://localhost:5000/api/mutual-fund-exit-strategies/health >nul 2>&1
+curl -s http://localhost:5000/ >nul 2>&1
 if %errorlevel% equ 0 (
     echo ✅ Backend server is running
 ) else (

@@ -651,38 +651,62 @@ const handleWebhook = async (req, res) => {
 const updateKYCStatusFromWebhook = async (kycRequest, status) => {
   try {
     const kycRecord = await KYCVerification.findOne({
-      aadharVerificationId: kycRequest.id
+      $or: [
+        { aadharVerificationId: kycRequest.id },
+        { panVerificationId: kycRequest.id }
+      ]
     });
 
     if (kycRecord) {
+      const previousStatus = {
+        aadharStatus: kycRecord.aadharStatus,
+        panStatus: kycRecord.panStatus,
+        overallStatus: kycRecord.overallStatus
+      };
+
       if (status === 'completed') {
         kycRecord.overallStatus = 'in_progress';
+        kycRecord.lastVerificationAttempt = new Date();
       } else if (status === 'approved') {
         kycRecord.aadharStatus = 'verified';
         kycRecord.panStatus = 'verified';
         kycRecord.overallStatus = 'verified';
+        kycRecord.lastVerificationAttempt = new Date();
       } else if (status === 'rejected') {
         kycRecord.aadharStatus = 'failed';
         kycRecord.panStatus = 'failed';
         kycRecord.overallStatus = 'failed';
+        kycRecord.lastVerificationAttempt = new Date();
       }
 
       await kycRecord.save();
       
       logger.info('KYC status updated from webhook', {
         requestId: kycRequest.id,
-        newStatus: status,
-        clientId: kycRecord.clientId
+        clientId: kycRecord.clientId,
+        advisorId: kycRecord.advisorId,
+        previousStatus,
+        newStatus: {
+          aadharStatus: kycRecord.aadharStatus,
+          panStatus: kycRecord.panStatus,
+          overallStatus: kycRecord.overallStatus
+        },
+        webhookStatus: status
       });
     } else {
       logger.warn('KYC record not found for webhook update', {
-        digioRequestId: kycRequest.id
+        digioRequestId: kycRequest.id,
+        searchCriteria: {
+          aadharVerificationId: kycRequest.id,
+          panVerificationId: kycRequest.id
+        }
       });
     }
   } catch (error) {
     logger.error('Error updating KYC status from webhook', {
       requestId: kycRequest.id,
-      error: error.message
+      error: error.message,
+      stack: error.stack
     });
   }
 };
@@ -691,32 +715,59 @@ const updateKYCStatusFromWebhook = async (kycRequest, status) => {
 const updateKYCActionStatus = async (kycAction) => {
   try {
     const kycRecord = await KYCVerification.findOne({
-      aadharVerificationId: kycAction.kyc_request_id
+      $or: [
+        { aadharVerificationId: kycAction.kyc_request_id },
+        { panVerificationId: kycAction.kyc_request_id }
+      ]
     });
 
     if (kycRecord) {
+      const previousStatus = {
+        aadharStatus: kycRecord.aadharStatus,
+        panStatus: kycRecord.panStatus,
+        overallStatus: kycRecord.overallStatus
+      };
+
       if (kycAction.type === 'aadhaar_offline' || kycAction.type === 'aadhaar') {
         kycRecord.aadharStatus = kycAction.status;
       } else if (kycAction.type === 'digilocker' || kycAction.type === 'pan') {
         kycRecord.panStatus = kycAction.status;
       }
 
+      // Update last verification attempt
+      kycRecord.lastVerificationAttempt = new Date();
+
       await kycRecord.save();
       
       logger.info('KYC action status updated', {
         requestId: kycAction.kyc_request_id,
+        clientId: kycRecord.clientId,
+        advisorId: kycRecord.advisorId,
         actionType: kycAction.type,
-        newStatus: kycAction.status
+        actionStatus: kycAction.status,
+        previousStatus,
+        newStatus: {
+          aadharStatus: kycRecord.aadharStatus,
+          panStatus: kycRecord.panStatus,
+          overallStatus: kycRecord.overallStatus
+        }
       });
     } else {
       logger.warn('KYC record not found for action update', {
-        digioRequestId: kycAction.kyc_request_id
+        digioRequestId: kycAction.kyc_request_id,
+        actionType: kycAction.type,
+        searchCriteria: {
+          aadharVerificationId: kycAction.kyc_request_id,
+          panVerificationId: kycAction.kyc_request_id
+        }
       });
     }
   } catch (error) {
     logger.error('Error updating KYC action status', {
       requestId: kycAction.kyc_request_id,
-      error: error.message
+      actionType: kycAction.type,
+      error: error.message,
+      stack: error.stack
     });
   }
 };

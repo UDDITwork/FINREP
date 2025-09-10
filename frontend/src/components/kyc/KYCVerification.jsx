@@ -60,6 +60,22 @@ const KYCVerification = () => {
     }
   };
 
+  const handleRefreshStatus = async () => {
+    if (!selectedClient) return;
+    
+    try {
+      const response = await kycService.getKYCStatus(selectedClient._id);
+      if (response.success) {
+        setKycStatus(response.data.kycStatus);
+      } else {
+        setError('Failed to refresh KYC status');
+      }
+    } catch (error) {
+      console.error('Error refreshing KYC status:', error);
+      setError('Failed to refresh KYC status');
+    }
+  };
+
   const handleStartWorkflow = () => {
     setShowWorkflow(true);
     setActiveStep('workflow');
@@ -92,7 +108,7 @@ const KYCVerification = () => {
     if (!selectedClient) return;
     
     try {
-      const response = await kycService.resetKYCStatus(selectedClient._id);
+      const response = await kycService.resetKYCVerification(selectedClient._id);
       if (response.success) {
         // Refresh KYC status
         handleClientSelect(selectedClient);
@@ -217,6 +233,7 @@ const KYCVerification = () => {
               kycStatus={kycStatus}
               onStartWorkflow={handleStartWorkflow}
               onResetKYC={handleResetKYC}
+              onRefresh={handleRefreshStatus}
             />
           </div>
         )}

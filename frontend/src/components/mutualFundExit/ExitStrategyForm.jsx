@@ -67,6 +67,17 @@ const ExitStrategyForm = ({
   onStrategyCreated, 
   onBack 
 }) => {
+  // DEBUG: Log props on component mount
+  useEffect(() => {
+    console.log('🔍 [ExitStrategyForm] Component mounted with props:', {
+      client: client,
+      fund: fund,
+      hasClient: !!client,
+      hasFund: !!fund,
+      fundKeys: fund ? Object.keys(fund) : 'no fund',
+      clientKeys: client ? Object.keys(client) : 'no client'
+    });
+  }, [client, fund]);
   const [formData, setFormData] = useState({
     // Primary Exit Analysis
     primaryExitAnalysis: {
@@ -368,6 +379,17 @@ const ExitStrategyForm = ({
     try {
       setLoading(true);
       
+      // Validate required props first
+      if (!client) {
+        alert('Client data is missing. Please go back and select a client.');
+        return;
+      }
+      
+      if (!fund) {
+        alert('Fund data is missing. Please go back and select a fund.');
+        return;
+      }
+      
       // Validate all steps before submission
       let allStepsValid = true;
       for (let step = 1; step <= totalSteps; step++) {
@@ -382,21 +404,25 @@ const ExitStrategyForm = ({
         return;
       }
 
-      // Prepare complete strategy data
+      // DEBUG: Log fund and client data
+      console.log('🔍 [Exit Strategy] Fund data:', fund);
+      console.log('🔍 [Exit Strategy] Client data:', client);
+      
+      // Prepare complete strategy data with fallbacks
       const strategyData = {
-        clientId: client.clientId,
-        fundId: fund.fundId,
-        fundName: fund.fundName,
-        fundCategory: fund.fundCategory,
-        fundType: fund.fundType,
-        source: fund.source,
+        clientId: client?.clientId || client?._id,
+        fundId: fund?.fundId || fund?._id,
+        fundName: fund?.fundName || fund?.name || 'Unknown Fund',
+        fundCategory: fund?.fundCategory || fund?.category || 'Unknown Category',
+        fundType: fund?.fundType || fund?.type || 'Unknown Type',
+        source: fund?.source || 'manual',
         status: 'pending_approval',
         priority: 'medium',
         ...formData,
         // Ensure advisor certification is properly set
         advisorCertification: {
           ...formData.advisorCertification,
-          certifiedBy: client.advisorId || 'current_advisor',
+          certifiedBy: client?.advisorId || 'current_advisor',
           certificationDate: new Date()
         },
         // Ensure client acknowledgment is properly set
@@ -406,13 +432,24 @@ const ExitStrategyForm = ({
           acknowledgmentDate: null
         }
       };
+      
+      console.log('🔍 [Exit Strategy] Prepared strategy data:', strategyData);
 
       // Validate using API service
       try {
         mutualFundExitAPI.validateStrategyData(strategyData);
       } catch (validationError) {
         console.error('Validation error:', validationError.message);
-        // Show validation error to user
+        console.error('Missing fields in strategy data:', {
+          fundName: strategyData.fundName,
+          fundId: strategyData.fundId,
+          clientId: strategyData.clientId,
+          fundCategory: strategyData.fundCategory,
+          fundType: strategyData.fundType
+        });
+        
+        // Show validation error to user with more details
+        alert(`Validation Error: ${validationError.message}\n\nPlease check the fund data and try again.`);
         return;
       }
 

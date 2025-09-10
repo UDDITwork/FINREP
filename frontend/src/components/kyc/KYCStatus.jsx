@@ -14,7 +14,7 @@
 import React from 'react';
 import { Shield, CheckCircle, XCircle, Clock, AlertCircle, RefreshCw, User, Calendar, FileText } from 'lucide-react';
 
-const KYCStatus = ({ client, kycStatus, onStartWorkflow, onResetKYC }) => {
+const KYCStatus = ({ client, kycStatus, onStartWorkflow, onResetKYC, onRefresh }) => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'verified':
@@ -229,7 +229,18 @@ const KYCStatus = ({ client, kycStatus, onStartWorkflow, onResetKYC }) => {
 
       {/* Action Buttons Section */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">Actions</h3>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Actions</h3>
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Refresh Status</span>
+            </button>
+          )}
+        </div>
         
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Start/Retry KYC Button */}

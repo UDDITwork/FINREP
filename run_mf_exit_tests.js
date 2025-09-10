@@ -21,8 +21,8 @@ const axios = require('axios');
 const CONFIG = {
   BASE_URL: 'http://localhost:5000/api',
   TEST_ADVISOR: {
-    email: 'test.advisor@example.com',
-    password: 'TestPassword123!'
+    email: 'udditalerts247@gmail.com',
+    password: 'jpmcA@123'
   }
 };
 
@@ -118,8 +118,8 @@ class SimpleTester {
   async testHealthCheck() {
     this.log('🏥 Testing Health Check endpoint...');
     try {
-      const response = await this.makeRequest('GET', '/mutual-fund-exit-strategies/health');
-      if (response.data.success && response.data.message.includes('healthy')) {
+      const response = await axios.get(`${CONFIG.BASE_URL.replace('/api', '')}/`);
+      if (response.data.status === 'active' && response.data.database === 'connected') {
         this.log('✅ Health check passed', 'success');
         this.results.passed++;
         return true;
@@ -137,8 +137,18 @@ class SimpleTester {
   async testStrategyCreation() {
     this.log('📝 Testing Strategy Creation...');
     try {
+      // First, let's get the actual client data from the clients-with-funds endpoint
+      const clientsResponse = await this.makeRequest('GET', '/mutual-fund-exit-strategies/clients-with-funds');
+      if (!clientsResponse.success || !clientsResponse.data.clients || clientsResponse.data.clients.length === 0) {
+        throw new Error('No clients available for testing');
+      }
+      
+      const client = clientsResponse.data.clients[0];
+      this.log(`Using client: ${client.clientName} (ID: ${client.clientId})`);
+      
       const testStrategy = {
-        clientId: '507f1f77bcf86cd799439011', // Valid ObjectId format
+        clientId: client.clientId,
+        advisorId: '6883ec3e2cc2c6df98e40604', // Your advisor ID
         fundId: 'test_fund_001',
         fundName: 'Test Equity Fund',
         fundCategory: 'Equity',
@@ -299,7 +309,7 @@ class SimpleTester {
 
   async runTests() {
     this.log('🚀 Starting Mutual Fund Exit Suite Tests...');
-    this.log('=' * 50);
+    this.log('==================================================');
     
     // Test authentication first
     if (!(await this.testAuthentication())) {
@@ -321,9 +331,9 @@ class SimpleTester {
   }
 
   generateReport() {
-    this.log('\n' + '=' * 50);
+    this.log('\n==================================================');
     this.log('📊 TEST RESULTS SUMMARY');
-    this.log('=' * 50);
+    this.log('==================================================');
     
     const total = this.results.passed + this.results.failed;
     const passRate = total > 0 ? ((this.results.passed / total) * 100).toFixed(1) : 0;

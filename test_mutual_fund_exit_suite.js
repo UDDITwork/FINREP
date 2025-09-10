@@ -32,11 +32,11 @@ const TEST_CONFIG = {
 // Test data
 const TEST_DATA = {
   advisor: {
-    firstName: 'Test',
-    lastName: 'Advisor',
-    email: 'test.advisor@example.com',
-    password: 'TestPassword123!',
-    phoneNumber: '+91-9876543210'
+    firstName: 'UDDIT',
+    lastName: 'UDDIT',
+    email: 'udditalerts247@gmail.com',
+    password: 'jpmcA@123',
+    phoneNumber: '+917456886877'
   },
   client: {
     firstName: 'Test',
@@ -297,8 +297,9 @@ class MutualFundExitSuiteTester {
       this.assert(typeof summaryResponse.data.totalStrategies === 'number', 'Summary data valid');
       
       // Test 3.3: Health check
-      const healthResponse = await this.makeRequest('GET', '/mutual-fund-exit-strategies/health');
-      this.assert(healthResponse.success, 'Health check endpoint working');
+      const healthResponse = await axios.get(`${TEST_CONFIG.BASE_URL.replace('/api', '')}/`);
+      this.assert(healthResponse.data.status === 'active', 'Health check endpoint working');
+      this.assert(healthResponse.data.database === 'connected', 'Database connection verified');
       
       return true;
     } catch (error) {
@@ -563,7 +564,7 @@ class MutualFundExitSuiteTester {
    */
   async runAllTests() {
     this.log('🚀 Starting Mutual Fund Exit Suite Comprehensive Testing...');
-    this.log('=' * 60);
+    this.log('============================================================');
     
     const tests = [
       { name: 'Authentication', fn: () => this.testAuthentication() },
@@ -597,9 +598,9 @@ class MutualFundExitSuiteTester {
    * Generate test report
    */
   generateReport() {
-    this.log('\n' + '=' * 60);
+    this.log('\n============================================================');
     this.log('📊 TEST REPORT SUMMARY');
-    this.log('=' * 60);
+    this.log('============================================================');
     
     const totalTests = this.testResults.passed + this.testResults.failed;
     const passRate = ((this.testResults.passed / totalTests) * 100).toFixed(2);

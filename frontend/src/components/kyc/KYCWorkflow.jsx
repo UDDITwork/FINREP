@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Shield, CheckCircle, XCircle, Clock, AlertCircle, Play, RefreshCw, X } from 'lucide-react';
 import kycService from '../../services/kycService';
 
@@ -9,6 +9,10 @@ const KYCWorkflow = ({ client, onStatusUpdate, onClose }) => {
   const [error, setError] = useState(null);
   const [digioInstance, setDigioInstance] = useState(null);
   const [workflowStatus, setWorkflowStatus] = useState('idle'); // idle, starting, active, completed, failed
+  const [digioRequestId, setDigioRequestId] = useState(null);
+  const [pollingInterval, setPollingInterval] = useState(null);
+  const [lastStatusCheck, setLastStatusCheck] = useState(null);
+  const pollingRef = useRef(null);
 
   useEffect(() => {
     // Load Digio SDK from the correct production frontend URL
@@ -27,7 +31,70 @@ const KYCWorkflow = ({ client, onStatusUpdate, onClose }) => {
     if (!window.Digio) {
       loadDigioSDK();
     }
+
+    // Cleanup polling on component unmount
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
   }, []);
+
+  // Status polling function
+  const checkKYCStatus = async () => {
+    if (!client?._id) return;
+    
+    try {
+      const response = await kycService.getKYCStatus(client._id);
+      if (response.success) {
+        const { kycStatus } = response.data;
+        setLastStatusCheck(new Date());
+        
+        // Check if status has changed to completed or failed
+        if (kycStatus.overallStatus === 'verified') {
+          setWorkflowStatus('completed');
+          onStatusUpdate('completed', { kycStatus });
+          stopPolling();
+          
+          // Auto-refresh page after successful completion
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+        } else if (kycStatus.overallStatus === 'failed') {
+          setWorkflowStatus('failed');
+          setError('KYC verification failed');
+          onStatusUpdate('failed', { kycStatus });
+          stopPolling();
+        }
+      }
+    } catch (error) {
+      console.error('Error checking KYC status:', error);
+      // Don't stop polling on error, just log it
+    }
+  };
+
+  // Start polling for status updates
+  const startPolling = () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+    }
+    
+    // Check status immediately
+    checkKYCStatus();
+    
+    // Then check every 5 seconds
+    pollingRef.current = setInterval(checkKYCStatus, 5000);
+    console.log('Started KYC status polling');
+  };
+
+  // Stop polling
+  const stopPolling = () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+      console.log('Stopped KYC status polling');
+    }
+  };
 
   const initializeDigio = (accessToken) => {
     try {
@@ -84,6 +151,7 @@ const KYCWorkflow = ({ client, onStatusUpdate, onClose }) => {
       
       if (response.success) {
         const { digioRequestId, accessToken } = response.data;
+        setDigioRequestId(digioRequestId);
         
         // Initialize Digio SDK
         const digio = initializeDigio(accessToken);
@@ -91,6 +159,9 @@ const KYCWorkflow = ({ client, onStatusUpdate, onClose }) => {
 
         setWorkflowStatus('active');
         onStatusUpdate('active', { digioRequestId });
+
+        // Start polling for status updates
+        startPolling();
 
         // Submit workflow to Digio
         digio.submit({
@@ -116,7 +187,14 @@ const KYCWorkflow = ({ client, onStatusUpdate, onClose }) => {
   const retryWorkflow = () => {
     setError(null);
     setWorkflowStatus('idle');
+    stopPolling();
     startWorkflow();
+  };
+
+  const manualRefresh = async () => {
+    if (workflowStatus === 'active') {
+      await checkKYCStatus();
+    }
   };
 
   const getStatusDisplay = () => {
@@ -143,7 +221,7 @@ const KYCWorkflow = ({ client, onStatusUpdate, onClose }) => {
         return {
           icon: <Clock className="h-8 w-8 text-blue-500 animate-spin" />,
           title: 'Verification in Progress',
-          description: 'The KYC verification is currently active. Please complete the verification in the popup window.',
+          description: 'The KYC verification is currently active. Complete verification on your mobile device or in the popup window. Status updates automatically.',
           color: 'text-blue-600',
           bgColor: 'bg-blue-50',
           borderColor: 'border-blue-200'
@@ -223,7 +301,18 @@ const KYCWorkflow = ({ client, onStatusUpdate, onClose }) => {
 
           {/* Client Information Card */}
           <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">Client Details</h4>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold text-gray-900">Client Details</h4>
+              {workflowStatus === 'active' && (
+                <button
+                  onClick={manualRefresh}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Refresh Status</span>
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm font-medium text-gray-500 mb-1">Full Name</p>
@@ -246,6 +335,21 @@ const KYCWorkflow = ({ client, onStatusUpdate, onClose }) => {
                 <p className="text-gray-900 font-mono text-sm">{client?._id}</p>
               </div>
             </div>
+            
+            {/* Status Polling Info */}
+            {workflowStatus === 'active' && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span>Auto-refreshing status every 5 seconds</span>
+                  {lastStatusCheck && (
+                    <span className="text-gray-500">
+                      • Last check: {lastStatusCheck.toLocaleTimeString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Workflow Instructions */}
@@ -263,19 +367,52 @@ const KYCWorkflow = ({ client, onStatusUpdate, onClose }) => {
                   <div className="bg-blue-200 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
                     2
                   </div>
-                  <p>A popup window will open with the Digio verification interface</p>
+                  <p>A verification link will be sent to the client's mobile number</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="bg-blue-200 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
                     3
                   </div>
-                  <p>Follow the on-screen instructions to complete verification</p>
+                  <p>Client completes verification on their mobile device</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="bg-blue-200 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
                     4
                   </div>
-                  <p>Status will update automatically upon completion</p>
+                  <p>Status updates automatically every 5 seconds</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Active Workflow Instructions */}
+          {workflowStatus === 'active' && (
+            <div className="bg-green-50 rounded-xl p-6 border border-green-200">
+              <h4 className="text-lg font-semibold text-green-900 mb-3">Verification in Progress</h4>
+              <div className="space-y-3 text-sm text-green-800">
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-200 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                    ✓
+                  </div>
+                  <p>Verification link sent to client's mobile number</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-200 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                    ⏳
+                  </div>
+                  <p>Waiting for client to complete verification on mobile</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-200 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                    🔄
+                  </div>
+                  <p>Status automatically updates every 5 seconds</p>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="bg-green-200 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                    📱
+                  </div>
+                  <p>Client can also complete verification in browser popup</p>
                 </div>
               </div>
             </div>
@@ -340,7 +477,10 @@ const KYCWorkflow = ({ client, onStatusUpdate, onClose }) => {
 
             {workflowStatus === 'active' && (
               <button
-                onClick={onClose}
+                onClick={() => {
+                  stopPolling();
+                  onClose();
+                }}
                 className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
               >
                 <X className="h-5 w-5" />

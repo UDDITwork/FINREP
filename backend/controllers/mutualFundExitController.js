@@ -332,15 +332,36 @@ class MutualFundExitController {
       const strategyData = req.body;
 
       logger.info(`Creating exit strategy for client: ${strategyData.clientId}, fund: ${strategyData.fundId}`);
+      
+      // DEBUG: Log the request details
+      console.log('🔍 [MF Exit Strategy] Create request details:', {
+        advisorId: advisorId,
+        advisorIdType: typeof advisorId,
+        clientId: strategyData.clientId,
+        clientIdType: typeof strategyData.clientId,
+        fundId: strategyData.fundId,
+        fundName: strategyData.fundName
+      });
 
       // Verify client belongs to advisor
       const client = await Client.findOne({
         _id: strategyData.clientId,
-        advisor: advisorId,
-        isActive: true
+        advisor: advisorId
+      });
+
+      console.log('🔍 [MF Exit Strategy] Client lookup result:', {
+        clientFound: !!client,
+        clientId: client?._id,
+        clientAdvisor: client?.advisor,
+        requestedAdvisor: advisorId
       });
 
       if (!client) {
+        logger.warn(`Client not found or access denied`, {
+          clientId: strategyData.clientId,
+          advisorId: advisorId,
+          advisorIdType: typeof advisorId
+        });
         return res.status(404).json({
           success: false,
           message: 'Client not found or access denied'
