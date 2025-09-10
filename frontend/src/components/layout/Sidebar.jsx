@@ -38,11 +38,6 @@ function Sidebar() {
       icon: Video,
     },
     {
-      name: 'A/B Testing',
-      path: '/ab-testing',
-      icon: BarChart3,
-    },
-    {
       name: 'A/B Testing Suite 2',
       path: '/ab-testing-suite-2',
       icon: TrendingUp,
@@ -83,7 +78,7 @@ function Sidebar() {
       icon: FileText,
     },
     {
-      name: 'Vault',
+      name: 'Profile',
       path: '/vault', 
       icon: Lock,
     },

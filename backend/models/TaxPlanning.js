@@ -2,41 +2,9 @@
  * FILE LOCATION: backend/models/TaxPlanning.js
  * 
  * PURPOSE: Mongoose model for storing comprehensive tax planning strategies and recommendations
- * 
- * FUNCTIONALITY:
- * - Defines schema for detailed tax planning analysis and recommendations
- * - Stores AI-generated tax recommendations and manual advisor inputs
- * - Tracks tax optimization strategies, deductions, and compliance requirements
- * - Maintains tax planning metadata, review dates, and advisor certifications
- * - Records client acknowledgments and implementation status
- * 
- * DATA STRUCTURE:
- * - Personal tax information and compliance data
- * - Income analysis and tax slab calculations
- * - Tax-saving investments and deduction optimization
- * - Capital gains analysis and tax implications
- * - Estate tax planning and wealth transfer strategies
- * - Business tax considerations and professional income
- * - AI recommendations and manual advisor inputs
- * - Implementation tracking and compliance monitoring
- * 
- * RELATIONSHIPS:
- * - Links to Client model via clientId
- * - Links to Advisor model via advisorId
- * - References financial plans and CAS data for comprehensive analysis
- * - Tracks tax planning history and version control
- * 
- * VALIDATION:
- * - Required fields for essential tax planning components
- * - Date validation for tax years and review dates
- * - Numeric validation for amounts, percentages, and tax calculations
- * - Status validation for workflow states and compliance tracking
- * 
- * INDEXING:
- * - Client ID for efficient client-based queries
- * - Advisor ID for advisor-specific access
- * - Tax year for chronological tax planning
- * - Status for workflow management
+
+
+ - Status for workflow management
  * - Created date for chronological ordering
  */
 

@@ -10,7 +10,10 @@ const {
   deleteCertification,
   addMembership,
   updateMembership,
-  deleteMembership
+  deleteMembership,
+  uploadDocument,
+  updateDocument,
+  deleteDocument
 } = require('../controllers/vaultController');
 
 // Apply authentication to all vault routes
@@ -75,5 +78,27 @@ router.put('/memberships/:membershipId', updateMembership);
  * DELETE /api/vault/memberships/:membershipId
  */
 router.delete('/memberships/:membershipId', deleteMembership);
+
+// ============================================================================
+// DOCUMENT ROUTES
+// ============================================================================
+
+/**
+ * Upload new document
+ * POST /api/vault/documents
+ */
+router.post('/documents', uploadDocument);
+
+/**
+ * Update document
+ * PUT /api/vault/documents/:documentId
+ */
+router.put('/documents/:documentId', updateDocument);
+
+/**
+ * Delete document
+ * DELETE /api/vault/documents/:documentId
+ */
+router.delete('/documents/:documentId', deleteDocument);
 
 module.exports = router;

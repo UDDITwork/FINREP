@@ -1,22 +1,17 @@
 /**
  * FILE LOCATION: frontend/src/components/clientReports/ClientReportsPage.jsx
- * 
- * PURPOSE: Main client reports page that displays client list and allows navigation to detailed reports
- * 
- * FUNCTIONALITY:
- * - Displays advisor vault data in header
- * - Shows list of all clients for the advisor
- * - Allows clicking on client to view comprehensive report
- * - Handles loading states and error handling
+
  */
+
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Search, Calendar, FileText, TrendingUp, Shield, MessageCircle, BarChart3, PieChart, TrendingDown, Lock, DollarSign, Target, Activity } from 'lucide-react';
+import { Users, Search, Calendar, FileText, TrendingUp, Shield, MessageCircle, BarChart3, PieChart, TrendingDown, Lock, DollarSign, Target, Activity, Upload } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { clientReportsAPI } from '../../services/api';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, RadialLinearScale, PointElement, LineElement, Filler } from 'chart.js';
 import { Bar, Doughnut, Pie, Line, Radar } from 'react-chartjs-2';
+import BulkImportModal from './BulkImportModal';
 
 // Register Chart.js components
 ChartJS.register(
@@ -38,6 +33,7 @@ function ClientReportsPage() {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -76,6 +72,12 @@ function ClientReportsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBulkImportComplete = (importData) => {
+    // Refresh the client list after successful import
+    fetchData();
+    toast.success(`Successfully imported ${importData.successful} clients`);
   };
 
   const handleClientClick = (client) => {
@@ -447,9 +449,18 @@ function ClientReportsPage() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            <div className="flex items-center space-x-4 text-sm text-gray-600">
-              <span>Total Clients: {clients.length}</span>
-              <span>Active: {clients.filter(c => c.status === 'active').length}</span>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowBulkImport(true)}
+                className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+              >
+                <Upload className="h-4 w-4" />
+                <span>Bulk Import</span>
+              </button>
+              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                <span>Total Clients: {clients.length}</span>
+                <span>Active: {clients.filter(c => c.status === 'active').length}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -847,6 +858,13 @@ function ClientReportsPage() {
           </div>
         )}
       </div>
+
+      {/* Bulk Import Modal */}
+      <BulkImportModal
+        isOpen={showBulkImport}
+        onClose={() => setShowBulkImport(false)}
+        onImportComplete={handleBulkImportComplete}
+      />
     </div>
   );
 }

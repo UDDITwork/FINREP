@@ -772,10 +772,158 @@ const updateKYCActionStatus = async (kycAction) => {
   }
 };
 
+// Simplified approach: Manual status check without webhooks
+const checkKYCStatusManually = async (req, res) => {
+  try {
+    const { clientId } = req.params;
+    const advisorId = extractAdvisorId(req);
+
+    if (!advisorId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+
+    // Get KYC record
+    const kycRecord = await KYCVerification.findOne({ 
+      clientId, 
+      advisorId 
+    });
+
+    if (!kycRecord) {
+      return res.status(404).json({
+        success: false,
+        error: 'KYC record not found'
+      });
+    }
+
+    // If no Digio request ID, return current status
+    if (!kycRecord.aadharVerificationId) {
+      return res.json({
+        success: true,
+        data: {
+          kycStatus: {
+            aadharStatus: kycRecord.aadharStatus,
+            panStatus: kycRecord.panStatus,
+            overallStatus: kycRecord.overallStatus,
+            lastVerificationAttempt: kycRecord.lastVerificationAttempt
+          }
+        }
+      });
+    }
+
+    // Check status with Digio API
+    const digioResponse = await digioService.getVerificationStatus(kycRecord.aadharVerificationId);
+    
+    if (digioResponse.success) {
+      const digioStatus = digioResponse.data;
+      
+      // Update local status based on Digio response
+      const previousStatus = {
+        aadharStatus: kycRecord.aadharStatus,
+        panStatus: kycRecord.panStatus,
+        overallStatus: kycRecord.overallStatus
+      };
+
+      // Map Digio status to our status
+      if (digioStatus.overallStatus === 'approved') {
+        kycRecord.aadharStatus = 'verified';
+        kycRecord.panStatus = 'verified';
+        kycRecord.overallStatus = 'verified';
+      } else if (digioStatus.overallStatus === 'rejected' || digioStatus.overallStatus === 'failed') {
+        kycRecord.aadharStatus = 'failed';
+        kycRecord.panStatus = 'failed';
+        kycRecord.overallStatus = 'failed';
+      } else if (digioStatus.overallStatus === 'requested') {
+        kycRecord.aadharStatus = 'in_progress';
+        kycRecord.panStatus = 'in_progress';
+        kycRecord.overallStatus = 'in_progress';
+      }
+
+      // Update specific action statuses if available
+      if (digioStatus.aadharStatus) {
+        kycRecord.aadharStatus = digioStatus.aadharStatus === 'success' ? 'verified' : 
+                                digioStatus.aadharStatus === 'failed' ? 'failed' : 'in_progress';
+      }
+      
+      if (digioStatus.panStatus) {
+        kycRecord.panStatus = digioStatus.panStatus === 'success' ? 'verified' : 
+                              digioStatus.panStatus === 'failed' ? 'failed' : 'in_progress';
+      }
+
+      kycRecord.lastVerificationAttempt = new Date();
+      await kycRecord.save();
+
+      logger.info('KYC status updated manually', {
+        clientId,
+        advisorId,
+        digioRequestId: kycRecord.aadharVerificationId,
+        previousStatus,
+        newStatus: {
+          aadharStatus: kycRecord.aadharStatus,
+          panStatus: kycRecord.panStatus,
+          overallStatus: kycRecord.overallStatus
+        },
+        digioStatus: digioStatus.overallStatus
+      });
+
+      res.json({
+        success: true,
+        data: {
+          kycStatus: {
+            aadharStatus: kycRecord.aadharStatus,
+            panStatus: kycRecord.panStatus,
+            overallStatus: kycRecord.overallStatus,
+            lastVerificationAttempt: kycRecord.lastVerificationAttempt
+          },
+          digioStatus: digioStatus
+        }
+      });
+    } else {
+      // If Digio API fails, return current status
+      logger.warn('Failed to get Digio status, returning local status', {
+        clientId,
+        advisorId,
+        error: digioResponse.error
+      });
+
+      res.json({
+        success: true,
+        data: {
+          kycStatus: {
+            aadharStatus: kycRecord.aadharStatus,
+            panStatus: kycRecord.panStatus,
+            overallStatus: kycRecord.overallStatus,
+            lastVerificationAttempt: kycRecord.lastVerificationAttempt
+          },
+          warning: 'Could not fetch latest status from Digio'
+        }
+      });
+    }
+
+  } catch (error) {
+    logger.error('Error checking KYC status manually', {
+      clientId: req.params.clientId,
+      error: error.message,
+      stack: error.stack
+    });
+    
+    res.status(500).json({
+      success: false,
+      error: 'Failed to check KYC status',
+      ...(process.env.NODE_ENV === 'development' && { 
+        details: error.message 
+      })
+    });
+  }
+};
+
 module.exports = {
   getClientsForKYC,
   getKYCStatus,
   startKYCWorkflow,
   resetKYCVerification,
-  handleWebhook
+  handleWebhook,
+  checkKYCStatusManually
 };

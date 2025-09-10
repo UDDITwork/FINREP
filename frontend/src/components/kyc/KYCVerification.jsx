@@ -64,9 +64,11 @@ const KYCVerification = () => {
     if (!selectedClient) return;
     
     try {
-      const response = await kycService.getKYCStatus(selectedClient._id);
+      // Use manual status check for more reliable updates
+      const response = await kycService.checkKYCStatusManually(selectedClient._id);
       if (response.success) {
         setKycStatus(response.data.kycStatus);
+        console.log('Status refreshed:', response.data.kycStatus);
       } else {
         setError('Failed to refresh KYC status');
       }

@@ -18,7 +18,8 @@ const {
   getKYCStatus,
   startKYCWorkflow,
   resetKYCVerification,
-  handleWebhook
+  handleWebhook,
+  checkKYCStatusManually
 } = require('../controllers/kycController');
 
 // Get all clients for KYC verification (advisor's clients)
@@ -33,7 +34,10 @@ router.post('/workflow/:clientId', auth, startKYCWorkflow);
 // Reset KYC verification for a client
 router.post('/reset/:clientId', auth, resetKYCVerification);
 
-// Webhook endpoint for Digio notifications (no auth required for webhooks)
+// Manual status check (simplified approach without webhooks)
+router.get('/check-status/:clientId', auth, checkKYCStatusManually);
+
+// Webhook endpoint for Digio notifications (optional - can be disabled)
 router.post('/webhook', handleWebhook);
 
 module.exports = router;

@@ -32,7 +32,8 @@ const {
   getClientCASData,
   deleteClientCAS,
   getDashboardStats,
-  getClientFinancialSummary
+  getClientFinancialSummary,
+  bulkImportClients
 } = require('../controllers/clientController');
 
 const { OnboardingCASController, upload } = require('../controllers/OnboardingCASController');
@@ -79,6 +80,46 @@ const casUpload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
     files: 1
+  }
+});
+
+// Configure multer for bulk import files
+const bulkImportStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadPath = path.join(__dirname, '../uploads/temp');
+    // Ensure directory exists
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    const timestamp = Date.now();
+    const advisorId = req.user?.id || 'unknown';
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    cb(null, `bulk_import_${advisorId}_${timestamp}_${sanitizedName}`);
+  }
+});
+
+const bulkImportFileFilter = (req, file, cb) => {
+  const allowedExtensions = ['.csv', '.json', '.xlsx', '.xls'];
+  const fileExtension = path.extname(file.originalname).toLowerCase();
+  
+  if (allowedExtensions.includes(fileExtension)) {
+    cb(null, true);
+  } else {
+    const error = new Error('Only CSV, JSON, or Excel files are allowed for bulk import');
+    error.code = 'INVALID_FILE_TYPE';
+    cb(error, false);
+  }
+};
+
+const bulkImportUpload = multer({
+  storage: bulkImportStorage,
+  fileFilter: bulkImportFileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit for bulk import files
+    files: 1 // Only one file at a time
   }
 });
 
@@ -130,6 +171,9 @@ router.delete('/manage/:id', auth, deleteClient);
 // NEW: Enhanced Dashboard and Analytics Routes
 router.get('/manage/dashboard/stats', auth, getDashboardStats);
 router.get('/manage/:id/financial-summary', auth, getClientFinancialSummary);
+
+// Bulk Import Route
+router.post('/manage/bulk-import', auth, bulkImportUpload.single('file'), handleMulterError, bulkImportClients);
 
 // Enhanced CAS Management Routes for existing clients
 router.post('/manage/:id/cas/upload', auth, casUpload.single('casFile'), handleMulterError, uploadClientCAS);

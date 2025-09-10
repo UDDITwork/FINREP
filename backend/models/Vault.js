@@ -148,6 +148,50 @@ const vaultSchema = new mongoose.Schema({
     }
   }],
 
+  // Advisor Documents
+  documents: [{
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: [100, 'Document name cannot exceed 100 characters']
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: '',
+      maxlength: [500, 'Description cannot exceed 500 characters']
+    },
+    category: {
+      type: String,
+      required: true,
+      enum: ['certificate', 'license', 'registration', 'compliance', 'other'],
+      default: 'other'
+    },
+    fileUrl: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    cloudinaryId: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    fileSize: {
+      type: Number,
+      required: true
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    }
+  }],
+
   // Branding Configuration
   branding: {
     primaryColor: {
@@ -306,7 +350,7 @@ const vaultSchema = new mongoose.Schema({
     },
     footerStyle: {
       type: String,
-      enum: ['minimal', 'detailed', 'legal', 'none'],
+      enum: ['minimal', 'detailed', 'legal', 'none', 'professional'],
       default: 'detailed'
     },
     watermark: {
@@ -488,7 +532,8 @@ vaultSchema.pre('save', function(next) {
     // Sanitize white label data
     if (this.whiteLabel) {
       if (this.whiteLabel.isEnabled !== undefined) {
-        this.whiteLabel.isEnabled = Boolean(this.whiteLabel.isEnabled);
+        // Convert empty string or falsy values to false, truthy values to true
+        this.whiteLabel.isEnabled = this.whiteLabel.isEnabled === true || this.whiteLabel.isEnabled === 'true' || this.whiteLabel.isEnabled === 1;
       }
       if (this.whiteLabel.companyName !== undefined) {
         this.whiteLabel.companyName = String(this.whiteLabel.companyName || '').trim();
@@ -505,7 +550,8 @@ vaultSchema.pre('save', function(next) {
       }
       if (this.reportCustomization.watermark) {
         if (this.reportCustomization.watermark.isEnabled !== undefined) {
-          this.reportCustomization.watermark.isEnabled = Boolean(this.reportCustomization.watermark.isEnabled);
+          // Convert empty string or falsy values to false, truthy values to true
+          this.reportCustomization.watermark.isEnabled = this.reportCustomization.watermark.isEnabled === true || this.reportCustomization.watermark.isEnabled === 'true' || this.reportCustomization.watermark.isEnabled === 1;
         }
         if (this.reportCustomization.watermark.text !== undefined) {
           this.reportCustomization.watermark.text = String(this.reportCustomization.watermark.text || '').trim();
@@ -518,7 +564,10 @@ vaultSchema.pre('save', function(next) {
       Object.keys(this.scheduling.workingHours).forEach(day => {
         const dayConfig = this.scheduling.workingHours[day];
         if (dayConfig) {
-          if (dayConfig.isWorking !== undefined) dayConfig.isWorking = Boolean(dayConfig.isWorking);
+          if (dayConfig.isWorking !== undefined) {
+            // Convert empty string or falsy values to false, truthy values to true
+            dayConfig.isWorking = dayConfig.isWorking === true || dayConfig.isWorking === 'true' || dayConfig.isWorking === 1;
+          }
           if (dayConfig.startTime !== undefined) dayConfig.startTime = String(dayConfig.startTime || '09:00').trim();
           if (dayConfig.endTime !== undefined) dayConfig.endTime = String(dayConfig.endTime || '17:00').trim();
         }
@@ -531,7 +580,10 @@ vaultSchema.pre('save', function(next) {
         if (cert.name !== undefined) cert.name = String(cert.name || '').trim();
         if (cert.issuingBody !== undefined) cert.issuingBody = String(cert.issuingBody || '').trim();
         if (cert.certificateNumber !== undefined) cert.certificateNumber = String(cert.certificateNumber || '').trim();
-        if (cert.isActive !== undefined) cert.isActive = Boolean(cert.isActive);
+        if (cert.isActive !== undefined) {
+          // Convert empty string or falsy values to false, truthy values to true
+          cert.isActive = cert.isActive === true || cert.isActive === 'true' || cert.isActive === 1;
+        }
       });
     }
     
@@ -540,7 +592,10 @@ vaultSchema.pre('save', function(next) {
         if (membership.organization !== undefined) membership.organization = String(membership.organization || '').trim();
         if (membership.membershipType !== undefined) membership.membershipType = String(membership.membershipType || '').trim();
         if (membership.membershipNumber !== undefined) membership.membershipNumber = String(membership.membershipNumber || '').trim();
-        if (membership.isActive !== undefined) membership.isActive = Boolean(membership.isActive);
+        if (membership.isActive !== undefined) {
+          // Convert empty string or falsy values to false, truthy values to true
+          membership.isActive = membership.isActive === true || membership.isActive === 'true' || membership.isActive === 1;
+        }
       });
     }
     

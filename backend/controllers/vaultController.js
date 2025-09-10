@@ -1,6 +1,37 @@
 // File: backend/controllers/vaultController.js
 const Vault = require('../models/Vault');
 const { logger } = require('../utils/logger');
+const cloudinary = require('cloudinary').v2;
+const multer = require('multer');
+const path = require('path');
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Configure multer for document uploads
+const documentStorage = multer.memoryStorage();
+
+const documentFileFilter = (req, file, cb) => {
+  // Only allow PDF files
+  if (file.mimetype === 'application/pdf') {
+    cb(null, true);
+  } else {
+    cb(new Error('Only PDF files are allowed'), false);
+  }
+};
+
+const documentUpload = multer({
+  storage: documentStorage,
+  fileFilter: documentFileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+    files: 1 // Only one file at a time
+  }
+});
 
 /**
  * Get vault data for authenticated advisor
@@ -695,6 +726,204 @@ const deleteMembership = async (req, res) => {
   }
 };
 
+// ============================================================================
+// DOCUMENT UPLOAD FUNCTIONS
+// ============================================================================
+
+/**
+ * Upload document to Cloudinary and save to vault
+ */
+const uploadDocument = async (req, res) => {
+  try {
+    const advisorId = req.advisor.id;
+    const { name, description, category } = req.body;
+
+    // Validate required fields
+    if (!name || !category) {
+      return res.status(400).json({
+        success: false,
+        message: 'Document name and category are required'
+      });
+    }
+
+    // Check if file is uploaded
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No PDF file uploaded'
+      });
+    }
+
+    // Upload to Cloudinary
+    const uploadResult = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'raw',
+          folder: `advisor-documents/${advisorId}`,
+          public_id: `document_${Date.now()}`,
+          format: 'pdf'
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      ).end(req.file.buffer);
+    });
+
+    // Find or create vault
+    let vault = await Vault.findOne({ advisorId });
+    if (!vault) {
+      vault = new Vault({ advisorId });
+    }
+
+    // Add document to vault
+    const document = {
+      name: name.trim(),
+      description: description ? description.trim() : '',
+      category,
+      fileUrl: uploadResult.secure_url,
+      cloudinaryId: uploadResult.public_id,
+      fileSize: req.file.size,
+      uploadedAt: new Date(),
+      isActive: true
+    };
+
+    vault.documents.push(document);
+    await vault.save();
+
+    logger.info('Document uploaded successfully', {
+      advisorId,
+      documentName: name,
+      cloudinaryId: uploadResult.public_id,
+      fileSize: req.file.size
+    });
+
+    res.json({
+      success: true,
+      message: 'Document uploaded successfully',
+      data: {
+        document: vault.documents[vault.documents.length - 1],
+        vault: vault
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error uploading document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload document',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Update document information
+ */
+const updateDocument = async (req, res) => {
+  try {
+    const advisorId = req.advisor.id;
+    const documentId = req.params.documentId;
+    const { name, description, category } = req.body;
+
+    const vault = await Vault.findOne({ advisorId });
+    if (!vault) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vault not found'
+      });
+    }
+
+    const document = vault.documents.id(documentId);
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+
+    // Update document fields
+    if (name) document.name = name.trim();
+    if (description !== undefined) document.description = description.trim();
+    if (category) document.category = category;
+
+    await vault.save();
+
+    res.json({
+      success: true,
+      message: 'Document updated successfully',
+      data: vault
+    });
+
+  } catch (error) {
+    logger.error('Error updating document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update document',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Delete document from Cloudinary and vault
+ */
+const deleteDocument = async (req, res) => {
+  try {
+    const advisorId = req.advisor.id;
+    const documentId = req.params.documentId;
+
+    const vault = await Vault.findOne({ advisorId });
+    if (!vault) {
+      return res.status(404).json({
+        success: false,
+        message: 'Vault not found'
+      });
+    }
+
+    const document = vault.documents.id(documentId);
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: 'Document not found'
+      });
+    }
+
+    // Delete from Cloudinary
+    try {
+      await cloudinary.uploader.destroy(document.cloudinaryId);
+      logger.info('Document deleted from Cloudinary', {
+        advisorId,
+        cloudinaryId: document.cloudinaryId
+      });
+    } catch (cloudinaryError) {
+      logger.warn('Failed to delete document from Cloudinary', {
+        advisorId,
+        cloudinaryId: document.cloudinaryId,
+        error: cloudinaryError.message
+      });
+    }
+
+    // Remove from vault
+    vault.documents.id(documentId).remove();
+    await vault.save();
+
+    res.json({
+      success: true,
+      message: 'Document deleted successfully',
+      data: vault
+    });
+
+  } catch (error) {
+    logger.error('Error deleting document:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete document',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getVaultData,
   updateVaultData,
@@ -703,5 +932,8 @@ module.exports = {
   deleteCertification,
   addMembership,
   updateMembership,
-  deleteMembership
+  deleteMembership,
+  uploadDocument: documentUpload.single('document'),
+  updateDocument,
+  deleteDocument
 };

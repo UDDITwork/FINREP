@@ -12,6 +12,9 @@ const { OnboardingCASController } = require('./OnboardingCASController');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const multer = require('multer');
+const csv = require('csv-parser');
+const xlsx = require('xlsx');
 
 // Daily.co configuration
 const DAILY_API_KEY = process.env.DAILY_API_KEY;
@@ -2649,6 +2652,303 @@ const generateFinancialRecommendations = (client, financials, healthMetrics) => 
   return recommendations;
 };
 
+// ============================================================================
+// BULK IMPORT FUNCTIONALITY
+// ============================================================================
+
+/**
+ * Bulk import clients from CSV, JSON, or Excel files
+ * Supports fields: fullName, phoneNumber, email
+ */
+const bulkImportClients = async (req, res) => {
+  try {
+    const advisorId = req.user.id;
+    
+    // Check if file is uploaded
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded. Please upload a CSV, JSON, or Excel file.'
+      });
+    }
+
+    const filePath = req.file.path;
+    const fileExtension = path.extname(req.file.originalname).toLowerCase();
+    
+    let clientsData = [];
+    
+    try {
+      // Parse file based on extension
+      if (fileExtension === '.csv') {
+        clientsData = await parseCSVFile(filePath);
+      } else if (fileExtension === '.json') {
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        clientsData = JSON.parse(fileContent);
+      } else if (fileExtension === '.xlsx' || fileExtension === '.xls') {
+        clientsData = await parseExcelFile(filePath);
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Unsupported file format. Please upload CSV, JSON, or Excel files only.'
+        });
+      }
+
+      // Validate and process client data
+      const validationResult = validateClientData(clientsData);
+      if (!validationResult.isValid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Data validation failed',
+          errors: validationResult.errors
+        });
+      }
+
+      // Create clients in database
+      const importResult = await createBulkClients(clientsData, advisorId);
+      
+      // Clean up uploaded file
+      fs.unlinkSync(filePath);
+      
+      logger.info('Bulk import completed', {
+        advisorId,
+        totalRecords: clientsData.length,
+        successful: importResult.successful,
+        failed: importResult.failed,
+        errors: importResult.errors
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully imported ${importResult.successful} clients`,
+        data: {
+          totalRecords: clientsData.length,
+          successful: importResult.successful,
+          failed: importResult.failed,
+          errors: importResult.errors
+        }
+      });
+
+    } catch (parseError) {
+      // Clean up uploaded file on error
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      
+      logger.error('Bulk import parsing error', {
+        advisorId,
+        error: parseError.message,
+        fileExtension
+      });
+      
+      return res.status(400).json({
+        success: false,
+        message: 'Error parsing file. Please check file format and data structure.',
+        error: parseError.message
+      });
+    }
+
+  } catch (error) {
+    logger.error('Bulk import error', {
+      advisorId: req.user?.id,
+      error: error.message,
+      stack: error.stack
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error during bulk import',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Parse CSV file and return array of client objects
+ */
+const parseCSVFile = (filePath) => {
+  return new Promise((resolve, reject) => {
+    const results = [];
+    
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on('data', (data) => {
+        // Normalize field names (case insensitive)
+        const normalizedData = {};
+        Object.keys(data).forEach(key => {
+          const normalizedKey = key.toLowerCase().trim();
+          if (normalizedKey.includes('name') || normalizedKey.includes('fullname')) {
+            normalizedData.fullName = data[key].trim();
+          } else if (normalizedKey.includes('phone') || normalizedKey.includes('mobile')) {
+            normalizedData.phoneNumber = data[key].trim();
+          } else if (normalizedKey.includes('email') || normalizedKey.includes('mail')) {
+            normalizedData.email = data[key].trim();
+          }
+        });
+        
+        // Only add if we have at least one required field
+        if (normalizedData.fullName || normalizedData.email || normalizedData.phoneNumber) {
+          results.push(normalizedData);
+        }
+      })
+      .on('end', () => {
+        resolve(results);
+      })
+      .on('error', (error) => {
+        reject(error);
+      });
+  });
+};
+
+/**
+ * Parse Excel file and return array of client objects
+ */
+const parseExcelFile = (filePath) => {
+  const workbook = xlsx.readFile(filePath);
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+  const jsonData = xlsx.utils.sheet_to_json(worksheet);
+  
+  // Normalize field names (case insensitive)
+  return jsonData.map(row => {
+    const normalizedData = {};
+    Object.keys(row).forEach(key => {
+      const normalizedKey = key.toLowerCase().trim();
+      if (normalizedKey.includes('name') || normalizedKey.includes('fullname')) {
+        normalizedData.fullName = row[key]?.toString().trim();
+      } else if (normalizedKey.includes('phone') || normalizedKey.includes('mobile')) {
+        normalizedData.phoneNumber = row[key]?.toString().trim();
+      } else if (normalizedKey.includes('email') || normalizedKey.includes('mail')) {
+        normalizedData.email = row[key]?.toString().trim();
+      }
+    });
+    return normalizedData;
+  }).filter(data => data.fullName || data.email || data.phoneNumber);
+};
+
+/**
+ * Validate client data before import
+ */
+const validateClientData = (clientsData) => {
+  const errors = [];
+  
+  if (!Array.isArray(clientsData)) {
+    errors.push('Data must be an array of client objects');
+    return { isValid: false, errors };
+  }
+  
+  if (clientsData.length === 0) {
+    errors.push('No client data found in file');
+    return { isValid: false, errors };
+  }
+  
+  if (clientsData.length > 1000) {
+    errors.push('Maximum 1000 clients can be imported at once');
+    return { isValid: false, errors };
+  }
+  
+  // Validate each client record
+  clientsData.forEach((client, index) => {
+    const rowErrors = [];
+    
+    // Check required fields
+    if (!client.fullName && !client.email) {
+      rowErrors.push('Either full name or email is required');
+    }
+    
+    // Validate email format if provided
+    if (client.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(client.email)) {
+      rowErrors.push('Invalid email format');
+    }
+    
+    // Validate phone number format if provided
+    if (client.phoneNumber && !/^[+]?[\d\s\-\(\)]{10,15}$/.test(client.phoneNumber)) {
+      rowErrors.push('Invalid phone number format');
+    }
+    
+    if (rowErrors.length > 0) {
+      errors.push(`Row ${index + 1}: ${rowErrors.join(', ')}`);
+    }
+  });
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
+/**
+ * Create multiple clients in database
+ */
+const createBulkClients = async (clientsData, advisorId) => {
+  const successful = [];
+  const failed = [];
+  const errors = [];
+  
+  for (let i = 0; i < clientsData.length; i++) {
+    try {
+      const clientData = clientsData[i];
+      
+      // Split full name into first and last name
+      const nameParts = (clientData.fullName || '').trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      // Check for duplicate email
+      if (clientData.email) {
+        const existingClient = await Client.findOne({ 
+          email: clientData.email.toLowerCase(),
+          advisor: advisorId 
+        });
+        
+        if (existingClient) {
+          failed.push({
+            row: i + 1,
+            data: clientData,
+            reason: 'Email already exists'
+          });
+          continue;
+        }
+      }
+      
+      // Create new client
+      const newClient = new Client({
+        firstName: firstName,
+        lastName: lastName,
+        email: clientData.email?.toLowerCase() || '',
+        phoneNumber: clientData.phoneNumber || '',
+        advisor: advisorId,
+        status: 'invited',
+        onboardingStep: 0,
+        lastActiveDate: new Date()
+      });
+      
+      await newClient.save();
+      
+      successful.push({
+        row: i + 1,
+        clientId: newClient._id,
+        name: `${firstName} ${lastName}`.trim(),
+        email: clientData.email
+      });
+      
+    } catch (error) {
+      failed.push({
+        row: i + 1,
+        data: clientsData[i],
+        reason: error.message
+      });
+      errors.push(`Row ${i + 1}: ${error.message}`);
+    }
+  }
+  
+  return {
+    successful: successful.length,
+    failed: failed.length,
+    errors,
+    details: { successful, failed }
+  };
+};
+
 module.exports = {
   // Enhanced client management
   getClients,
@@ -2673,5 +2973,8 @@ module.exports = {
   
   // New dashboard and analytics
   getDashboardStats,
-  getClientFinancialSummary
+  getClientFinancialSummary,
+  
+  // Bulk import functionality
+  bulkImportClients
 };

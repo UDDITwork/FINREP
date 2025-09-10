@@ -2195,6 +2195,77 @@ export const vaultAPI = {
     });
     
     return response.data;
+  },
+
+  // Document upload functions
+  uploadDocument: async (formData) => {
+    console.log('📄 [VAULT API] Uploading document...', {
+      hasFile: !!formData.get('document'),
+      name: formData.get('name'),
+      category: formData.get('category'),
+      timestamp: new Date().toISOString()
+    });
+    
+    const startTime = Date.now();
+    const response = await api.post('/vault/documents', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    const duration = Date.now() - startTime;
+    
+    console.log('✅ [VAULT API] Document uploaded:', {
+      success: response.data.success,
+      documentId: response.data.data?.document?._id,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    });
+    
+    return response.data;
+  },
+
+  updateDocument: async (documentId, formData) => {
+    console.log('📄 [VAULT API] Updating document...', {
+      documentId,
+      name: formData.get('name'),
+      category: formData.get('category'),
+      timestamp: new Date().toISOString()
+    });
+    
+    const startTime = Date.now();
+    const response = await api.put(`/vault/documents/${documentId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    const duration = Date.now() - startTime;
+    
+    console.log('✅ [VAULT API] Document updated:', {
+      success: response.data.success,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    });
+    
+    return response.data;
+  },
+
+  deleteDocument: async (documentId) => {
+    console.log('🗑️ [VAULT API] Deleting document...', {
+      documentId,
+      timestamp: new Date().toISOString()
+    });
+    
+    const startTime = Date.now();
+    const response = await api.delete(`/vault/documents/${documentId}`);
+    const duration = Date.now() - startTime;
+    
+    console.log('✅ [VAULT API] Document deleted:', {
+      success: response.data.success,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    });
+    
+    return response.data;
   }
 };
 

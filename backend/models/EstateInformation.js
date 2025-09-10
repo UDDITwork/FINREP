@@ -1,15 +1,6 @@
 // File: backend/models/EstateInformation.js
 /**
- * Estate Information Model
- * Comprehensive estate planning data model for clients
- * 
- * PURPOSE: Stores complete estate planning information including:
- * - Family structure and beneficiaries
- * - Real estate properties with detailed ownership
- * - Legal documents status (wills, trusts, POA)
- * - Personal and digital assets
- * - Estate planning preferences
- * - Healthcare directives
+
  * - Estate metadata and planning status
  */
 

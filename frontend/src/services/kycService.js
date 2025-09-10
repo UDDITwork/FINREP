@@ -55,6 +55,17 @@ class KYCService {
       throw error;
     }
   }
+
+  // Check KYC status manually (simplified approach without webhooks)
+  async checkKYCStatusManually(clientId) {
+    try {
+      const response = await api.get(`/kyc/check-status/${clientId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking KYC status manually:', error);
+      throw error;
+    }
+  }
 }
 
 export default new KYCService();

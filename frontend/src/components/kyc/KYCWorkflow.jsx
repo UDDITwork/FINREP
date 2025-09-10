@@ -40,15 +40,23 @@ const KYCWorkflow = ({ client, onStatusUpdate, onClose }) => {
     };
   }, []);
 
-  // Status polling function
+  // Status polling function - using manual check instead of webhooks
   const checkKYCStatus = async () => {
     if (!client?._id) return;
     
     try {
-      const response = await kycService.getKYCStatus(client._id);
+      // Use the new manual status check endpoint
+      const response = await kycService.checkKYCStatusManually(client._id);
       if (response.success) {
         const { kycStatus } = response.data;
         setLastStatusCheck(new Date());
+        
+        console.log('KYC Status Check:', {
+          overallStatus: kycStatus.overallStatus,
+          aadharStatus: kycStatus.aadharStatus,
+          panStatus: kycStatus.panStatus,
+          lastCheck: new Date().toISOString()
+        });
         
         // Check if status has changed to completed or failed
         if (kycStatus.overallStatus === 'verified') {
@@ -65,11 +73,15 @@ const KYCWorkflow = ({ client, onStatusUpdate, onClose }) => {
           setError('KYC verification failed');
           onStatusUpdate('failed', { kycStatus });
           stopPolling();
+        } else if (kycStatus.overallStatus === 'in_progress') {
+          setWorkflowStatus('in_progress');
+          onStatusUpdate('in_progress', { kycStatus });
         }
       }
     } catch (error) {
       console.error('Error checking KYC status:', error);
       // Don't stop polling on error, just log it
+      // This ensures we keep checking even if there are temporary API issues
     }
   };
 

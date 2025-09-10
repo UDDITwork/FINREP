@@ -6,7 +6,7 @@
  */
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Save, Plus, Edit, Trash2, Palette, Globe, FileText, Clock, Award, Users, Settings, Eye, User, X } from 'lucide-react';
+import { Save, Plus, Edit, Trash2, Palette, Globe, FileText, Clock, Award, Users, Settings, Eye, User, X, Upload, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { vaultAPI } from '../services/api';
 import toast from 'react-hot-toast';
@@ -19,8 +19,11 @@ function Vault() {
   const [saving, setSaving] = useState(false);
   const [showCertificationModal, setShowCertificationModal] = useState(false);
   const [showMembershipModal, setShowMembershipModal] = useState(false);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [editingCertification, setEditingCertification] = useState(null);
   const [editingMembership, setEditingMembership] = useState(null);
+  const [editingDocument, setEditingDocument] = useState(null);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm();
 
@@ -29,6 +32,7 @@ function Vault() {
     { id: 'branding', label: 'Branding', icon: Palette },
     { id: 'certifications', label: 'Certifications', icon: Award },
     { id: 'memberships', label: 'Memberships', icon: Users },
+    { id: 'documents', label: 'Documents', icon: FileText },
     { id: 'digital', label: 'Digital Presence', icon: Globe },
     { id: 'reports', label: 'Report Settings', icon: FileText },
     { id: 'scheduling', label: 'Scheduling', icon: Clock },
@@ -462,6 +466,50 @@ function Vault() {
     }
   };
 
+  // Document functions
+  const handleAddDocument = () => {
+    setEditingDocument(null);
+    setShowDocumentModal(true);
+  };
+
+  const handleEditDocument = (document) => {
+    setEditingDocument(document);
+    setShowDocumentModal(true);
+  };
+
+  const handleDeleteDocument = async (documentId) => {
+    if (window.confirm('Are you sure you want to delete this document?')) {
+      try {
+        await vaultAPI.deleteDocument(documentId);
+        toast.success('Document deleted successfully');
+        loadVaultData();
+      } catch (error) {
+        console.error('Error deleting document:', error);
+        toast.error('Failed to delete document');
+      }
+    }
+  };
+
+  const handleDocumentUpload = async (formData) => {
+    try {
+      setUploadingDocument(true);
+      if (editingDocument) {
+        await vaultAPI.updateDocument(editingDocument._id, formData);
+        toast.success('Document updated successfully');
+      } else {
+        await vaultAPI.uploadDocument(formData);
+        toast.success('Document uploaded successfully');
+      }
+      setShowDocumentModal(false);
+      loadVaultData();
+    } catch (error) {
+      console.error('Error saving document:', error);
+      toast.error('Failed to save document');
+    } finally {
+      setUploadingDocument(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -509,13 +557,14 @@ function Vault() {
             {activeTab === 'branding' && <BrandingTab register={register} errors={errors} watch={watch} setValue={setValue} />}
             {activeTab === 'certifications' && <CertificationsTab vaultData={vaultData} onAdd={handleAddCertification} onEdit={handleEditCertification} onDelete={handleDeleteCertification} />}
             {activeTab === 'memberships' && <MembershipsTab vaultData={vaultData} onAdd={handleAddMembership} onEdit={handleEditMembership} onDelete={handleDeleteMembership} />}
+            {activeTab === 'documents' && <DocumentsTab vaultData={vaultData} onAdd={handleAddDocument} onEdit={handleEditDocument} onDelete={handleDeleteDocument} />}
             {activeTab === 'digital' && <DigitalPresenceTab register={register} errors={errors} />}
             {activeTab === 'reports' && <ReportSettingsTab register={register} errors={errors} watch={watch} />}
             {activeTab === 'scheduling' && <SchedulingTab register={register} errors={errors} />}
             {activeTab === 'whitelabel' && <WhiteLabelTab register={register} errors={errors} watch={watch} />}
 
-            {/* Save Button - Hidden for certifications and memberships tabs */}
-            {activeTab !== 'certifications' && activeTab !== 'memberships' && (
+            {/* Save Button - Hidden for certifications, memberships, and documents tabs */}
+            {activeTab !== 'certifications' && activeTab !== 'memberships' && activeTab !== 'documents' && (
               <div className="flex justify-end mt-8 pt-6 border-t border-gray-200">
                 <button
                   type="submit"
@@ -577,6 +626,16 @@ function Vault() {
               toast.error('Failed to save membership');
             }
           }}
+        />
+      )}
+
+      {showDocumentModal && (
+        <DocumentModal
+          isOpen={showDocumentModal}
+          onClose={() => setShowDocumentModal(false)}
+          document={editingDocument}
+          onSave={handleDocumentUpload}
+          loading={uploadingDocument}
         />
       )}
     </div>
@@ -1654,6 +1713,310 @@ function MembershipModal({ isOpen, onClose, membership, onSave }) {
             </div>
           </form>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Documents Tab Component
+function DocumentsTab({ vaultData, onAdd, onEdit, onDelete }) {
+  const documents = vaultData?.documents || [];
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getCategoryColor = (category) => {
+    const colors = {
+      certificate: 'bg-green-100 text-green-800',
+      license: 'bg-blue-100 text-blue-800',
+      registration: 'bg-purple-100 text-purple-800',
+      compliance: 'bg-orange-100 text-orange-800',
+      other: 'bg-gray-100 text-gray-800'
+    };
+    return colors[category] || colors.other;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Professional Documents</h3>
+          <p className="text-sm text-gray-600">Upload and manage your professional documents</p>
+        </div>
+        <button
+          onClick={onAdd}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus size={20} />
+          Add Document
+        </button>
+      </div>
+
+      {documents.length === 0 ? (
+        <div className="text-center py-12">
+          <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No documents uploaded yet</h3>
+          <p className="text-gray-600 mb-4">Upload your professional documents to showcase your credentials</p>
+          <button
+            onClick={onAdd}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Upload Your First Document
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {documents.map((document) => (
+            <div key={document._id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900 mb-1">{document.name}</h4>
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(document.category)}`}>
+                    {document.category}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => onEdit(document)}
+                    className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                  >
+                    <Edit size={16} />
+                  </button>
+                  <button
+                    onClick={() => onDelete(document._id)}
+                    className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {document.description && (
+                <p className="text-sm text-gray-600 mb-4">{document.description}</p>
+              )}
+
+              <div className="space-y-2 text-sm text-gray-500">
+                <div className="flex items-center justify-between">
+                  <span>File Size:</span>
+                  <span>{formatFileSize(document.fileSize)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Uploaded:</span>
+                  <span>{new Date(document.uploadedAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <a
+                  href={document.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  <Download size={16} />
+                  View Document
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Document Upload Modal Component
+function DocumentModal({ isOpen, onClose, document, onSave, loading }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    category: 'other',
+    file: null
+  });
+
+  useEffect(() => {
+    if (document) {
+      setFormData({
+        name: document.name || '',
+        description: document.description || '',
+        category: document.category || 'other',
+        file: null
+      });
+    } else {
+      setFormData({
+        name: '',
+        description: '',
+        category: 'other',
+        file: null
+      });
+    }
+  }, [document]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.type !== 'application/pdf') {
+        alert('Only PDF files are allowed');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        alert('File size must be less than 10MB');
+        return;
+      }
+      setFormData(prev => ({
+        ...prev,
+        file: file
+      }));
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!formData.name.trim()) {
+      alert('Document name is required');
+      return;
+    }
+    
+    if (!document && !formData.file) {
+      alert('Please select a PDF file to upload');
+      return;
+    }
+
+    const submitData = new FormData();
+    submitData.append('name', formData.name.trim());
+    submitData.append('description', formData.description.trim());
+    submitData.append('category', formData.category);
+    
+    if (formData.file) {
+      submitData.append('document', formData.file);
+    }
+
+    onSave(submitData);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">
+            {document ? 'Edit Document' : 'Upload Document'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Document Name *
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="e.g., SEBI Registration Certificate"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Brief description of the document"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Category *
+            </label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="certificate">Certificate</option>
+              <option value="license">License</option>
+              <option value="registration">Registration</option>
+              <option value="compliance">Compliance</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+
+          {!document && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                PDF File *
+              </label>
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleFileChange}
+                required={!document}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 mt-1">Only PDF files up to 10MB are allowed</p>
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  {document ? 'Updating...' : 'Uploading...'}
+                </>
+              ) : (
+                <>
+                  <Upload size={16} />
+                  {document ? 'Update Document' : 'Upload Document'}
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

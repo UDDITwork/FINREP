@@ -145,6 +145,13 @@ function ClientDetailReport() {
       setLoading(true);
       logDebug('FETCH START', { clientId, timestamp: new Date().toISOString() });
       
+      // ENHANCED BROWSER CONSOLE LOGGING
+      console.log(`\n🚀 [FRONTEND] Starting comprehensive client report fetch`);
+      console.log(`📊 [FRONTEND] Client ID: ${clientId}`);
+      console.log(`⏰ [FRONTEND] Fetch start time: ${new Date().toISOString()}`);
+      console.log(`🎯 [FRONTEND] Target models: EstateInformation, MutualFundRecommend, TaxPlanning`);
+      console.log(`🔍 [FRONTEND] Expected data: Complete client data with all 3 new models`);
+      
       // Enhanced clientId validation before making the API call
       if (!clientId) {
         throw new Error('No client ID provided');
@@ -172,6 +179,70 @@ function ClientDetailReport() {
       
       const response = await clientReportsAPI.getClientReport(clientId);
       
+      // COMPREHENSIVE API RESPONSE LOGGING
+      console.log(`\n📡 [FRONTEND] API Response received successfully`);
+      console.log(`✅ [FRONTEND] Response status: ${response.status || 'Unknown'}`);
+      console.log(`📊 [FRONTEND] Response success: ${response.success}`);
+      console.log(`⏰ [FRONTEND] Processing time: ${response.processingTime}`);
+      console.log(`📋 [FRONTEND] Response size: ${JSON.stringify(response).length} characters`);
+      console.log(`🔍 [FRONTEND] Data exists: ${!!response.data}`);
+      
+      // NEW MODELS DATA VERIFICATION LOGGING
+      if (response.data) {
+        console.log(`\n🎯 [FRONTEND] New Models Data Verification:`);
+        
+        // Estate Information Verification
+        const estateData = response.data.estateInformation;
+        console.log(`🏠 [ESTATE VERIFICATION] Estate data present: ${!!estateData}`);
+        if (estateData) {
+          console.log(`📊 [ESTATE VERIFICATION] Estate exists: ${estateData.exists}`);
+          console.log(`📋 [ESTATE VERIFICATION] Estate data fields: ${Object.keys(estateData.data || {}).length}`);
+          console.log(`📈 [ESTATE VERIFICATION] Estate summary fields: ${Object.keys(estateData.summary || {}).length}`);
+          console.log(`💰 [ESTATE VERIFICATION] Estimated net estate: ${estateData.summary?.estimatedNetEstate || 'Not Available'}`);
+        } else {
+          console.log(`❌ [ESTATE VERIFICATION] Estate data missing from response`);
+        }
+        
+        // Mutual Fund Recommendations Verification
+        const mfData = response.data.mutualFundRecommendations;
+        console.log(`📈 [MF VERIFICATION] MF recommendations present: ${!!mfData}`);
+        if (mfData) {
+          console.log(`📊 [MF VERIFICATION] MF count: ${mfData.count}`);
+          console.log(`📋 [MF VERIFICATION] MF recommendations: ${mfData.recommendations?.length || 0}`);
+          console.log(`📈 [MF VERIFICATION] MF summary fields: ${Object.keys(mfData.summary || {}).length}`);
+          console.log(`💰 [MF VERIFICATION] Total SIP amount: ${mfData.summary?.totalSIPAmount || 'Not Available'}`);
+          if (mfData.recommendations?.length > 0) {
+            console.log(`📋 [MF VERIFICATION] Sample fund: ${mfData.recommendations[0].fundName || 'Unknown'}`);
+          }
+        } else {
+          console.log(`❌ [MF VERIFICATION] MF recommendations missing from response`);
+        }
+        
+        // Tax Planning Verification
+        const taxData = response.data.taxPlanning;
+        console.log(`🧾 [TAX VERIFICATION] Tax planning present: ${!!taxData}`);
+        if (taxData) {
+          console.log(`📊 [TAX VERIFICATION] Tax plans count: ${taxData.count}`);
+          console.log(`📋 [TAX VERIFICATION] Tax plans: ${taxData.plans?.length || 0}`);
+          console.log(`📈 [TAX VERIFICATION] Tax summary fields: ${Object.keys(taxData.summary || {}).length}`);
+          console.log(`💰 [TAX VERIFICATION] Total tax savings: ${taxData.summary?.totalTaxSavings || 'Not Available'}`);
+          if (taxData.plans?.length > 0) {
+            console.log(`📋 [TAX VERIFICATION] Tax years: ${taxData.plans.map(plan => plan.taxYear).join(', ')}`);
+          }
+        } else {
+          console.log(`❌ [TAX VERIFICATION] Tax planning missing from response`);
+        }
+        
+        // Overall Verification
+        const allModelsPresent = !!(estateData && mfData && taxData);
+        console.log(`\n🎯 [OVERALL VERIFICATION] All 3 new models present: ${allModelsPresent ? 'YES' : 'NO'}`);
+        console.log(`📊 [OVERALL VERIFICATION] Estate: ${estateData ? '✅' : '❌'}`);
+        console.log(`📈 [OVERALL VERIFICATION] MF Recommendations: ${mfData ? '✅' : '❌'}`);
+        console.log(`🧾 [OVERALL VERIFICATION] Tax Planning: ${taxData ? '✅' : '❌'}`);
+      } else {
+        console.log(`❌ [FRONTEND] No data received in response`);
+      }
+      
       logDebug('FETCH RESPONSE RECEIVED', {
         status: response.status,
         dataExists: !!response.data,
@@ -182,10 +253,22 @@ function ClientDetailReport() {
 
       if (response?.success) {
         const reportData = response.data;
+        
+        // COMPREHENSIVE DATA SETTING LOGGING
+        console.log(`\n💾 [FRONTEND] Setting client data in state`);
+        console.log(`📊 [FRONTEND] Report data received: ${!!reportData}`);
+        console.log(`📋 [FRONTEND] Client data fields: ${reportData.client ? Object.keys(reportData.client).length : 0}`);
+        
+        // NEW MODELS STATE SETTING LOGGING
+        console.log(`\n🎯 [FRONTEND] New Models State Setting:`);
+        console.log(`🏠 [ESTATE STATE] Estate data being set: ${!!reportData.estateInformation}`);
+        console.log(`📈 [MF STATE] MF recommendations being set: ${!!reportData.mutualFundRecommendations}`);
+        console.log(`🧾 [TAX STATE] Tax planning being set: ${!!reportData.taxPlanning}`);
+        
         setClientData(reportData);
         
-        // Store debug information
-        setDebugInfo({
+        // Store debug information with enhanced new models tracking
+        const debugInfo = {
           fetchTime: new Date().toISOString(),
           processingTime: response.processingTime,
           dataIntegrity: response.dataIntegrity,
@@ -197,9 +280,20 @@ function ClientDetailReport() {
             abTests: reportData.abTesting?.count || 0,
             chats: reportData.chatHistory?.count || 0,
             exitStrategies: reportData.mutualFundExitStrategies?.count || 0,
-            invitations: reportData.invitations?.count || 0
+            invitations: reportData.invitations?.count || 0,
+            // NEW MODELS COUNT
+            estateInformation: reportData.estateInformation?.exists ? 1 : 0,
+            mutualFundRecommendations: reportData.mutualFundRecommendations?.count || 0,
+            taxPlanning: reportData.taxPlanning?.count || 0
           }
-        });
+        };
+        
+        console.log(`📊 [FRONTEND] Debug info set with new models counts:`);
+        console.log(`🏠 [DEBUG] Estate information: ${debugInfo.relatedDataCount.estateInformation}`);
+        console.log(`📈 [DEBUG] MF recommendations: ${debugInfo.relatedDataCount.mutualFundRecommendations}`);
+        console.log(`🧾 [DEBUG] Tax planning: ${debugInfo.relatedDataCount.taxPlanning}`);
+        
+        setDebugInfo(debugInfo);
 
         logDebug('DATA SET SUCCESSFULLY', {
           clientName: `${reportData.client?.basicInfo?.firstName} ${reportData.client?.basicInfo?.lastName}`,
@@ -662,13 +756,48 @@ function ClientDetailReport() {
               { id: 'risk-profile', name: 'Risk Assessment', icon: Activity },
               { id: 'kyc', name: 'Compliance', icon: Lock },
               { id: 'preferences', name: 'Preferences', icon: Settings },
-              { id: 'ab-testing', name: 'Investment Scenarios', icon: BarChart3 }
+              { id: 'ab-testing', name: 'Investment Scenarios', icon: BarChart3 },
+              // NEW COMPREHENSIVE DATA TABS
+              { id: 'estate-planning', name: 'Estate Planning', icon: Home },
+              { id: 'mutual-fund-recommendations', name: 'MF Recommendations', icon: TrendingUp },
+              { id: 'tax-planning', name: 'Tax Planning', icon: Calculator }
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => {
+                  const previousTab = activeTab;
                   setActiveTab(tab.id);
-                  logDebug('TAB CHANGE', { from: activeTab, to: tab.id });
+                  
+                  // ENHANCED TAB SWITCHING LOGGING
+                  console.log(`\n🔄 [FRONTEND] Tab switched from '${previousTab}' to '${tab.id}'`);
+                  console.log(`📊 [FRONTEND] Tab name: ${tab.name}`);
+                  console.log(`⏰ [FRONTEND] Switch time: ${new Date().toISOString()}`);
+                  
+                  // NEW MODELS TAB ACCESS LOGGING
+                  if (tab.id === 'estate-planning') {
+                    console.log(`🏠 [ESTATE TAB] Estate Planning tab accessed`);
+                    console.log(`📊 [ESTATE TAB] Estate data available: ${clientData?.estateInformation ? 'YES' : 'NO'}`);
+                    if (clientData?.estateInformation) {
+                      console.log(`📋 [ESTATE TAB] Estate exists: ${clientData.estateInformation.exists}`);
+                      console.log(`📈 [ESTATE TAB] Estate data fields: ${Object.keys(clientData.estateInformation.data || {}).length}`);
+                    }
+                  } else if (tab.id === 'mutual-fund-recommendations') {
+                    console.log(`📈 [MF TAB] Mutual Fund Recommendations tab accessed`);
+                    console.log(`📊 [MF TAB] MF data available: ${clientData?.mutualFundRecommendations ? 'YES' : 'NO'}`);
+                    if (clientData?.mutualFundRecommendations) {
+                      console.log(`📋 [MF TAB] MF count: ${clientData.mutualFundRecommendations.count}`);
+                      console.log(`📈 [MF TAB] MF recommendations: ${clientData.mutualFundRecommendations.recommendations?.length || 0}`);
+                    }
+                  } else if (tab.id === 'tax-planning') {
+                    console.log(`🧾 [TAX TAB] Tax Planning tab accessed`);
+                    console.log(`📊 [TAX TAB] Tax data available: ${clientData?.taxPlanning ? 'YES' : 'NO'}`);
+                    if (clientData?.taxPlanning) {
+                      console.log(`📋 [TAX TAB] Tax plans count: ${clientData.taxPlanning.count}`);
+                      console.log(`📈 [TAX TAB] Tax plans: ${clientData.taxPlanning.plans?.length || 0}`);
+                    }
+                  }
+                  
+                  logDebug('TAB CHANGE', { from: previousTab, to: tab.id });
                 }}
                 className={`py-3 px-4 border-b-2 font-medium text-sm flex items-center space-x-2 whitespace-nowrap transition-all duration-200 ${
                   activeTab === tab.id
@@ -3304,6 +3433,580 @@ function ClientDetailReport() {
                 </div>
               ) : (
                 <p className="text-gray-500">No AB test sessions found for this client.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ESTATE PLANNING TAB */}
+        {activeTab === 'estate-planning' && (
+          <div className="space-y-8">
+            {/* ESTATE TAB RENDERING LOGGING */}
+            {(() => {
+              console.log(`\n🏠 [ESTATE TAB] Rendering Estate Planning tab content`);
+              console.log(`📊 [ESTATE TAB] Client data available: ${!!clientData}`);
+              console.log(`📋 [ESTATE TAB] Estate data available: ${!!clientData?.estateInformation}`);
+              if (clientData?.estateInformation) {
+                console.log(`📈 [ESTATE TAB] Estate exists: ${clientData.estateInformation.exists}`);
+                console.log(`📊 [ESTATE TAB] Estate data fields: ${Object.keys(clientData.estateInformation.data || {}).length}`);
+                console.log(`📋 [ESTATE TAB] Estate summary fields: ${Object.keys(clientData.estateInformation.summary || {}).length}`);
+              }
+              return null;
+            })()}
+            
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">Estate Planning Information</h3>
+                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Home className="h-4 w-4 text-blue-600" />
+                </div>
+              </div>
+              
+              {/* COMPREHENSIVE ESTATE DATA DISPLAY - ALL 18 FIELDS */}
+              <div className="space-y-8">
+                
+                {/* 1. CLIENT REFERENCE */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <User className="h-4 w-4 mr-2 text-blue-600" />
+                    Client Reference
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Client ID:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.clientId)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Record Status:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.exists ? 'Active' : 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. FAMILY STRUCTURE & BENEFICIARIES */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <Users className="h-4 w-4 mr-2 text-blue-600" />
+                    Family Structure & Beneficiaries
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Spouse Exists:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.familyStructure?.spouse?.exists)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Spouse Name:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.familyStructure?.spouse?.fullName)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Children Count:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.familyStructure?.children?.length || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Dependents Count:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.familyStructure?.dependents?.length || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Beneficiaries Count:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.familyStructure?.beneficiaries?.length || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Marriage Date:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.familyStructure?.spouse?.marriageDate)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. REAL ESTATE PROPERTIES */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <Building className="h-4 w-4 mr-2 text-blue-600" />
+                    Real Estate Properties
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Properties Count:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.realEstateProperties?.length || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Total Market Value:</span>
+                      <p className="text-sm text-gray-900">
+                        {clientData.estateInformation?.data?.realEstateProperties?.length > 0 
+                          ? formatCurrency(clientData.estateInformation.data.realEstateProperties.reduce((sum, prop) => sum + (prop.financialDetails?.currentMarketValue || 0), 0))
+                          : 'N/A'
+                        }
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Property Types:</span>
+                      <p className="text-sm text-gray-900">
+                        {clientData.estateInformation?.data?.realEstateProperties?.length > 0 
+                          ? clientData.estateInformation.data.realEstateProperties.map(prop => prop.propertyType).join(', ')
+                          : 'N/A'
+                        }
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Cities:</span>
+                      <p className="text-sm text-gray-900">
+                        {clientData.estateInformation?.data?.realEstateProperties?.length > 0 
+                          ? clientData.estateInformation.data.realEstateProperties.map(prop => prop.propertyAddress?.city).filter(Boolean).join(', ')
+                          : 'N/A'
+                        }
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Rental Properties:</span>
+                      <p className="text-sm text-gray-900">
+                        {clientData.estateInformation?.data?.realEstateProperties?.length > 0 
+                          ? clientData.estateInformation.data.realEstateProperties.filter(prop => prop.rentalDetails?.isRented).length
+                          : 'N/A'
+                        }
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Properties with Loans:</span>
+                      <p className="text-sm text-gray-900">
+                        {clientData.estateInformation?.data?.realEstateProperties?.length > 0 
+                          ? clientData.estateInformation.data.realEstateProperties.filter(prop => prop.propertyLoan?.hasLoan).length
+                          : 'N/A'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. LEGAL DOCUMENTS STATUS */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <FileText className="h-4 w-4 mr-2 text-blue-600" />
+                    Legal Documents Status
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Has Will:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.legalDocumentsStatus?.willDetails?.hasWill)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Will Type:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.legalDocumentsStatus?.willDetails?.willType)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Will Date:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.legalDocumentsStatus?.willDetails?.dateOfWill)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Trusts Count:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.legalDocumentsStatus?.trustStructures?.length || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Has Power of Attorney:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.legalDocumentsStatus?.powerOfAttorney?.hasPOA)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Nominations Count:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.legalDocumentsStatus?.nominations?.length || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. PERSONAL & DIGITAL ASSETS */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <Briefcase className="h-4 w-4 mr-2 text-blue-600" />
+                    Personal & Digital Assets
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Vehicles Count:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.personalAssets?.vehicles?.length || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Valuables Count:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.personalAssets?.valuables?.length || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Cryptocurrency Count:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.personalAssets?.digitalAssets?.cryptocurrency?.length || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Digital Accounts Count:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.personalAssets?.digitalAssets?.digitalAccounts?.length || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Intellectual Property Count:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.personalAssets?.digitalAssets?.intellectualProperty?.length || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Total Vehicle Value:</span>
+                      <p className="text-sm text-gray-900">
+                        {clientData.estateInformation?.data?.personalAssets?.vehicles?.length > 0 
+                          ? formatCurrency(clientData.estateInformation.data.personalAssets.vehicles.reduce((sum, vehicle) => sum + (vehicle.currentMarketValue || 0), 0))
+                          : 'N/A'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 6. ESTATE PLANNING PREFERENCES */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <Settings className="h-4 w-4 mr-2 text-blue-600" />
+                    Estate Planning Preferences
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Religion:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.estatePreferences?.applicableLaws?.religion)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Distribution Method:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.estatePreferences?.distributionPreferences?.distributionMethod)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Personal Law:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.estatePreferences?.applicableLaws?.personalLaw)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Ancestral Property:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.estatePreferences?.applicableLaws?.ancestralProperty)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Guardianship Arrangements:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.estatePreferences?.guardianshipArrangements?.length || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Philanthropy Count:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.estatePreferences?.philanthropy?.length || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 7. HEALTHCARE & END-OF-LIFE DIRECTIVES */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <Heart className="h-4 w-4 mr-2 text-blue-600" />
+                    Healthcare & End-of-Life Directives
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Blood Group:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.healthcareDirectives?.medicalProfile?.bloodGroup)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Chronic Conditions:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.healthcareDirectives?.medicalProfile?.chronicConditions?.length || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Medical POA:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.healthcareDirectives?.healthcareDecisions?.medicalPowerOfAttorney?.hasDesignated)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Organ Donor:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.healthcareDirectives?.healthcareDecisions?.treatmentPreferences?.organDonation?.isOrganDonor)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Body Donor:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.healthcareDirectives?.healthcareDecisions?.treatmentPreferences?.bodyDonation?.isBodyDonor)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Funeral Preference:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.healthcareDirectives?.finalArrangements?.funeralPreferences?.ceremonialType)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 8. ESTATE METADATA */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <BarChart3 className="h-4 w-4 mr-2 text-blue-600" />
+                    Estate Metadata
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Estimated Net Estate:</span>
+                      <p className="text-sm text-gray-900">{formatCurrency(clientData.estateInformation?.data?.estateMetadata?.estimatedNetEstate)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Estate Tax Liability:</span>
+                      <p className="text-sm text-gray-900">{formatCurrency(clientData.estateInformation?.data?.estateMetadata?.estateTaxLiability)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Succession Complexity:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.estateMetadata?.successionComplexity)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Legal Review Required:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.estateMetadata?.legalReviewRequired)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Documentation Gaps:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.estateMetadata?.documentationGaps?.length || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Priority Actions:</span>
+                      <p className="text-sm text-gray-900">{clientData.estateInformation?.data?.estateMetadata?.priorityActions?.length || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 9. TIMESTAMPS */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <Clock className="h-4 w-4 mr-2 text-blue-600" />
+                    Record Timestamps
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Created At:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.createdAt)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Last Updated:</span>
+                      <p className="text-sm text-gray-900">{safeDisplay(clientData.estateInformation?.data?.updatedAt)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SUMMARY SECTION */}
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
+                    <CheckCircle className="h-4 w-4 mr-2 text-blue-600" />
+                    Estate Planning Summary
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-blue-600">{clientData.estateInformation?.data ? '18' : '0'}</p>
+                      <p className="text-sm text-blue-800">Data Fields Available</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-blue-600">
+                        {clientData.estateInformation?.data ? 
+                          Object.values(clientData.estateInformation.data).filter(value => 
+                            value !== null && value !== undefined && value !== '' && 
+                            !(Array.isArray(value) && value.length === 0)
+                          ).length 
+                          : '0'
+                        }
+                      </p>
+                      <p className="text-sm text-blue-800">Fields with Data</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-blue-600">
+                        {clientData.estateInformation?.data ? 
+                          Math.round((Object.values(clientData.estateInformation.data).filter(value => 
+                            value !== null && value !== undefined && value !== '' && 
+                            !(Array.isArray(value) && value.length === 0)
+                          ).length / 18) * 100)
+                          : '0'
+                        }%
+                      </p>
+                      <p className="text-sm text-blue-800">Data Completeness</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MUTUAL FUND RECOMMENDATIONS TAB */}
+        {activeTab === 'mutual-fund-recommendations' && (
+          <div className="space-y-8">
+            {/* MF TAB RENDERING LOGGING */}
+            {(() => {
+              console.log(`\n📈 [MF TAB] Rendering Mutual Fund Recommendations tab content`);
+              console.log(`📊 [MF TAB] Client data available: ${!!clientData}`);
+              console.log(`📋 [MF TAB] MF data available: ${!!clientData?.mutualFundRecommendations}`);
+              if (clientData?.mutualFundRecommendations) {
+                console.log(`📈 [MF TAB] MF count: ${clientData.mutualFundRecommendations.count}`);
+                console.log(`📊 [MF TAB] MF recommendations: ${clientData.mutualFundRecommendations.recommendations?.length || 0}`);
+                console.log(`📋 [MF TAB] MF summary fields: ${Object.keys(clientData.mutualFundRecommendations.summary || {}).length}`);
+              }
+              return null;
+            })()}
+            
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">Mutual Fund Recommendations</h3>
+                <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                </div>
+              </div>
+              
+              {clientData.mutualFundRecommendations?.count > 0 ? (
+                <div className="space-y-6">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="bg-green-50 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Total Recommendations</h4>
+                      <p className="text-2xl font-bold text-green-600">
+                        {clientData.mutualFundRecommendations.summary.totalRecommendations}
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Active</h4>
+                      <p className="text-2xl font-bold text-blue-600">
+                        {clientData.mutualFundRecommendations.summary.activeRecommendations}
+                      </p>
+                    </div>
+                    <div className="bg-purple-50 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Completed</h4>
+                      <p className="text-2xl font-bold text-purple-600">
+                        {clientData.mutualFundRecommendations.summary.completedRecommendations}
+                      </p>
+                    </div>
+                    <div className="bg-orange-50 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Total SIP Amount</h4>
+                      <p className="text-lg font-bold text-orange-600">
+                        {formatCurrency(clientData.mutualFundRecommendations.summary.totalSIPAmount)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Recommendations List */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-gray-900">Recommendation Details</h4>
+                    <div className="space-y-4">
+                      {clientData.mutualFundRecommendations.recommendations.map((rec, index) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h5 className="font-semibold text-gray-900">{safeDisplay(rec.fundName)}</h5>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(rec.status)}`}>
+                              {safeDisplay(rec.status)}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-600">Fund House</p>
+                              <p className="font-medium">{safeDisplay(rec.fundHouseName)}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">Monthly SIP</p>
+                              <p className="font-medium">{formatCurrency(rec.recommendedMonthlySIP)}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">Risk Profile</p>
+                              <p className="font-medium">{safeDisplay(rec.riskProfile)}</p>
+                            </div>
+                          </div>
+                          <div className="mt-3 text-sm">
+                            <p className="text-gray-600">Investment Goal</p>
+                            <p className="font-medium">{safeDisplay(rec.investmentGoal)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Mutual Fund Recommendations</h3>
+                  <p className="text-gray-600">No mutual fund recommendations have been made for this client.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAX PLANNING TAB */}
+        {activeTab === 'tax-planning' && (
+          <div className="space-y-8">
+            {/* TAX TAB RENDERING LOGGING */}
+            {(() => {
+              console.log(`\n🧾 [TAX TAB] Rendering Tax Planning tab content`);
+              console.log(`📊 [TAX TAB] Client data available: ${!!clientData}`);
+              console.log(`📋 [TAX TAB] Tax data available: ${!!clientData?.taxPlanning}`);
+              if (clientData?.taxPlanning) {
+                console.log(`📈 [TAX TAB] Tax plans count: ${clientData.taxPlanning.count}`);
+                console.log(`📊 [TAX TAB] Tax plans: ${clientData.taxPlanning.plans?.length || 0}`);
+                console.log(`📋 [TAX TAB] Tax summary fields: ${Object.keys(clientData.taxPlanning.summary || {}).length}`);
+              }
+              return null;
+            })()}
+            
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">Tax Planning Strategies</h3>
+                <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
+                  <Calculator className="h-4 w-4 text-purple-600" />
+                </div>
+              </div>
+              
+              {clientData.taxPlanning?.count > 0 ? (
+                <div className="space-y-6">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="bg-purple-50 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Total Plans</h4>
+                      <p className="text-2xl font-bold text-purple-600">
+                        {clientData.taxPlanning.summary.totalPlans}
+                      </p>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Total Tax Savings</h4>
+                      <p className="text-lg font-bold text-green-600">
+                        {formatCurrency(clientData.taxPlanning.summary.totalTaxSavings)}
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Average Savings</h4>
+                      <p className="text-lg font-bold text-blue-600">
+                        {formatCurrency(clientData.taxPlanning.summary.averageTaxSavings)}
+                      </p>
+                    </div>
+                    <div className="bg-orange-50 rounded-lg p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2">Current Year Plan</h4>
+                      <p className="text-sm font-bold text-orange-600">
+                        {clientData.taxPlanning.summary.currentYearPlan ? 'Available' : 'Not Available'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Tax Plans List */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-semibold text-gray-900">Tax Planning Details</h4>
+                    <div className="space-y-4">
+                      {clientData.taxPlanning.plans.map((plan, index) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h5 className="font-semibold text-gray-900">Tax Year: {safeDisplay(plan.taxYear)}</h5>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(plan.status)}`}>
+                              {safeDisplay(plan.status)}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                              <p className="text-gray-600">Taxable Income</p>
+                              <p className="font-medium">{formatCurrency(plan.taxCalculations?.taxableIncome)}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">Total Tax Liability</p>
+                              <p className="font-medium">{formatCurrency(plan.taxCalculations?.totalTaxLiability)}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-600">Tax Savings</p>
+                              <p className="font-medium text-green-600">{formatCurrency(plan.totalTaxSavings)}</p>
+                            </div>
+                          </div>
+                          <div className="mt-3 text-sm">
+                            <p className="text-gray-600">Priority</p>
+                            <p className="font-medium">{safeDisplay(plan.priority)}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Calculator className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Tax Planning Data</h3>
+                  <p className="text-gray-600">Tax planning strategies have not been developed for this client.</p>
+                </div>
               )}
             </div>
           </div>
