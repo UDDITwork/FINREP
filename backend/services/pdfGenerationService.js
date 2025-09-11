@@ -175,17 +175,8 @@ class PDFGenerationService {
     const recommendations = this.generateRecommendations(clientData);
 
     return {
-      // Header data
-      vault: {
-        firmName: vaultData?.firmName || 'Financial Advisory Firm',
-        advisorName: `${vaultData?.firstName || 'Advisor'} ${vaultData?.lastName || 'Name'}`.trim(),
-        sebiRegNumber: vaultData?.sebiRegNumber || 'SEBI Registration Pending',
-        email: vaultData?.email || 'advisor@example.com',
-        phoneNumber: vaultData?.phoneNumber || '',
-        address: vaultData?.address || '',
-        certifications: vaultData?.certifications || [],
-        logo: vaultData?.logo || null
-      },
+      // Comprehensive Header data
+      vault: this.prepareVaultHeaderData(vaultData),
 
       // Client data
       client: {
@@ -263,6 +254,9 @@ class PDFGenerationService {
    */
   async renderTemplate(templateData) {
     try {
+      // Register Handlebars helpers
+      this.registerHandlebarsHelpers();
+      
       // Read main template
       const templatePath = path.join(this.templatePath, 'client-report-template.hbs');
       const templateContent = await fs.readFile(templatePath, 'utf8');
@@ -286,6 +280,37 @@ class PDFGenerationService {
   }
 
   /**
+   * Register Handlebars helpers
+   */
+  registerHandlebarsHelpers() {
+    // Substring helper
+    handlebars.registerHelper('substring', function(str, start, end) {
+      if (!str) return '';
+      return str.substring(start, end);
+    });
+
+    // Format currency helper
+    handlebars.registerHelper('formatCurrency', function(amount) {
+      if (!amount) return '₹0';
+      return '₹' + new Intl.NumberFormat('en-IN').format(amount);
+    });
+
+    // Format date helper
+    handlebars.registerHelper('formatDate', function(date) {
+      if (!date) return '';
+      return new Date(date).toLocaleDateString('en-IN');
+    });
+
+    // Conditional helper
+    handlebars.registerHelper('if_eq', function(a, b, options) {
+      if (a === b) {
+        return options.fn(this);
+      }
+      return options.inverse(this);
+    });
+  }
+
+  /**
    * Convert HTML to PDF using Puppeteer
    * @param {String} htmlContent - HTML content
    * @returns {Buffer} - PDF buffer
@@ -296,16 +321,57 @@ class PDFGenerationService {
     try {
       logger.info('🔄 [PDF GENERATION] Converting HTML to PDF');
 
-      // Launch browser
+      // Launch browser with enhanced configuration
       browser = await puppeteer.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor'
+        ],
+        timeout: 60000 // 60 seconds timeout for browser launch
       });
 
       const page = await browser.newPage();
       
-      // Set content
-      await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+      // Set page timeout and disable images for faster loading
+      page.setDefaultTimeout(60000); // 60 seconds
+      page.setDefaultNavigationTimeout(60000); // 60 seconds
+      
+      // Block external resources to prevent timeout issues
+      await page.setRequestInterception(true);
+      page.on('request', (request) => {
+        const resourceType = request.resourceType();
+        const url = request.url();
+        
+        // Block external images, fonts, and other resources that might cause timeouts
+        if (resourceType === 'image' && !url.startsWith('data:')) {
+          request.abort();
+        } else if (resourceType === 'font' && !url.startsWith('data:')) {
+          request.abort();
+        } else if (resourceType === 'stylesheet' && !url.startsWith('data:')) {
+          request.abort();
+        } else if (url.includes('googleapis.com') || url.includes('fonts.gstatic.com')) {
+          request.abort();
+        } else {
+          request.continue();
+        }
+      });
+      
+      // Set content with shorter timeout and different wait condition
+      await page.setContent(htmlContent, { 
+        waitUntil: 'domcontentloaded', // Changed from 'networkidle0' to avoid waiting for external resources
+        timeout: 30000 // 30 seconds timeout
+      });
+      
+      // Wait a bit for any remaining content to load
+      await page.waitForTimeout(2000);
       
       // Generate PDF
       const pdfBuffer = await page.pdf({
@@ -324,7 +390,8 @@ class PDFGenerationService {
             <span>Page <span class="pageNumber"></span> of <span class="totalPages"></span></span>
             <span style="margin-left: 20px;">Generated on ${new Date().toLocaleDateString('en-IN')}</span>
           </div>
-        `
+        `,
+        timeout: 30000 // 30 seconds timeout for PDF generation
       });
 
       logger.info('✅ [PDF GENERATION] PDF generated successfully', {
@@ -581,6 +648,278 @@ class PDFGenerationService {
     const now = new Date();
     const year = now.getFullYear();
     return `Financial Year ${year}-${year + 1}`;
+  }
+
+  /**
+   * Prepare comprehensive vault header data for PDF
+   * @param {Object} vaultData - Raw vault data from database
+   * @returns {Object} - Formatted vault data for template
+   */
+  prepareVaultHeaderData(vaultData) {
+    if (!vaultData) {
+      return this.getDefaultVaultData();
+    }
+
+    const vault = vaultData.toObject ? vaultData.toObject() : vaultData;
+
+    // Format certifications
+    const formattedCertifications = (vault.certifications || []).map(cert => ({
+      name: cert.name || '',
+      issuingBody: cert.issuingBody || '',
+      issueDate: cert.issueDate ? new Date(cert.issueDate).toLocaleDateString('en-IN') : '',
+      expiryDate: cert.expiryDate ? new Date(cert.expiryDate).toLocaleDateString('en-IN') : 'N/A',
+      certificateNumber: cert.certificateNumber || '',
+      isActive: cert.isActive || false,
+      isExpired: cert.expiryDate ? new Date(cert.expiryDate) < new Date() : false
+    }));
+
+    // Format memberships
+    const formattedMemberships = (vault.memberships || []).map(membership => ({
+      organization: membership.organization || '',
+      membershipType: membership.membershipType || '',
+      memberSince: membership.memberSince ? new Date(membership.memberSince).toLocaleDateString('en-IN') : '',
+      membershipNumber: membership.membershipNumber || '',
+      isActive: membership.isActive || false
+    }));
+
+    // Format documents
+    const formattedDocuments = (vault.documents || []).map(doc => ({
+      name: doc.name || '',
+      description: doc.description || '',
+      category: doc.category || 'other',
+      fileUrl: doc.fileUrl || '',
+      fileSize: this.formatFileSize(doc.fileSize || 0),
+      uploadedAt: doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString('en-IN') : '',
+      isActive: doc.isActive || false
+    }));
+
+    // Format branding
+    const branding = vault.branding || {};
+    const formattedBranding = {
+      primaryColor: branding.primaryColor || '#2563eb',
+      secondaryColor: branding.secondaryColor || '#64748b',
+      accentColor: branding.accentColor || '#f59e0b',
+      logo: {
+        url: branding.logo?.url || '',
+        altText: branding.logo?.altText || 'Advisor Logo'
+      },
+      typography: {
+        primaryFont: branding.typography?.primaryFont || 'Inter',
+        secondaryFont: branding.typography?.secondaryFont || 'Roboto',
+        fontSize: branding.typography?.fontSize || 'medium'
+      },
+      tagline: branding.tagline || ''
+    };
+
+    // Format digital presence
+    const digitalPresence = vault.digitalPresence || {};
+    const formattedDigitalPresence = {
+      website: digitalPresence.website || '',
+      linkedin: digitalPresence.linkedin || '',
+      twitter: digitalPresence.twitter || '',
+      facebook: digitalPresence.facebook || '',
+      instagram: digitalPresence.instagram || '',
+      youtube: digitalPresence.youtube || ''
+    };
+
+    // Format white label
+    const whiteLabel = vault.whiteLabel || {};
+    const formattedWhiteLabel = {
+      isEnabled: whiteLabel.isEnabled || false,
+      companyName: whiteLabel.companyName || '',
+      customDomain: whiteLabel.customDomain || '',
+      apiKeys: (whiteLabel.apiKeys || []).map(apiKey => ({
+        name: apiKey.name || '',
+        key: apiKey.key ? this.maskApiKey(apiKey.key) : '',
+        isActive: apiKey.isActive || false,
+        createdAt: apiKey.createdAt ? new Date(apiKey.createdAt).toLocaleDateString('en-IN') : ''
+      }))
+    };
+
+    // Format report customization
+    const reportCustomization = vault.reportCustomization || {};
+    const formattedReportCustomization = {
+      headerStyle: reportCustomization.headerStyle || 'professional',
+      footerStyle: reportCustomization.footerStyle || 'detailed',
+      watermark: {
+        isEnabled: reportCustomization.watermark?.isEnabled || false,
+        text: reportCustomization.watermark?.text || '',
+        opacity: reportCustomization.watermark?.opacity || 0.3
+      },
+      customFooter: reportCustomization.customFooter || ''
+    };
+
+    // Format scheduling
+    const scheduling = vault.scheduling || {};
+    const workingHours = scheduling.workingHours || {};
+    const formattedScheduling = {
+      workingHours: {
+        monday: this.formatWorkingDay(workingHours.monday),
+        tuesday: this.formatWorkingDay(workingHours.tuesday),
+        wednesday: this.formatWorkingDay(workingHours.wednesday),
+        thursday: this.formatWorkingDay(workingHours.thursday),
+        friday: this.formatWorkingDay(workingHours.friday),
+        saturday: this.formatWorkingDay(workingHours.saturday),
+        sunday: this.formatWorkingDay(workingHours.sunday)
+      },
+      appointmentDuration: scheduling.appointmentDuration || 60,
+      timezone: scheduling.timezone || 'Asia/Kolkata',
+      bufferTime: {
+        before: scheduling.bufferTime?.before || 15,
+        after: scheduling.bufferTime?.after || 15
+      }
+    };
+
+    return {
+      // Basic advisor information
+      advisorId: vault.advisorId || '',
+      firstName: vault.firstName || 'Advisor',
+      lastName: vault.lastName || 'Name',
+      email: vault.email || 'advisor@example.com',
+      phoneNumber: vault.phoneNumber || '',
+      firmName: vault.firmName || 'Financial Advisory Firm',
+      sebiRegNumber: vault.sebiRegNumber || 'SEBI Registration Pending',
+      revenueModel: vault.revenueModel || '',
+      fpsbNumber: vault.fpsbNumber || '',
+      riaNumber: vault.riaNumber || '',
+      arnNumber: vault.arnNumber || '',
+      amfiRegNumber: vault.amfiRegNumber || '',
+      isEmailVerified: vault.isEmailVerified || false,
+      status: vault.status || 'active',
+
+      // Professional information
+      certifications: formattedCertifications,
+      memberships: formattedMemberships,
+      documents: formattedDocuments,
+
+      // Branding and customization
+      branding: formattedBranding,
+      digitalPresence: formattedDigitalPresence,
+      whiteLabel: formattedWhiteLabel,
+      reportCustomization: formattedReportCustomization,
+      scheduling: formattedScheduling,
+
+      // Computed fields
+      advisorName: `${vault.firstName || 'Advisor'} ${vault.lastName || 'Name'}`.trim(),
+      activeCertifications: formattedCertifications.filter(cert => cert.isActive && !cert.isExpired),
+      activeMemberships: formattedMemberships.filter(membership => membership.isActive),
+      hasLogo: !!(branding.logo?.url),
+      hasWebsite: !!(digitalPresence.website),
+      hasSocialMedia: !!(digitalPresence.linkedin || digitalPresence.twitter || digitalPresence.facebook || digitalPresence.instagram || digitalPresence.youtube)
+    };
+  }
+
+  /**
+   * Get default vault data when no vault exists
+   * @returns {Object} - Default vault data
+   */
+  getDefaultVaultData() {
+    return {
+      advisorId: '',
+      firstName: 'Advisor',
+      lastName: 'Name',
+      email: 'advisor@example.com',
+      phoneNumber: '',
+      firmName: 'Financial Advisory Firm',
+      sebiRegNumber: 'SEBI Registration Pending',
+      revenueModel: '',
+      fpsbNumber: '',
+      riaNumber: '',
+      arnNumber: '',
+      amfiRegNumber: '',
+      isEmailVerified: false,
+      status: 'active',
+      certifications: [],
+      memberships: [],
+      documents: [],
+      branding: {
+        primaryColor: '#2563eb',
+        secondaryColor: '#64748b',
+        accentColor: '#f59e0b',
+        logo: { url: '', altText: 'Advisor Logo' },
+        typography: { primaryFont: 'Inter', secondaryFont: 'Roboto', fontSize: 'medium' },
+        tagline: ''
+      },
+      digitalPresence: {
+        website: '',
+        linkedin: '',
+        twitter: '',
+        facebook: '',
+        instagram: '',
+        youtube: ''
+      },
+      whiteLabel: {
+        isEnabled: false,
+        companyName: '',
+        customDomain: '',
+        apiKeys: []
+      },
+      reportCustomization: {
+        headerStyle: 'professional',
+        footerStyle: 'detailed',
+        watermark: { isEnabled: false, text: '', opacity: 0.3 },
+        customFooter: ''
+      },
+      scheduling: {
+        workingHours: {
+          monday: { isWorking: true, startTime: '09:00', endTime: '17:00' },
+          tuesday: { isWorking: true, startTime: '09:00', endTime: '17:00' },
+          wednesday: { isWorking: true, startTime: '09:00', endTime: '17:00' },
+          thursday: { isWorking: true, startTime: '09:00', endTime: '17:00' },
+          friday: { isWorking: true, startTime: '09:00', endTime: '17:00' },
+          saturday: { isWorking: false, startTime: '09:00', endTime: '13:00' },
+          sunday: { isWorking: false, startTime: '09:00', endTime: '13:00' }
+        },
+        appointmentDuration: 60,
+        timezone: 'Asia/Kolkata',
+        bufferTime: { before: 15, after: 15 }
+      },
+      advisorName: 'Advisor Name',
+      activeCertifications: [],
+      activeMemberships: [],
+      hasLogo: false,
+      hasWebsite: false,
+      hasSocialMedia: false
+    };
+  }
+
+  /**
+   * Format working day data
+   * @param {Object} dayData - Working day data
+   * @returns {Object} - Formatted working day
+   */
+  formatWorkingDay(dayData) {
+    if (!dayData) {
+      return { isWorking: false, startTime: '09:00', endTime: '17:00' };
+    }
+    return {
+      isWorking: dayData.isWorking || false,
+      startTime: dayData.startTime || '09:00',
+      endTime: dayData.endTime || '17:00'
+    };
+  }
+
+  /**
+   * Format file size for display
+   * @param {Number} bytes - File size in bytes
+   * @returns {String} - Formatted file size
+   */
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  /**
+   * Mask API key for security
+   * @param {String} apiKey - API key
+   * @returns {String} - Masked API key
+   */
+  maskApiKey(apiKey) {
+    if (!apiKey || apiKey.length < 8) return '****';
+    return apiKey.substring(0, 4) + '****' + apiKey.substring(apiKey.length - 4);
   }
 }
 

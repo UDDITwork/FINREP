@@ -56,17 +56,67 @@ class PDFController {
           vaultError: vaultDataResponse.error
         });
         
-        // Create default vault data if none exists
+        // Create comprehensive default vault data if none exists
         const defaultVaultData = {
           advisorId: advisorId,
           firstName: 'Advisor',
           lastName: 'Name',
           email: 'advisor@example.com',
+          phoneNumber: '',
           firmName: 'Financial Advisory Firm',
           sebiRegNumber: 'SEBI Registration Pending',
-          phoneNumber: '',
-          address: '',
-          certifications: []
+          revenueModel: '',
+          fpsbNumber: '',
+          riaNumber: '',
+          arnNumber: '',
+          amfiRegNumber: '',
+          isEmailVerified: false,
+          status: 'active',
+          certifications: [],
+          memberships: [],
+          documents: [],
+          branding: {
+            primaryColor: '#2563eb',
+            secondaryColor: '#64748b',
+            accentColor: '#f59e0b',
+            logo: { url: '', altText: 'Advisor Logo' },
+            typography: { primaryFont: 'Inter', secondaryFont: 'Roboto', fontSize: 'medium' },
+            tagline: ''
+          },
+          digitalPresence: {
+            website: '',
+            linkedin: '',
+            twitter: '',
+            facebook: '',
+            instagram: '',
+            youtube: ''
+          },
+          whiteLabel: {
+            isEnabled: false,
+            companyName: '',
+            customDomain: '',
+            apiKeys: []
+          },
+          reportCustomization: {
+            headerStyle: 'professional',
+            footerStyle: 'detailed',
+            watermark: { isEnabled: false, text: '', opacity: 0.3 },
+            customFooter: ''
+          },
+          scheduling: {
+            workingHours: {
+              monday: { isWorking: true, startTime: '09:00', endTime: '17:00' },
+              tuesday: { isWorking: true, startTime: '09:00', endTime: '17:00' },
+              wednesday: { isWorking: true, startTime: '09:00', endTime: '17:00' },
+              thursday: { isWorking: true, startTime: '09:00', endTime: '17:00' },
+              friday: { isWorking: true, startTime: '09:00', endTime: '17:00' },
+              saturday: { isWorking: false, startTime: '09:00', endTime: '13:00' },
+              sunday: { isWorking: false, startTime: '09:00', endTime: '13:00' }
+            },
+            appointmentDuration: 60,
+            timezone: 'Asia/Kolkata',
+            bufferTime: { before: 15, after: 15 }
+          }
         };
         
         vaultDataResponse.data = defaultVaultData;

@@ -37,62 +37,342 @@
             --warning-orange: #D97706;
         }
 
-        /* Header Styles */
+        /* Enhanced Header Styles */
         .header {
             background: linear-gradient(135deg, var(--dark-blue) 0%, var(--primary-green) 100%);
             color: var(--white);
-            padding: 35px 30px;
-            text-align: center;
+            padding: 40px 30px;
             margin-bottom: 35px;
-            border-radius: 0 0 10px 10px;
-            box-shadow: 0 3px 15px rgba(30, 58, 138, 0.12);
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 4px 20px rgba(30, 58, 138, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .header-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-container {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logo-container img {
+            max-width: 45px;
+            max-height: 45px;
+            object-fit: contain;
+        }
+
+        .logo-placeholder {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--white);
+        }
+
+        .header-title {
+            flex: 1;
+            text-align: center;
         }
 
         .header h1 {
-            font-size: 30px;
+            font-size: 32px;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .header .subtitle {
             font-size: 16px;
             opacity: 0.95;
             font-weight: 400;
+            margin-bottom: 5px;
         }
 
+        .header .tagline {
+            font-size: 14px;
+            opacity: 0.85;
+            font-style: italic;
+        }
+
+        .header-meta {
+            text-align: right;
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .header-meta div {
+            margin-bottom: 3px;
+        }
+
+        /* Comprehensive Advisor Information */
         .advisor-info {
             background-color: var(--white);
-            padding: 25px;
-            border-radius: 10px;
+            padding: 30px;
+            border-radius: 15px;
             margin: 25px 0;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
             border: 1px solid var(--border-gray);
+            position: relative;
         }
 
-        .advisor-info h2 {
+        .advisor-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-green), var(--accent-yellow));
+            border-radius: 15px 15px 0 0;
+        }
+
+        .advisor-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--light-gray);
+        }
+
+        .advisor-header h2 {
             color: var(--dark-blue);
-            font-size: 19px;
-            margin-bottom: 18px;
-            border-bottom: 3px solid var(--primary-green);
-            padding-bottom: 8px;
+            font-size: 22px;
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .advisor-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-active {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+
+        .status-inactive {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .status-suspended {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+
+        .advisor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .advisor-section {
+            background-color: var(--light-gray);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-green);
+        }
+
+        .advisor-section h3 {
+            color: var(--dark-blue);
+            font-size: 14px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .advisor-details {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 12px;
         }
 
         .advisor-details div {
             font-size: 11px;
             line-height: 1.6;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
         }
 
         .advisor-details strong {
             color: var(--dark-blue);
             font-weight: 600;
+            min-width: 80px;
+            flex-shrink: 0;
+        }
+
+        .advisor-details span {
+            color: var(--text-muted);
+            flex: 1;
+        }
+
+        .certifications-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-gray);
+        }
+
+        .certifications-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .certification-card {
+            background-color: var(--white);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-gray);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .certification-card h4 {
+            color: var(--dark-blue);
+            font-size: 12px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .certification-card p {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin: 2px 0;
+        }
+
+        .certification-status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        .cert-active {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+
+        .cert-expired {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .digital-presence {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-gray);
+        }
+
+        .social-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .social-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 10px;
+            background-color: var(--light-gray);
+            border-radius: 15px;
+            color: var(--text-muted);
+            font-size: 10px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .working-hours {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-gray);
+        }
+
+        .hours-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .day-slot {
+            text-align: center;
+            padding: 8px 4px;
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 500;
+        }
+
+        .day-working {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+
+        .day-off {
+            background-color: #F3F4F6;
+            color: #6B7280;
+        }
+
+        .day-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .day-time {
+            font-size: 8px;
         }
 
         /* Client Info Card */
@@ -449,21 +729,207 @@
 </head>
 <body>
     <!-- Header Section -->
+    <!-- Enhanced Header -->
     <div class="header">
+        <div class="header-content">
+            <div class="header-main">
+                <div class="header-logo">
+                    <div class="logo-container">
+                        {{#if vault.branding.logo.url}}
+                            <img src="{{vault.branding.logo.url}}" alt="{{vault.branding.logo.altText}}" />
+                        {{else}}
+                            <div class="logo-placeholder">{{substring vault.firmName 0 2}}</div>
+                        {{/if}}
+                    </div>
+                </div>
+                <div class="header-title">
         <h1>Comprehensive Financial Report</h1>
         <div class="subtitle">{{reportMetadata.confidentiality}}</div>
+                    {{#if vault.branding.tagline}}
+                        <div class="tagline">{{vault.branding.tagline}}</div>
+                    {{/if}}
+                </div>
+                <div class="header-meta">
+                    <div><strong>Generated:</strong> {{reportMetadata.generatedAt}}</div>
+                    <div><strong>Report Period:</strong> {{reportMetadata.reportPeriod}}</div>
+                    <div><strong>Version:</strong> {{reportMetadata.reportVersion}}</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Advisor Information -->
+    <!-- Comprehensive Advisor Information -->
     <div class="advisor-info">
+        <div class="advisor-header">
         <h2>{{vault.firmName}}</h2>
+            <div class="advisor-status">
+                <span class="status-badge status-{{vault.status}}">{{vault.status}}</span>
+                {{#if vault.isEmailVerified}}
+                    <span class="status-badge status-active">Verified</span>
+                {{/if}}
+            </div>
+        </div>
+
+        <div class="advisor-grid">
+            <!-- Basic Information -->
+            <div class="advisor-section">
+                <h3>Basic Information</h3>
         <div class="advisor-details">
-            <div><strong>Advisor:</strong> {{vault.advisorName}}</div>
-            <div><strong>SEBI Registration:</strong> {{vault.sebiRegNumber}}</div>
-            <div><strong>Email:</strong> {{vault.email}}</div>
-            <div><strong>Phone:</strong> {{vault.phoneNumber}}</div>
-            <div><strong>Address:</strong> {{vault.address}}</div>
-            <div><strong>Report Generated:</strong> {{reportMetadata.generatedAt}}</div>
+                    <div><strong>Advisor:</strong> <span>{{vault.advisorName}}</span></div>
+                    <div><strong>Email:</strong> <span>{{vault.email}}</span></div>
+                    <div><strong>Phone:</strong> <span>{{vault.phoneNumber}}</span></div>
+                    <div><strong>Revenue Model:</strong> <span>{{vault.revenueModel}}</span></div>
+                </div>
+            </div>
+
+            <!-- Registration Details -->
+            <div class="advisor-section">
+                <h3>Registration Details</h3>
+                <div class="advisor-details">
+                    <div><strong>SEBI Reg:</strong> <span>{{vault.sebiRegNumber}}</span></div>
+                    <div><strong>FPSB No:</strong> <span>{{vault.fpsbNumber}}</span></div>
+                    <div><strong>RIA No:</strong> <span>{{vault.riaNumber}}</span></div>
+                    <div><strong>ARN No:</strong> <span>{{vault.arnNumber}}</span></div>
+                    <div><strong>AMFI Reg:</strong> <span>{{vault.amfiRegNumber}}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Certifications -->
+        {{#if vault.certifications.length}}
+        <div class="certifications-section">
+            <h3>Professional Certifications</h3>
+            <div class="certifications-grid">
+                {{#each vault.certifications}}
+                <div class="certification-card">
+                    <h4>{{this.name}}</h4>
+                    <p><strong>Issuing Body:</strong> {{this.issuingBody}}</p>
+                    <p><strong>Issue Date:</strong> {{this.issueDate}}</p>
+                    <p><strong>Expiry Date:</strong> {{this.expiryDate}}</p>
+                    {{#if this.certificateNumber}}
+                        <p><strong>Cert No:</strong> {{this.certificateNumber}}</p>
+                    {{/if}}
+                    <span class="certification-status {{#if this.isExpired}}cert-expired{{else}}cert-active{{/if}}">
+                        {{#if this.isExpired}}Expired{{else}}Active{{/if}}
+                    </span>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Memberships -->
+        {{#if vault.memberships.length}}
+        <div class="certifications-section">
+            <h3>Professional Memberships</h3>
+            <div class="certifications-grid">
+                {{#each vault.memberships}}
+                <div class="certification-card">
+                    <h4>{{this.organization}}</h4>
+                    <p><strong>Type:</strong> {{this.membershipType}}</p>
+                    <p><strong>Member Since:</strong> {{this.memberSince}}</p>
+                    {{#if this.membershipNumber}}
+                        <p><strong>Member No:</strong> {{this.membershipNumber}}</p>
+                    {{/if}}
+                    <span class="certification-status {{#if this.isActive}}cert-active{{else}}cert-expired{{/if}}">
+                        {{#if this.isActive}}Active{{else}}Inactive{{/if}}
+                    </span>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Digital Presence -->
+        {{#if vault.hasSocialMedia}}
+        <div class="digital-presence">
+            <h3>Digital Presence</h3>
+            <div class="social-links">
+                {{#if vault.digitalPresence.website}}
+                    <span class="social-link">🌐 {{vault.digitalPresence.website}}</span>
+                {{/if}}
+                {{#if vault.digitalPresence.linkedin}}
+                    <span class="social-link">💼 {{vault.digitalPresence.linkedin}}</span>
+                {{/if}}
+                {{#if vault.digitalPresence.twitter}}
+                    <span class="social-link">🐦 {{vault.digitalPresence.twitter}}</span>
+                {{/if}}
+                {{#if vault.digitalPresence.facebook}}
+                    <span class="social-link">📘 {{vault.digitalPresence.facebook}}</span>
+                {{/if}}
+                {{#if vault.digitalPresence.instagram}}
+                    <span class="social-link">📷 {{vault.digitalPresence.instagram}}</span>
+                {{/if}}
+                {{#if vault.digitalPresence.youtube}}
+                    <span class="social-link">📺 {{vault.digitalPresence.youtube}}</span>
+                {{/if}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Working Hours -->
+        <div class="working-hours">
+            <h3>Working Hours</h3>
+            <div class="hours-grid">
+                <div class="day-slot {{#if vault.scheduling.workingHours.monday.isWorking}}day-working{{else}}day-off{{/if}}">
+                    <div class="day-name">Mon</div>
+                    <div class="day-time">{{vault.scheduling.workingHours.monday.startTime}} - {{vault.scheduling.workingHours.monday.endTime}}</div>
+                </div>
+                <div class="day-slot {{#if vault.scheduling.workingHours.tuesday.isWorking}}day-working{{else}}day-off{{/if}}">
+                    <div class="day-name">Tue</div>
+                    <div class="day-time">{{vault.scheduling.workingHours.tuesday.startTime}} - {{vault.scheduling.workingHours.tuesday.endTime}}</div>
+                </div>
+                <div class="day-slot {{#if vault.scheduling.workingHours.wednesday.isWorking}}day-working{{else}}day-off{{/if}}">
+                    <div class="day-name">Wed</div>
+                    <div class="day-time">{{vault.scheduling.workingHours.wednesday.startTime}} - {{vault.scheduling.workingHours.wednesday.endTime}}</div>
+                </div>
+                <div class="day-slot {{#if vault.scheduling.workingHours.thursday.isWorking}}day-working{{else}}day-off{{/if}}">
+                    <div class="day-name">Thu</div>
+                    <div class="day-time">{{vault.scheduling.workingHours.thursday.startTime}} - {{vault.scheduling.workingHours.thursday.endTime}}</div>
+                </div>
+                <div class="day-slot {{#if vault.scheduling.workingHours.friday.isWorking}}day-working{{else}}day-off{{/if}}">
+                    <div class="day-name">Fri</div>
+                    <div class="day-time">{{vault.scheduling.workingHours.friday.startTime}} - {{vault.scheduling.workingHours.friday.endTime}}</div>
+                </div>
+                <div class="day-slot {{#if vault.scheduling.workingHours.saturday.isWorking}}day-working{{else}}day-off{{/if}}">
+                    <div class="day-name">Sat</div>
+                    <div class="day-time">{{vault.scheduling.workingHours.saturday.startTime}} - {{vault.scheduling.workingHours.saturday.endTime}}</div>
+                </div>
+                <div class="day-slot {{#if vault.scheduling.workingHours.sunday.isWorking}}day-working{{else}}day-off{{/if}}">
+                    <div class="day-name">Sun</div>
+                    <div class="day-time">{{vault.scheduling.workingHours.sunday.startTime}} - {{vault.scheduling.workingHours.sunday.endTime}}</div>
+                </div>
+            </div>
+            <div style="margin-top: 10px; font-size: 10px; color: var(--text-muted);">
+                <strong>Appointment Duration:</strong> {{vault.scheduling.appointmentDuration}} minutes | 
+                <strong>Timezone:</strong> {{vault.scheduling.timezone}} | 
+                <strong>Buffer Time:</strong> {{vault.scheduling.bufferTime.before}}min before, {{vault.scheduling.bufferTime.after}}min after
+            </div>
+        </div>
+
+        <!-- White Label Information -->
+        {{#if vault.whiteLabel.isEnabled}}
+        <div class="certifications-section">
+            <h3>White Label Configuration</h3>
+            <div class="advisor-details">
+                <div><strong>Company Name:</strong> <span>{{vault.whiteLabel.companyName}}</span></div>
+                <div><strong>Custom Domain:</strong> <span>{{vault.whiteLabel.customDomain}}</span></div>
+                <div><strong>API Keys:</strong> <span>{{vault.whiteLabel.apiKeys.length}} configured</span></div>
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Report Customization -->
+        <div class="certifications-section">
+            <h3>Report Customization</h3>
+            <div class="advisor-details">
+                <div><strong>Header Style:</strong> <span>{{vault.reportCustomization.headerStyle}}</span></div>
+                <div><strong>Footer Style:</strong> <span>{{vault.reportCustomization.footerStyle}}</span></div>
+                <div><strong>Watermark:</strong> <span>{{#if vault.reportCustomization.watermark.isEnabled}}Enabled{{else}}Disabled{{/if}}</span></div>
+                {{#if vault.reportCustomization.customFooter}}
+                    <div><strong>Custom Footer:</strong> <span>{{vault.reportCustomization.customFooter}}</span></div>
+                {{/if}}
+            </div>
         </div>
     </div>
 
