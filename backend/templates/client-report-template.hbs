@@ -1,0 +1,786 @@
+/* backend/templates/client-report-template.hbs */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Financial Report - {{client.name}}</title>
+    <style>
+        /* Professional PDF Styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Arial', 'Helvetica', sans-serif;
+            line-height: 1.7;
+            color: #1E3A8A;
+            background-color: #FFFFFF;
+            font-size: 11px;
+            letter-spacing: 0.2px;
+        }
+
+        /* Color Variables */
+        :root {
+            --primary-green: #10B981;
+            --dark-blue: #1E3A8A;
+            --accent-yellow: #F59E0B;
+            --danger-red: #EF4444;
+            --neutral-gray: #6B7280;
+            --light-gray: #F8FAFC;
+            --white: #FFFFFF;
+            --border-gray: #E2E8F0;
+            --text-muted: #64748B;
+            --success-green: #059669;
+            --warning-orange: #D97706;
+        }
+
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, var(--dark-blue) 0%, var(--primary-green) 100%);
+            color: var(--white);
+            padding: 35px 30px;
+            text-align: center;
+            margin-bottom: 35px;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 3px 15px rgba(30, 58, 138, 0.12);
+        }
+
+        .header h1 {
+            font-size: 30px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.95;
+            font-weight: 400;
+        }
+
+        .advisor-info {
+            background-color: var(--white);
+            padding: 25px;
+            border-radius: 10px;
+            margin: 25px 0;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-gray);
+        }
+
+        .advisor-info h2 {
+            color: var(--dark-blue);
+            font-size: 19px;
+            margin-bottom: 18px;
+            border-bottom: 3px solid var(--primary-green);
+            padding-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .advisor-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .advisor-details div {
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .advisor-details strong {
+            color: var(--dark-blue);
+            font-weight: 600;
+        }
+
+        /* Client Info Card */
+        .client-card {
+            background-color: var(--light-gray);
+            padding: 28px;
+            border-radius: 10px;
+            margin: 25px 0;
+            border-left: 6px solid var(--primary-green);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+
+        .client-card h2 {
+            color: var(--dark-blue);
+            font-size: 21px;
+            margin-bottom: 18px;
+            font-weight: 600;
+        }
+
+        .client-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .client-info strong {
+            color: var(--dark-blue);
+            font-weight: 600;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 22px;
+            margin: 35px 0;
+        }
+
+        .kpi-card {
+            background-color: var(--white);
+            padding: 22px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            border-top: 5px solid var(--primary-green);
+            border: 1px solid var(--border-gray);
+        }
+
+        .kpi-card h3 {
+            color: var(--dark-blue);
+            font-size: 15px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .kpi-card .value {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--primary-green);
+            margin-bottom: 6px;
+        }
+
+        .kpi-card .label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* Section Styles */
+        .section {
+            margin: 45px 0;
+            page-break-inside: avoid;
+        }
+
+        .section h2 {
+            color: var(--dark-blue);
+            font-size: 19px;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 3px solid var(--primary-green);
+            font-weight: 600;
+        }
+
+        .section h3 {
+            color: var(--dark-blue);
+            font-size: 15px;
+            margin: 18px 0 12px 0;
+            font-weight: 600;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            text-align: center;
+            margin: 25px 0;
+            padding: 25px;
+            background-color: var(--white);
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-gray);
+        }
+
+        .chart-container img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Table Styles */
+        .table-container {
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--white);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-gray);
+        }
+
+        th {
+            background-color: var(--dark-blue);
+            color: var(--white);
+            padding: 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            letter-spacing: 0.3px;
+        }
+
+        td {
+            padding: 14px;
+            border-bottom: 1px solid var(--border-gray);
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+
+        tr:hover {
+            background-color: #F1F5F9;
+        }
+
+        /* Alert Styles */
+        .alert {
+            padding: 18px;
+            margin: 18px 0;
+            border-radius: 8px;
+            border-left: 5px solid;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .alert.danger {
+            background-color: #FEF2F2;
+            border-left-color: var(--danger-red);
+            color: #991B1B;
+        }
+
+        .alert.warning {
+            background-color: #FFFBEB;
+            border-left-color: var(--accent-yellow);
+            color: #92400E;
+        }
+
+        .alert.info {
+            background-color: #EFF6FF;
+            border-left-color: var(--dark-blue);
+            color: #1E40AF;
+        }
+
+        .alert h4 {
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .alert p {
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        /* Recommendation Styles */
+        .recommendation {
+            background-color: var(--white);
+            padding: 22px;
+            margin: 18px 0;
+            border-radius: 10px;
+            border-left: 5px solid var(--primary-green);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-gray);
+        }
+
+        .recommendation h4 {
+            color: var(--dark-blue);
+            font-size: 14px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .recommendation .category {
+            background-color: var(--primary-green);
+            color: var(--white);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 10px;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 10px;
+            letter-spacing: 0.3px;
+        }
+
+        .recommendation .timeline {
+            color: var(--text-muted);
+            font-size: 10px;
+            font-style: italic;
+            margin-top: 8px;
+        }
+
+        /* Goal Progress */
+        .goal-item {
+            background-color: var(--white);
+            padding: 18px;
+            margin: 12px 0;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary-green);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid var(--border-gray);
+        }
+
+        .goal-progress-bar {
+            background-color: var(--light-gray);
+            border-radius: 12px;
+            height: 22px;
+            margin: 12px 0;
+            overflow: hidden;
+            border: 1px solid var(--border-gray);
+        }
+
+        .goal-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-green) 0%, var(--accent-yellow) 100%);
+            border-radius: 12px;
+            transition: width 0.3s ease;
+        }
+
+        .goal-progress-text {
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--white);
+            line-height: 22px;
+        }
+
+        /* Risk Assessment */
+        .risk-indicator {
+            display: inline-block;
+            padding: 10px 18px;
+            border-radius: 22px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 0.3px;
+        }
+
+        .risk-conservative {
+            background-color: var(--primary-green);
+            color: var(--white);
+        }
+
+        .risk-moderate {
+            background-color: var(--accent-yellow);
+            color: var(--white);
+        }
+
+        .risk-aggressive {
+            background-color: var(--danger-red);
+            color: var(--white);
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 60px;
+            padding: 25px;
+            background-color: var(--light-gray);
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-muted);
+            border-top: 3px solid var(--primary-green);
+            border-radius: 10px 10px 0 0;
+        }
+
+        /* Page Break */
+        .page-break {
+            page-break-before: always;
+        }
+
+        /* Utility Classes */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-green { color: var(--primary-green); }
+        .text-blue { color: var(--dark-blue); }
+        .text-red { color: var(--danger-red); }
+        .text-gray { color: var(--neutral-gray); }
+        .text-muted { color: var(--text-muted); }
+        .font-bold { font-weight: bold; }
+        .font-semibold { font-weight: 600; }
+        .font-light { font-weight: 300; }
+        .mb-20 { margin-bottom: 20px; }
+        .mt-20 { margin-top: 20px; }
+        .p-20 { padding: 20px; }
+
+        /* Currency Formatting */
+        .currency {
+            font-weight: 700;
+            color: var(--primary-green);
+        }
+
+        .currency::before {
+            content: '₹';
+        }
+
+        /* Responsive Grid */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                font-size: 11px;
+            }
+            
+            .page-break {
+                page-break-before: always;
+            }
+            
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <div class="header">
+        <h1>Comprehensive Financial Report</h1>
+        <div class="subtitle">{{reportMetadata.confidentiality}}</div>
+    </div>
+
+    <!-- Advisor Information -->
+    <div class="advisor-info">
+        <h2>{{vault.firmName}}</h2>
+        <div class="advisor-details">
+            <div><strong>Advisor:</strong> {{vault.advisorName}}</div>
+            <div><strong>SEBI Registration:</strong> {{vault.sebiRegNumber}}</div>
+            <div><strong>Email:</strong> {{vault.email}}</div>
+            <div><strong>Phone:</strong> {{vault.phoneNumber}}</div>
+            <div><strong>Address:</strong> {{vault.address}}</div>
+            <div><strong>Report Generated:</strong> {{reportMetadata.generatedAt}}</div>
+        </div>
+    </div>
+
+    <!-- Client Information -->
+    <div class="client-card">
+        <h2>{{client.name}}</h2>
+        <div class="client-info">
+            <div>
+                <strong>Email:</strong> {{client.email}}<br>
+                <strong>Phone:</strong> {{client.phoneNumber}}<br>
+                <strong>Age:</strong> {{client.age}} years<br>
+                <strong>Occupation:</strong> {{client.occupation}}
+            </div>
+            <div>
+                <strong>Income Type:</strong> {{client.incomeType}}<br>
+                <strong>Marital Status:</strong> {{client.maritalStatus}}<br>
+                <strong>Dependents:</strong> {{client.dependents}}<br>
+                <strong>Address:</strong> {{client.address}}
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Performance Indicators -->
+    <div class="section">
+        <h2>Financial Overview</h2>
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <h3>Net Worth</h3>
+                <div class="value currency">{{financialMetrics.netWorth}}</div>
+                <div class="label">Total Assets - Liabilities</div>
+            </div>
+            <div class="kpi-card">
+                <h3>Savings Rate</h3>
+                <div class="value">{{financialMetrics.savingsRate}}%</div>
+                <div class="label">Monthly Income - Expenses</div>
+            </div>
+            <div class="kpi-card">
+                <h3>Goal Progress</h3>
+                <div class="value">{{goals.avgProgress}}%</div>
+                <div class="label">Average Achievement</div>
+            </div>
+            <div class="kpi-card">
+                <h3>Risk Profile</h3>
+                <div class="value">{{riskAssessment.level}}</div>
+                <div class="label">Score: {{riskAssessment.score}}/10</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Charts -->
+    <div class="section">
+        <h2>Financial Analysis</h2>
+        
+        {{#if charts.assetAllocation}}
+        <div class="chart-container">
+            <img src="{{charts.assetAllocation}}" alt="Asset Allocation Chart">
+        </div>
+        {{/if}}
+
+        {{#if charts.incomeExpense}}
+        <div class="chart-container">
+            <img src="{{charts.incomeExpense}}" alt="Income vs Expenses Chart">
+        </div>
+        {{/if}}
+
+        {{#if charts.netWorthTrend}}
+        <div class="chart-container">
+            <img src="{{charts.netWorthTrend}}" alt="Net Worth Trend Chart">
+        </div>
+        {{/if}}
+    </div>
+
+    <!-- Goals Section -->
+    <div class="section">
+        <h2>Financial Goals Progress</h2>
+        
+        {{#if charts.goalProgress}}
+        <div class="chart-container">
+            <img src="{{charts.goalProgress}}" alt="Goal Progress Chart">
+        </div>
+        {{/if}}
+
+        <div class="grid-2">
+            <div>
+                <h3>Goal Summary</h3>
+                <table>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>Total Goals</td>
+                        <td>{{goals.totalGoals}}</td>
+                    </tr>
+                    <tr>
+                        <td>Completed Goals</td>
+                        <td class="text-green">{{goals.completedGoals}}</td>
+                    </tr>
+                    <tr>
+                        <td>On Track Goals</td>
+                        <td class="text-blue">{{goals.onTrackGoals}}</td>
+                    </tr>
+                    <tr>
+                        <td>Needs Attention</td>
+                        <td class="text-red">{{goals.needsAttentionGoals}}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div>
+                <h3>Individual Goals</h3>
+                {{#each goals.list}}
+                <div class="goal-item">
+                    <h4>{{name}}</h4>
+                    <div class="goal-progress-bar">
+                        <div class="goal-progress-fill" style="width: {{progressPercentage}}%">
+                            <div class="goal-progress-text">{{progressPercentage}}%</div>
+                        </div>
+                    </div>
+                    <div class="text-gray">
+                        ₹{{currentAmount}} of ₹{{targetAmount}} 
+                        (₹{{remainingAmount}} remaining)
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Assessment -->
+    <div class="section">
+        <h2>Risk Assessment</h2>
+        <div class="grid-2">
+            <div>
+                <h3>Risk Profile</h3>
+                <div class="risk-indicator risk-{{riskAssessment.level}}">
+                    {{riskAssessment.level}} ({{riskAssessment.score}}/10)
+                </div>
+                <p class="mt-20">{{riskAssessment.description}}</p>
+            </div>
+            
+            <div>
+                <h3>Risk Recommendations</h3>
+                <ul>
+                    {{#each riskAssessment.recommendations}}
+                    <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Investment Recommendations -->
+    {{#if mutualFundRecommend.length}}
+    <div class="section">
+        <h2>Investment Recommendations</h2>
+        
+        {{#if charts.investmentRecommendations}}
+        <div class="chart-container">
+            <img src="{{charts.investmentRecommendations}}" alt="Investment Recommendations Chart">
+        </div>
+        {{/if}}
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Fund Name</th>
+                    <th>Category</th>
+                    <th>Recommended Amount</th>
+                    <th>SIP Amount</th>
+                    <th>Expected Return</th>
+                    <th>Risk Level</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each mutualFundRecommend}}
+                <tr>
+                    <td>{{fundName}}</td>
+                    <td>{{category}}</td>
+                    <td class="currency">{{recommendedAmount}}</td>
+                    <td class="currency">{{sipAmount}}</td>
+                    <td>{{expectedReturn}}%</td>
+                    <td>{{riskLevel}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+    {{/if}}
+
+    <!-- Tax Planning -->
+    {{#if taxPlanning}}
+    <div class="section">
+        <h2>Tax Planning Analysis</h2>
+        
+        {{#if charts.taxSavings}}
+        <div class="chart-container">
+            <img src="{{charts.taxSavings}}" alt="Tax Savings Chart">
+        </div>
+        {{/if}}
+
+        <div class="grid-2">
+            <div>
+                <h3>Current Tax Position</h3>
+                <table>
+                    <tr>
+                        <th>Tax Component</th>
+                        <th>Amount</th>
+                    </tr>
+                    <tr>
+                        <td>Current Tax Liability</td>
+                        <td class="currency">{{taxPlanning.currentTaxLiability}}</td>
+                    </tr>
+                    <tr>
+                        <td>Projected Tax Liability</td>
+                        <td class="currency">{{taxPlanning.projectedTaxLiability}}</td>
+                    </tr>
+                    <tr>
+                        <td>Potential Savings</td>
+                        <td class="text-green currency">{{taxPlanning.potentialSavings}}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div>
+                <h3>Tax Saving Opportunities</h3>
+                <ul>
+                    {{#each taxPlanning.recommendations}}
+                    <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {{/if}}
+
+    <!-- Estate Planning -->
+    {{#if estateInformation}}
+    <div class="section">
+        <h2>Estate Planning Overview</h2>
+        <div class="grid-2">
+            <div>
+                <h3>Family Structure</h3>
+                <p><strong>Spouse:</strong> {{estateInformation.spouseName}}</p>
+                <p><strong>Children:</strong> {{estateInformation.childrenCount}}</p>
+                <p><strong>Dependents:</strong> {{estateInformation.dependents}}</p>
+            </div>
+            
+            <div>
+                <h3>Asset Distribution</h3>
+                <p><strong>Real Estate:</strong> {{estateInformation.realEstateValue}}</p>
+                <p><strong>Personal Assets:</strong> {{estateInformation.personalAssetsValue}}</p>
+                <p><strong>Digital Assets:</strong> {{estateInformation.digitalAssetsValue}}</p>
+            </div>
+        </div>
+    </div>
+    {{/if}}
+
+    <!-- Alerts and Recommendations -->
+    <div class="section">
+        <h2>Alerts & Recommendations</h2>
+        
+        {{#if alerts.length}}
+        <h3>Important Alerts</h3>
+        {{#each alerts}}
+        <div class="alert {{type}}">
+            <h4>{{title}}</h4>
+            <p>{{message}}</p>
+        </div>
+        {{/each}}
+        {{/if}}
+
+        {{#if recommendations.length}}
+        <h3>Action Items</h3>
+        {{#each recommendations}}
+        <div class="recommendation">
+            <span class="category">{{category}}</span>
+            <h4>{{title}}</h4>
+            <p>{{description}}</p>
+            <div class="timeline">Timeline: {{timeline}}</div>
+        </div>
+        {{/each}}
+        {{/if}}
+    </div>
+
+    <!-- Meeting History -->
+    {{#if meetings.length}}
+    <div class="section">
+        <h2>Meeting History</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Duration</th>
+                    <th>Key Points</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each meetings}}
+                <tr>
+                    <td>{{date}}</td>
+                    <td>{{type}}</td>
+                    <td>{{duration}}</td>
+                    <td>{{keyPoints}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+    {{/if}}
+
+    <!-- Footer -->
+    <div class="footer">
+        <p><strong>{{vault.firmName}}</strong> | {{vault.advisorName}} | SEBI Registration: {{vault.sebiRegNumber}}</p>
+        <p>This report is confidential and intended solely for the use of {{client.name}}.</p>
+        <p>Generated on {{reportMetadata.generatedAt}} | Report Version {{reportMetadata.reportVersion}}</p>
+    </div>
+</body>
+</html>

@@ -12,6 +12,7 @@ import { clientReportsAPI } from '../../services/api';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, RadialLinearScale, PointElement, LineElement, Filler } from 'chart.js';
 import { Bar, Doughnut, Pie, Line, Radar } from 'react-chartjs-2';
 import BulkImportModal from './BulkImportModal';
+import PDFDownloadButton from './PDFDownloadButton';
 
 // Register Chart.js components
 ChartJS.register(
@@ -831,11 +832,44 @@ function ClientReportsPage() {
                   )}
                 </div>
 
-                {/* Action Button */}
+                {/* PDF Download Button */}
                 <div className="mt-6 pt-4 border-t border-gray-100">
-                  <button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-sm font-semibold shadow-sm">
-                    View Comprehensive Report
-                  </button>
+                  {(() => {
+                    // More robust client ID extraction
+                    let clientIdString;
+                    
+                    if (client._id) {
+                      if (typeof client._id === 'string') {
+                        clientIdString = client._id;
+                      } else if (client._id.toString) {
+                        clientIdString = client._id.toString();
+                      } else {
+                        clientIdString = String(client._id);
+                      }
+                    } else if (client.id) {
+                      clientIdString = client.id.toString();
+                    } else {
+                      clientIdString = 'unknown';
+                    }
+                    
+                    console.log('🔍 [ClientReportsPage] Client ID conversion:', {
+                      originalClient: client,
+                      clientId: client._id,
+                      clientIdType: typeof client._id,
+                      clientIdString,
+                      clientIdStringType: typeof clientIdString,
+                      clientIdStringLength: clientIdString?.length,
+                      allClientKeys: Object.keys(client)
+                    });
+                    
+                    return (
+                      <PDFDownloadButton 
+                        clientId={clientIdString}
+                        clientName={`${client.firstName} ${client.lastName}`}
+                        className="w-full"
+                      />
+                    );
+                  })()}
                 </div>
               </div>
             ))}

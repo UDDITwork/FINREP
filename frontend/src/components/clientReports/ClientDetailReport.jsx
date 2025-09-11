@@ -21,6 +21,7 @@ import {
   ClipboardCheck, StickyNote, EyeOff, RefreshCw
 } from 'lucide-react';
 import EnhancedTranscriptDisplay from '../common/EnhancedTranscriptDisplay';
+import PDFDownloadButton from './PDFDownloadButton';
 import { toast } from 'react-hot-toast';
 import { clientReportsAPI } from '../../services/api';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, RadialLinearScale, PointElement, LineElement, Filler } from 'chart.js';
@@ -727,6 +728,14 @@ function ClientDetailReport() {
                 </span>
                 <div className="text-sm text-gray-600">
                   <span className="font-medium">Onboarding:</span> Step {safeDisplay(client.basicInfo?.onboardingStep)} of 7
+                </div>
+                {/* PDF Download Button */}
+                <div className="mt-3">
+                  <PDFDownloadButton 
+                    clientId={clientId}
+                    clientName={`${safeDisplay(client.basicInfo?.firstName)} ${safeDisplay(client.basicInfo?.lastName)}`}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                  />
                 </div>
               </div>
             </div>

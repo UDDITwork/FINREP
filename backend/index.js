@@ -190,7 +190,8 @@ app.get('/', (req, res) => {
       abTesting: true,
       loeManagement: true,
       adminDashboard: true,
-      clientReports: true // NEW: Client Reports feature
+      clientReports: true, // NEW: Client Reports feature
+      pdfGeneration: true // NEW: PDF Generation feature
     }
   };
   
@@ -276,6 +277,47 @@ try {
   comprehensiveLogger.logSystemEvent('CLIENT_REPORTS_SYSTEM_DISABLED', {
     reason: 'Client Reports routes file not found',
     impact: 'App will function normally without client reports',
+    error: error.message,
+    timestamp: new Date().toISOString()
+  });
+}
+
+// ============================================================================
+// 🆕 NEW: PDF GENERATION ROUTES (Comprehensive PDF Reports)
+// ============================================================================
+
+// Add PDF generation routes for comprehensive PDF reports
+try {
+  console.log('🔍 Attempting to load PDF generation routes...');
+  const pdfRoutes = require('./routes/pdfRoutes');
+  console.log('✅ PDF generation routes file loaded successfully');
+  app.use('/api/pdf', pdfRoutes);
+  console.log('✅ PDF Generation routes registered: /api/pdf/*');
+  
+  // Log PDF Generation system availability
+  comprehensiveLogger.logSystemEvent('PDF_GENERATION_SYSTEM_ENABLED', {
+    pdfRoutes: [
+      '/api/pdf/generate-client-report/:clientId',
+      '/api/pdf/health'
+    ],
+    features: [
+      'Comprehensive PDF Reports',
+      'Professional Chart Generation',
+      'Vault Data Integration',
+      'Multi-Model Data Aggregation',
+      'Professional Styling'
+    ],
+    timestamp: new Date().toISOString()
+  });
+  
+} catch (error) {
+  console.log('⚠️ PDF Generation routes not found - skipping (app will work without PDF generation)');
+  console.log('Error details:', error.message);
+  logger.warn('PDF Generation routes not available:', error.message);
+  
+  comprehensiveLogger.logSystemEvent('PDF_GENERATION_SYSTEM_DISABLED', {
+    reason: 'PDF Generation routes file not found',
+    impact: 'App will function normally without PDF generation',
     error: error.message,
     timestamp: new Date().toISOString()
   });
@@ -739,7 +781,7 @@ const gracefulShutdown = (signal) => {
   // Cleanup performance monitoring
   cleanup();
   
-  mongoose.connection.close(() => {
+  mongoose.connection.close().then(() => {
     logger.info('MongoDB connection closed');
     logger.info('Server shutdown complete');
     
@@ -750,6 +792,9 @@ const gracefulShutdown = (signal) => {
     });
     
     process.exit(0);
+  }).catch((error) => {
+    logger.error('Error closing MongoDB connection:', error);
+    process.exit(1);
   });
 };
 
