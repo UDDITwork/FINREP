@@ -14,12 +14,43 @@ const { logger } = require('../utils/logger');
 const { auth } = require('../middleware/auth');
 const pdfController = require('../controllers/pdfController');
 
+// Handle OPTIONS request for CORS preflight
+router.options('/generate-client-report/:clientId', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://richieai.in');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+  res.status(200).end();
+});
+
 // Generate comprehensive PDF report for a client
 router.post('/generate-client-report/:clientId', auth, async (req, res) => {
+  const routeRequestId = Math.random().toString(36).substr(2, 9);
+  
+  console.log(`\n🛣️ [PDF ROUTES] [${routeRequestId}] ===== ROUTE HANDLER STARTED =====`);
+  console.log(`📋 [PDF ROUTES] [${routeRequestId}] Route: POST /api/pdf/generate-client-report/:clientId`);
+  console.log(`🔍 [PDF ROUTES] [${routeRequestId}] Route params:`, {
+    clientId: req.params.clientId,
+    advisorId: req.advisor?.id,
+    method: req.method,
+    url: req.originalUrl
+  });
+  
   try {
+    console.log(`📞 [PDF ROUTES] [${routeRequestId}] Calling pdfController.generateClientReport...`);
     await pdfController.generateClientReport(req, res);
+    console.log(`✅ [PDF ROUTES] [${routeRequestId}] Route handler completed successfully`);
   } catch (error) {
+    console.log(`❌ [PDF ROUTES] [${routeRequestId}] ===== ROUTE HANDLER FAILED =====`);
+    console.log(`💥 [PDF ROUTES] [${routeRequestId}] Route error details:`, {
+      message: error.message,
+      name: error.name,
+      stack: error.stack?.split('\n').slice(0, 3)
+    });
+    
     logger.error('❌ [PDF ROUTES] Error in PDF generation route', {
+      routeRequestId,
       error: error.message,
       stack: error.stack,
       clientId: req.params.clientId,

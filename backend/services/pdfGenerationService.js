@@ -27,16 +27,34 @@ class PDFGenerationService {
    * @returns {Buffer} - PDF buffer
    */
   async generateClientReport(clientData, vaultData) {
+    const serviceRequestId = Math.random().toString(36).substr(2, 9);
+    const startTime = Date.now();
+    
+    console.log(`\n🔧 [PDF SERVICE] [${serviceRequestId}] ===== PDF SERVICE STARTED =====`);
+    console.log(`📅 [PDF SERVICE] [${serviceRequestId}] Timestamp: ${new Date().toISOString()}`);
+    
     try {
+      console.log(`📊 [PDF SERVICE] [${serviceRequestId}] Input data:`, {
+        hasClientData: !!clientData,
+        hasVaultData: !!vaultData,
+        clientDataKeys: clientData ? Object.keys(clientData) : [],
+        vaultDataKeys: vaultData ? Object.keys(vaultData) : []
+      });
+      
       logger.info('🚀 [PDF GENERATION] Starting client report generation', {
+        serviceRequestId,
         clientId: clientData.client?._id,
         advisorId: vaultData?.advisorId
       });
 
       // Step 1: Generate charts with error handling
+      console.log(`🔍 [PDF SERVICE] [${serviceRequestId}] Step 1: Generating charts...`);
       let charts = {};
       try {
         charts = await this.generateCharts(clientData);
+        console.log(`✅ [PDF SERVICE] [${serviceRequestId}] Charts generated successfully:`, {
+          chartKeys: Object.keys(charts)
+        });
         logger.info('✅ [PDF GENERATION] Charts generated successfully');
       } catch (chartError) {
         logger.warn('⚠️ [PDF GENERATION] Chart generation failed, continuing without charts', {
@@ -46,12 +64,23 @@ class PDFGenerationService {
       }
       
       // Step 2: Prepare template data with comprehensive validation
+      console.log(`🔍 [PDF SERVICE] [${serviceRequestId}] Step 2: Preparing template data...`);
       const templateData = this.prepareTemplateData(clientData, vaultData, charts);
+      console.log(`✅ [PDF SERVICE] [${serviceRequestId}] Template data prepared:`, {
+        templateDataKeys: Object.keys(templateData || {}),
+        hasClient: !!templateData?.client,
+        hasVault: !!templateData?.vault
+      });
       
       // Step 3: Render HTML template with error handling
+      console.log(`🔍 [PDF SERVICE] [${serviceRequestId}] Step 3: Rendering HTML template...`);
       let htmlContent;
       try {
         htmlContent = await this.renderTemplate(templateData);
+        console.log(`✅ [PDF SERVICE] [${serviceRequestId}] Template rendered successfully:`, {
+          htmlLength: htmlContent.length,
+          htmlPreview: htmlContent.substring(0, 200) + '...'
+        });
         logger.info('✅ [PDF GENERATION] Template rendered successfully', {
           htmlLength: htmlContent.length,
           clientId: clientData.client?._id
@@ -66,13 +95,20 @@ class PDFGenerationService {
       }
       
       // Step 4: Convert HTML to PDF with retry logic
+      console.log(`🔍 [PDF SERVICE] [${serviceRequestId}] Step 4: Converting HTML to PDF...`);
       let pdfBuffer;
       let retryCount = 0;
       const maxRetries = 3;
       
       while (retryCount < maxRetries) {
         try {
+          console.log(`🔄 [PDF SERVICE] [${serviceRequestId}] PDF conversion attempt ${retryCount + 1}/${maxRetries}...`);
           pdfBuffer = await this.htmlToPdf(htmlContent);
+          console.log(`✅ [PDF SERVICE] [${serviceRequestId}] PDF conversion successful:`, {
+            pdfSize: pdfBuffer.length,
+            isBuffer: Buffer.isBuffer(pdfBuffer),
+            bufferType: typeof pdfBuffer
+          });
           break;
         } catch (pdfError) {
           retryCount++;
@@ -90,7 +126,17 @@ class PDFGenerationService {
         }
       }
       
+      const duration = Date.now() - startTime;
+      console.log(`✅ [PDF SERVICE] [${serviceRequestId}] ===== PDF SERVICE COMPLETED =====`);
+      console.log(`⏱️ [PDF SERVICE] [${serviceRequestId}] Total duration: ${duration}ms`);
+      console.log(`📊 [PDF SERVICE] [${serviceRequestId}] Final stats:`, {
+        duration: `${duration}ms`,
+        pdfSize: `${Math.round(pdfBuffer.length / 1024)}KB`,
+        clientId: clientData.client?._id
+      });
+      
       logger.info('✅ [PDF GENERATION] Client report generated successfully', {
+        serviceRequestId,
         clientId: clientData.client?._id,
         pdfSize: `${Math.round(pdfBuffer.length / 1024)}KB`
       });
@@ -98,7 +144,17 @@ class PDFGenerationService {
       return pdfBuffer;
 
     } catch (error) {
+      const duration = Date.now() - startTime;
+      console.log(`❌ [PDF SERVICE] [${serviceRequestId}] ===== PDF SERVICE FAILED =====`);
+      console.log(`💥 [PDF SERVICE] [${serviceRequestId}] Critical error details:`, {
+        message: error.message,
+        name: error.name,
+        stack: error.stack?.split('\n').slice(0, 5),
+        duration: `${duration}ms`
+      });
+      
       logger.error('❌ [PDF GENERATION] Critical error in PDF generation', {
+        serviceRequestId,
         error: error.message,
         stack: error.stack,
         clientId: clientData.client?._id

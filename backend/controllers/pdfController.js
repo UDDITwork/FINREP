@@ -1,13 +1,7 @@
 /**
  * FILE LOCATION: backend/controllers/pdfController.js
  * 
- * PURPOSE: PDF generation controller for client reports
- * 
- * FUNCTIONALITY:
- * - Generates comprehensive PDF reports for clients
- * - Fetches all client data from multiple models
- * - Returns PDF as downloadable file
- * - Comprehensive error handling and logging
+ * PURPOSE: PDF generation controller for client report
  */
 
 const { logger } = require('../utils/logger');
@@ -27,21 +21,60 @@ class PDFController {
    * @param {Object} res - Express response object
    */
   async generateClientReport(req, res) {
+    const requestId = Math.random().toString(36).substr(2, 9);
+    const startTime = Date.now();
+    
+    console.log(`\n🚀 [PDF CONTROLLER] [${requestId}] ===== PDF GENERATION STARTED =====`);
+    console.log(`📅 [PDF CONTROLLER] [${requestId}] Timestamp: ${new Date().toISOString()}`);
+    console.log(`🔍 [PDF CONTROLLER] [${requestId}] Request Details:`, {
+      method: req.method,
+      url: req.url,
+      clientId: req.params.clientId,
+      advisorId: req.advisor?.id,
+      headers: {
+        'content-type': req.headers['content-type'],
+        'authorization': req.headers['authorization'] ? 'Present' : 'Missing',
+        'origin': req.headers['origin'],
+        'user-agent': req.headers['user-agent']?.substring(0, 50) + '...'
+      }
+    });
+    
     try {
-      const startTime = Date.now();
       const { clientId } = req.params;
       const advisorId = req.advisor.id;
 
+      console.log(`📋 [PDF CONTROLLER] [${requestId}] Extracted parameters:`, { clientId, advisorId });
+
       logger.info('🚀 [PDF CONTROLLER] Starting PDF generation', {
+        requestId,
         clientId,
         advisorId,
         timestamp: new Date().toISOString()
       });
 
       // Step 1: Fetch comprehensive client data using existing controller
+      console.log(`🔍 [PDF CONTROLLER] [${requestId}] Step 1: Fetching client data...`);
+      console.log(`📞 [PDF CONTROLLER] [${requestId}] Calling fetchClientData with:`, { clientId, advisorId });
+      
       const clientDataResponse = await this.fetchClientData(clientId, advisorId);
       
+      console.log(`📊 [PDF CONTROLLER] [${requestId}] Client data fetch result:`, {
+        success: clientDataResponse.success,
+        status: clientDataResponse.status,
+        message: clientDataResponse.message,
+        hasData: !!clientDataResponse.data,
+        dataKeys: clientDataResponse.data ? Object.keys(clientDataResponse.data) : []
+      });
+      
       if (!clientDataResponse.success) {
+        console.log(`❌ [PDF CONTROLLER] [${requestId}] Client data fetch failed:`, clientDataResponse);
+        logger.error('❌ [PDF CONTROLLER] Failed to fetch client data', {
+          requestId,
+          error: clientDataResponse.message,
+          clientId,
+          advisorId
+        });
+        
         return res.status(clientDataResponse.status || 500).json({
           success: false,
           message: clientDataResponse.message || 'Failed to fetch client data',
@@ -50,9 +83,21 @@ class PDFController {
       }
 
       // Step 2: Fetch advisor vault data
+      console.log(`🔍 [PDF CONTROLLER] [${requestId}] Step 2: Fetching vault data...`);
+      console.log(`📞 [PDF CONTROLLER] [${requestId}] Calling fetchVaultData with advisorId:`, advisorId);
+      
       const vaultDataResponse = await this.fetchVaultData(advisorId);
       
+      console.log(`📊 [PDF CONTROLLER] [${requestId}] Vault data fetch result:`, {
+        success: vaultDataResponse.success,
+        status: vaultDataResponse.status,
+        message: vaultDataResponse.message,
+        hasData: !!vaultDataResponse.data,
+        dataKeys: vaultDataResponse.data ? Object.keys(vaultDataResponse.data) : []
+      });
+      
       if (!vaultDataResponse.success) {
+        console.log(`❌ [PDF CONTROLLER] [${requestId}] Vault data fetch failed:`, vaultDataResponse);
         logger.warn('⚠️ [PDF CONTROLLER] Vault data not found, using default values', {
           advisorId,
           vaultError: vaultDataResponse.error
@@ -126,12 +171,34 @@ class PDFController {
       }
 
       // Step 3: Generate PDF using main service for comprehensive vault data
+      console.log(`🔍 [PDF CONTROLLER] [${requestId}] Step 3: Generating PDF...`);
+      console.log(`📞 [PDF CONTROLLER] [${requestId}] Calling pdfService.generateClientReport...`);
+      
       let pdfBuffer;
       try {
+        console.log(`⚙️ [PDF CONTROLLER] [${requestId}] PDF Service details:`, {
+          hasService: !!this.pdfService,
+          serviceType: this.pdfService?.constructor?.name,
+          hasMethod: typeof this.pdfService?.generateClientReport === 'function'
+        });
+        
+        console.log(`📊 [PDF CONTROLLER] [${requestId}] Data being passed to PDF service:`, {
+          clientDataKeys: clientDataResponse.data ? Object.keys(clientDataResponse.data) : [],
+          vaultDataKeys: vaultDataResponse.data ? Object.keys(vaultDataResponse.data) : [],
+          clientDataSize: JSON.stringify(clientDataResponse.data || {}).length,
+          vaultDataSize: JSON.stringify(vaultDataResponse.data || {}).length
+        });
+        
         pdfBuffer = await this.pdfService.generateClientReport(
           clientDataResponse.data,
           vaultDataResponse.data
         );
+        
+        console.log(`✅ [PDF CONTROLLER] [${requestId}] PDF generation successful!`, {
+          bufferLength: pdfBuffer?.length || 0,
+          bufferType: typeof pdfBuffer,
+          isBuffer: Buffer.isBuffer(pdfBuffer)
+        });
         
         // Check if we got a fallback PDF (very small size indicates fallback)
         if (pdfBuffer.length < 50000) { // Less than 50KB likely indicates fallback
@@ -172,18 +239,54 @@ class PDFController {
         clientName
       });
 
-      // Step 4: Send PDF response
+      // Step 4: Send PDF response with CORS headers
+      console.log(`🔍 [PDF CONTROLLER] [${requestId}] Step 4: Sending PDF response...`);
+      
       const fileName = `Financial_Report_${clientName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
       
+      console.log(`📄 [PDF CONTROLLER] [${requestId}] Response details:`, {
+        fileName,
+        pdfSize: pdfBuffer.length,
+        clientName
+      });
+      
+      // Set CORS headers for production
+      console.log(`🌐 [PDF CONTROLLER] [${requestId}] Setting CORS headers...`);
+      res.setHeader('Access-Control-Allow-Origin', 'https://richieai.in');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      
+      // Set PDF response headers
+      console.log(`📋 [PDF CONTROLLER] [${requestId}] Setting PDF response headers...`);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
       res.setHeader('Content-Length', pdfBuffer.length);
       res.setHeader('Cache-Control', 'no-cache');
       
+      console.log(`📤 [PDF CONTROLLER] [${requestId}] Sending PDF buffer to client...`);
       res.send(pdfBuffer);
+      
+      console.log(`✅ [PDF CONTROLLER] [${requestId}] ===== PDF GENERATION COMPLETED =====`);
+      console.log(`⏱️ [PDF CONTROLLER] [${requestId}] Total duration: ${duration}ms`);
+      console.log(`📊 [PDF CONTROLLER] [${requestId}] Final stats:`, {
+        duration: `${duration}ms`,
+        pdfSize: `${Math.round(pdfBuffer.length / 1024)}KB`,
+        clientName
+      });
 
     } catch (error) {
+      const duration = Date.now() - startTime;
+      console.log(`❌ [PDF CONTROLLER] [${requestId}] ===== PDF GENERATION FAILED =====`);
+      console.log(`💥 [PDF CONTROLLER] [${requestId}] Error details:`, {
+        message: error.message,
+        name: error.name,
+        stack: error.stack?.split('\n').slice(0, 5), // First 5 lines of stack
+        duration: `${duration}ms`
+      });
+      
       logger.error('❌ [PDF CONTROLLER] Error generating PDF report', {
+        requestId,
         error: error.message,
         stack: error.stack,
         clientId: req.params.clientId,

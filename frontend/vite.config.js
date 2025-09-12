@@ -6,14 +6,31 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   optimizeDeps: {
-    include: ['pdfjs-dist']
+    include: ['pdfjs-dist'],
+    exclude: ['pdfjs-dist/build/pdf.js'] // Exclude problematic file
   },
   build: {
+    chunkSizeWarningLimit: 1000, // Increase warning limit to 1MB
     rollupOptions: {
       external: [],
       output: {
-        manualChunks: {
-          'pdfjs': ['pdfjs-dist']
+        manualChunks: (id) => {
+          // Auto-chunk based on node_modules
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor';
+            }
+            if (id.includes('pdfjs-dist')) {
+              return 'pdfjs';
+            }
+            if (id.includes('chart.js') || id.includes('react-chartjs-2')) {
+              return 'charts';
+            }
+            if (id.includes('@mui')) {
+              return 'ui';
+            }
+            return 'vendor';
+          }
         }
       }
     }
