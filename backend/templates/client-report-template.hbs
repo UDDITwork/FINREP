@@ -1851,6 +1851,501 @@
     {{/if}}
     {{/if}}
     
+    <!-- Comprehensive Financial Plan Analysis -->
+    {{#if financialPlan}}
+    <div class="section">
+        <h2>Financial Plan Analysis</h2>
+        
+        <!-- Plan Overview -->
+        <div class="advisor-section">
+            <h3>Plan Overview</h3>
+            <div class="advisor-details">
+                <div><strong>Plan Type:</strong> <span>{{#if financialPlan.planType}}{{financialPlan.planType}}{{else}}Not Available{{/if}}</span></div>
+                <div><strong>Status:</strong> <span class="status-badge status-{{financialPlan.status}}">{{#if financialPlan.status}}{{financialPlan.status}}{{else}}Not Available{{/if}}</span></div>
+                <div><strong>Version:</strong> <span>{{#if financialPlan.version}}{{financialPlan.version}}{{else}}1{{/if}}</span></div>
+                <div><strong>Plan Age:</strong> <span>{{#if financialPlan.planAge}}{{financialPlan.planAge}} days{{else}}0 days{{/if}}</span></div>
+                <div><strong>Review Due:</strong> <span>{{#if financialPlan.isReviewDue}}Yes{{else}}No{{/if}}</span></div>
+                <div><strong>Created:</strong> <span>{{#if financialPlan.createdAt}}{{formatDate financialPlan.createdAt}}{{else}}Not Available{{/if}}</span></div>
+                <div><strong>Last Updated:</strong> <span>{{#if financialPlan.updatedAt}}{{formatDate financialPlan.updatedAt}}{{else}}Not Available{{/if}}</span></div>
+            </div>
+        </div>
+
+        <!-- Client Data Snapshot from Financial Plan -->
+        <div class="advisor-section">
+            <h3>Client Data Snapshot (At Plan Creation)</h3>
+            <div class="grid-2">
+                <div>
+                    <h4>Personal Information</h4>
+                    <div class="advisor-details">
+                        <div><strong>Name:</strong> <span>{{financialPlan.clientDataSnapshot.personalInfo.firstName}} {{financialPlan.clientDataSnapshot.personalInfo.lastName}}</span></div>
+                        <div><strong>Email:</strong> <span>{{financialPlan.clientDataSnapshot.personalInfo.email}}</span></div>
+                        <div><strong>Phone:</strong> <span>{{financialPlan.clientDataSnapshot.personalInfo.phoneNumber}}</span></div>
+                        <div><strong>PAN:</strong> <span>{{financialPlan.clientDataSnapshot.personalInfo.panNumber}}</span></div>
+                        <div><strong>Marital Status:</strong> <span>{{financialPlan.clientDataSnapshot.personalInfo.maritalStatus}}</span></div>
+                        <div><strong>Dependents:</strong> <span>{{financialPlan.clientDataSnapshot.personalInfo.numberOfDependents}}</span></div>
+                    </div>
+                </div>
+                <div>
+                    <h4>Financial Snapshot</h4>
+                    <div class="advisor-details">
+                        <div><strong>Monthly Income:</strong> <span class="currency">{{financialPlan.clientDataSnapshot.financialInfo.totalMonthlyIncome}}</span></div>
+                        <div><strong>Monthly Expenses:</strong> <span class="currency">{{financialPlan.clientDataSnapshot.financialInfo.totalMonthlyExpenses}}</span></div>
+                        <div><strong>Income Type:</strong> <span>{{financialPlan.clientDataSnapshot.financialInfo.incomeType}}</span></div>
+                        <div><strong>Monthly EMIs:</strong> <span class="currency">{{financialPlan.clientDataSnapshot.calculatedMetrics.totalMonthlyEMIs}}</span></div>
+                        <div><strong>Monthly Surplus:</strong> <span class="currency">{{financialPlan.clientDataSnapshot.calculatedMetrics.monthlySurplus}}</span></div>
+                        <div><strong>EMI Ratio:</strong> <span>{{financialPlan.clientDataSnapshot.calculatedMetrics.emiRatio}}%</span></div>
+                        <div><strong>Savings Rate:</strong> <span>{{financialPlan.clientDataSnapshot.calculatedMetrics.savingsRate}}%</span></div>
+                        <div><strong>Net Worth:</strong> <span class="currency">{{financialPlan.clientDataSnapshot.calculatedMetrics.netWorth}}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investment Portfolio Snapshot -->
+        <div class="advisor-section">
+            <h3>Investment Portfolio Snapshot</h3>
+            <div class="grid-3">
+                <div>
+                    <h4>Mutual Funds</h4>
+                    <div class="advisor-details">
+                        <div><strong>Total Value:</strong> <span class="currency">{{financialPlan.clientDataSnapshot.investments.mutualFunds.totalValue}}</span></div>
+                        <div><strong>Monthly SIP:</strong> <span class="currency">{{financialPlan.clientDataSnapshot.investments.mutualFunds.monthlyInvestment}}</span></div>
+                    </div>
+                </div>
+                <div>
+                    <h4>Direct Stocks</h4>
+                    <div class="advisor-details">
+                        <div><strong>Total Value:</strong> <span class="currency">{{financialPlan.clientDataSnapshot.investments.directStocks.totalValue}}</span></div>
+                    </div>
+                </div>
+                <div>
+                    <h4>Fixed Income</h4>
+                    <div class="advisor-details">
+                        <div><strong>PPF:</strong> <span class="currency">{{financialPlan.clientDataSnapshot.investments.ppf.currentBalance}}</span></div>
+                        <div><strong>EPF:</strong> <span class="currency">{{financialPlan.clientDataSnapshot.investments.epf.currentBalance}}</span></div>
+                        <div><strong>NPS:</strong> <span class="currency">{{financialPlan.clientDataSnapshot.investments.nps.currentBalance}}</span></div>
+                        <div><strong>Fixed Deposits:</strong> <span class="currency">{{financialPlan.clientDataSnapshot.investments.fixedDeposits.totalValue}}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debt Analysis -->
+        <div class="advisor-section">
+            <h3>Debt Analysis</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Debt Type</th>
+                        <th>Outstanding Amount</th>
+                        <th>Monthly EMI</th>
+                        <th>Interest Rate</th>
+                        <th>Remaining Tenure</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#if financialPlan.clientDataSnapshot.debtsAndLiabilities.homeLoan.outstandingAmount}}
+                    <tr>
+                        <td>Home Loan</td>
+                        <td class="currency">{{financialPlan.clientDataSnapshot.debtsAndLiabilities.homeLoan.outstandingAmount}}</td>
+                        <td class="currency">{{financialPlan.clientDataSnapshot.debtsAndLiabilities.homeLoan.monthlyEMI}}</td>
+                        <td>{{financialPlan.clientDataSnapshot.debtsAndLiabilities.homeLoan.interestRate}}%</td>
+                        <td>{{financialPlan.clientDataSnapshot.debtsAndLiabilities.homeLoan.remainingTenure}} years</td>
+                    </tr>
+                    {{/if}}
+                    {{#if financialPlan.clientDataSnapshot.debtsAndLiabilities.personalLoan.outstandingAmount}}
+                    <tr>
+                        <td>Personal Loan</td>
+                        <td class="currency">{{financialPlan.clientDataSnapshot.debtsAndLiabilities.personalLoan.outstandingAmount}}</td>
+                        <td class="currency">{{financialPlan.clientDataSnapshot.debtsAndLiabilities.personalLoan.monthlyEMI}}</td>
+                        <td>{{financialPlan.clientDataSnapshot.debtsAndLiabilities.personalLoan.interestRate}}%</td>
+                        <td>-</td>
+                    </tr>
+                    {{/if}}
+                    {{#if financialPlan.clientDataSnapshot.debtsAndLiabilities.carLoan.outstandingAmount}}
+                    <tr>
+                        <td>Car Loan</td>
+                        <td class="currency">{{financialPlan.clientDataSnapshot.debtsAndLiabilities.carLoan.outstandingAmount}}</td>
+                        <td class="currency">{{financialPlan.clientDataSnapshot.debtsAndLiabilities.carLoan.monthlyEMI}}</td>
+                        <td>{{financialPlan.clientDataSnapshot.debtsAndLiabilities.carLoan.interestRate}}%</td>
+                        <td>-</td>
+                    </tr>
+                    {{/if}}
+                    {{#if financialPlan.clientDataSnapshot.debtsAndLiabilities.educationLoan.outstandingAmount}}
+                    <tr>
+                        <td>Education Loan</td>
+                        <td class="currency">{{financialPlan.clientDataSnapshot.debtsAndLiabilities.educationLoan.outstandingAmount}}</td>
+                        <td class="currency">{{financialPlan.clientDataSnapshot.debtsAndLiabilities.educationLoan.monthlyEMI}}</td>
+                        <td>{{financialPlan.clientDataSnapshot.debtsAndLiabilities.educationLoan.interestRate}}%</td>
+                        <td>-</td>
+                    </tr>
+                    {{/if}}
+                    {{#if financialPlan.clientDataSnapshot.debtsAndLiabilities.creditCards.totalOutstanding}}
+                    <tr>
+                        <td>Credit Cards</td>
+                        <td class="currency">{{financialPlan.clientDataSnapshot.debtsAndLiabilities.creditCards.totalOutstanding}}</td>
+                        <td class="currency">{{financialPlan.clientDataSnapshot.debtsAndLiabilities.creditCards.monthlyPayment}}</td>
+                        <td>{{financialPlan.clientDataSnapshot.debtsAndLiabilities.creditCards.averageInterestRate}}%</td>
+                        <td>-</td>
+                    </tr>
+                    {{/if}}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Cash Flow Plan Details -->
+        {{#if financialPlan.planDetails.cashFlowPlan}}
+        <div class="advisor-section">
+            <h3>Cash Flow Plan Details</h3>
+            
+            <!-- Debt Management Strategy -->
+            {{#if financialPlan.planDetails.cashFlowPlan.debtManagement.prioritizedDebts.length}}
+            <div class="advisor-section">
+                <h4>Prioritized Debt Management</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Debt Type</th>
+                            <th>Outstanding Amount</th>
+                            <th>Current EMI</th>
+                            <th>Recommended EMI</th>
+                            <th>Priority Rank</th>
+                            <th>Projected Savings</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each financialPlan.planDetails.cashFlowPlan.debtManagement.prioritizedDebts}}
+                        <tr>
+                            <td>{{this.debtType}}</td>
+                            <td class="currency">{{this.outstandingAmount}}</td>
+                            <td class="currency">{{this.currentEMI}}</td>
+                            <td class="currency">{{this.recommendedEMI}}</td>
+                            <td>{{this.priorityRank}}</td>
+                            <td class="currency">{{this.projectedSavings}}</td>
+                            <td>{{this.reason}}</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+                <div class="advisor-details" style="margin-top: 15px;">
+                    <div><strong>Total Debt Reduction:</strong> <span class="currency">{{financialPlan.planDetails.cashFlowPlan.debtManagement.totalDebtReduction}}</span></div>
+                    <div><strong>Total Interest Savings:</strong> <span class="currency">{{financialPlan.planDetails.cashFlowPlan.debtManagement.totalInterestSavings}}</span></div>
+                    <div><strong>Debt Free Date:</strong> <span>{{#if financialPlan.planDetails.cashFlowPlan.debtManagement.debtFreeDate}}{{formatDate financialPlan.planDetails.cashFlowPlan.debtManagement.debtFreeDate}}{{else}}Not Available{{/if}}</span></div>
+                </div>
+            </div>
+            {{/if}}
+
+            <!-- Emergency Fund Strategy -->
+            <div class="advisor-section">
+                <h4>Emergency Fund Strategy</h4>
+                <div class="grid-2">
+                    <div>
+                        <div class="advisor-details">
+                            <div><strong>Target Amount:</strong> <span class="currency">{{financialPlan.planDetails.cashFlowPlan.emergencyFundStrategy.targetAmount}}</span></div>
+                            <div><strong>Current Amount:</strong> <span class="currency">{{financialPlan.planDetails.cashFlowPlan.emergencyFundStrategy.currentAmount}}</span></div>
+                            <div><strong>Gap:</strong> <span class="currency">{{financialPlan.planDetails.cashFlowPlan.emergencyFundStrategy.gap}}</span></div>
+                            <div><strong>Monthly Allocation:</strong> <span class="currency">{{financialPlan.planDetails.cashFlowPlan.emergencyFundStrategy.monthlyAllocation}}</span></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="advisor-details">
+                            <div><strong>Timeline:</strong> <span>{{financialPlan.planDetails.cashFlowPlan.emergencyFundStrategy.timeline}} months</span></div>
+                            <div><strong>Investment Type:</strong> <span>{{financialPlan.planDetails.cashFlowPlan.emergencyFundStrategy.investmentType}}</span></div>
+                            <div><strong>Fund Recommendations:</strong> 
+                                {{#each financialPlan.planDetails.cashFlowPlan.emergencyFundStrategy.fundRecommendations}}
+                                    <span>{{this}}</span>{{#unless @last}}, {{/unless}}
+                                {{/each}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Investment Recommendations -->
+            {{#if financialPlan.planDetails.cashFlowPlan.investmentRecommendations.monthlyInvestments.length}}
+            <div class="advisor-section">
+                <h4>Monthly Investment Recommendations</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fund Name</th>
+                            <th>Fund Type</th>
+                            <th>Category</th>
+                            <th>Monthly Amount</th>
+                            <th>Purpose</th>
+                            <th>Expected Return</th>
+                            <th>Risk Level</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each financialPlan.planDetails.cashFlowPlan.investmentRecommendations.monthlyInvestments}}
+                        <tr>
+                            <td>{{this.fundName}}</td>
+                            <td>{{this.fundType}}</td>
+                            <td>{{this.category}}</td>
+                            <td class="currency">{{this.monthlyAmount}}</td>
+                            <td>{{this.purpose}}</td>
+                            <td>{{this.expectedReturn}}%</td>
+                            <td>{{this.riskLevel}}</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+                
+                <!-- Asset Allocation -->
+                <div class="advisor-section">
+                    <h5>Recommended Asset Allocation</h5>
+                    <div class="grid-4">
+                        <div><strong>Equity:</strong> <span>{{financialPlan.planDetails.cashFlowPlan.investmentRecommendations.assetAllocation.equity}}%</span></div>
+                        <div><strong>Debt:</strong> <span>{{financialPlan.planDetails.cashFlowPlan.investmentRecommendations.assetAllocation.debt}}%</span></div>
+                        <div><strong>Gold:</strong> <span>{{financialPlan.planDetails.cashFlowPlan.investmentRecommendations.assetAllocation.gold}}%</span></div>
+                        <div><strong>Others:</strong> <span>{{financialPlan.planDetails.cashFlowPlan.investmentRecommendations.assetAllocation.others}}%</span></div>
+                    </div>
+                    <div class="advisor-details">
+                        <div><strong>Total Monthly Investment:</strong> <span class="currency">{{financialPlan.planDetails.cashFlowPlan.investmentRecommendations.totalMonthlyInvestment}}</span></div>
+                    </div>
+                </div>
+
+                <!-- Projected Corpus -->
+                <div class="advisor-section">
+                    <h5>Projected Corpus</h5>
+                    <div class="grid-4">
+                        <div><strong>Year 1:</strong> <span class="currency">{{financialPlan.planDetails.cashFlowPlan.investmentRecommendations.projectedCorpus.year1}}</span></div>
+                        <div><strong>Year 3:</strong> <span class="currency">{{financialPlan.planDetails.cashFlowPlan.investmentRecommendations.projectedCorpus.year3}}</span></div>
+                        <div><strong>Year 5:</strong> <span class="currency">{{financialPlan.planDetails.cashFlowPlan.investmentRecommendations.projectedCorpus.year5}}</span></div>
+                        <div><strong>Year 10:</strong> <span class="currency">{{financialPlan.planDetails.cashFlowPlan.investmentRecommendations.projectedCorpus.year10}}</span></div>
+                    </div>
+                </div>
+            </div>
+            {{/if}}
+
+            <!-- Cash Flow Metrics -->
+            <div class="advisor-section">
+                <h4>Cash Flow Metrics</h4>
+                <div class="grid-3">
+                    <div>
+                        <h5>EMI Metrics</h5>
+                        <div class="advisor-details">
+                            <div><strong>Current EMI Ratio:</strong> <span>{{financialPlan.planDetails.cashFlowPlan.cashFlowMetrics.currentEmiRatio}}%</span></div>
+                            <div><strong>Target EMI Ratio:</strong> <span>{{financialPlan.planDetails.cashFlowPlan.cashFlowMetrics.targetEmiRatio}}%</span></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h5>Savings Metrics</h5>
+                        <div class="advisor-details">
+                            <div><strong>Current Savings Rate:</strong> <span>{{financialPlan.planDetails.cashFlowPlan.cashFlowMetrics.currentSavingsRate}}%</span></div>
+                            <div><strong>Target Savings Rate:</strong> <span>{{financialPlan.planDetails.cashFlowPlan.cashFlowMetrics.targetSavingsRate}}%</span></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h5>Financial Health</h5>
+                        <div class="advisor-details">
+                            <div><strong>Current Fixed Expenditure:</strong> <span>{{financialPlan.planDetails.cashFlowPlan.cashFlowMetrics.currentFixedExpenditureRatio}}%</span></div>
+                            <div><strong>Target Fixed Expenditure:</strong> <span>{{financialPlan.planDetails.cashFlowPlan.cashFlowMetrics.targetFixedExpenditureRatio}}%</span></div>
+                            <div><strong>Financial Health Score:</strong> <span>{{financialPlan.planDetails.cashFlowPlan.cashFlowMetrics.financialHealthScore}}/10</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Items -->
+            {{#if financialPlan.planDetails.cashFlowPlan.actionItems.length}}
+            <div class="advisor-section">
+                <h4>Action Items</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Priority</th>
+                            <th>Timeline</th>
+                            <th>Status</th>
+                            <th>Completion Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each financialPlan.planDetails.cashFlowPlan.actionItems}}
+                        <tr>
+                            <td>{{this.action}}</td>
+                            <td>{{this.priority}}</td>
+                            <td>{{this.timeline}}</td>
+                            <td class="status-badge status-{{this.status}}">{{this.status}}</td>
+                            <td>{{#if this.completionDate}}{{formatDate this.completionDate}}{{else}}-{{/if}}</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+            {{/if}}
+        </div>
+        {{/if}}
+
+        <!-- Goal Based Planning -->
+        {{#if financialPlan.planDetails.goalBasedPlan.selectedGoals.length}}
+        <div class="advisor-section">
+            <h3>Goal Based Planning</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Goal Name</th>
+                        <th>Target Amount</th>
+                        <th>Target Date</th>
+                        <th>Priority</th>
+                        <th>Monthly Allocation</th>
+                        <th>Investment Strategy</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each financialPlan.planDetails.goalBasedPlan.selectedGoals}}
+                    <tr>
+                        <td>{{this.goalName}}</td>
+                        <td class="currency">{{this.targetAmount}}</td>
+                        <td>{{#if this.targetDate}}{{formatDate this.targetDate}}{{else}}-{{/if}}</td>
+                        <td>{{this.priority}}</td>
+                        <td class="currency">{{this.monthlyAllocation}}</td>
+                        <td>{{this.investmentStrategy}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        {{/if}}
+
+        <!-- Advisor Recommendations -->
+        {{#if financialPlan.advisorRecommendations.keyPoints.length}}
+        <div class="advisor-section">
+            <h3>Advisor Recommendations</h3>
+            <div class="advisor-details">
+                <div><strong>Key Points:</strong></div>
+                <ul>
+                    {{#each financialPlan.advisorRecommendations.keyPoints}}
+                    <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+                {{#if financialPlan.advisorRecommendations.detailedNotes}}
+                <div><strong>Detailed Notes:</strong></div>
+                <p>{{financialPlan.advisorRecommendations.detailedNotes}}</p>
+                {{/if}}
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- AI Recommendations -->
+        {{#if financialPlan.aiRecommendations.debtStrategy}}
+        <div class="advisor-section">
+            <h3>AI Analysis & Recommendations</h3>
+            <div class="grid-2">
+                <div>
+                    <h4>Strategy Analysis</h4>
+                    <div class="advisor-details">
+                        {{#if financialPlan.aiRecommendations.debtStrategy}}
+                        <div><strong>Debt Strategy:</strong> <span>{{financialPlan.aiRecommendations.debtStrategy}}</span></div>
+                        {{/if}}
+                        {{#if financialPlan.aiRecommendations.emergencyFundAnalysis}}
+                        <div><strong>Emergency Fund Analysis:</strong> <span>{{financialPlan.aiRecommendations.emergencyFundAnalysis}}</span></div>
+                        {{/if}}
+                        {{#if financialPlan.aiRecommendations.investmentAnalysis}}
+                        <div><strong>Investment Analysis:</strong> <span>{{financialPlan.aiRecommendations.investmentAnalysis}}</span></div>
+                        {{/if}}
+                        {{#if financialPlan.aiRecommendations.cashFlowOptimization}}
+                        <div><strong>Cash Flow Optimization:</strong> <span>{{financialPlan.aiRecommendations.cashFlowOptimization}}</span></div>
+                        {{/if}}
+                    </div>
+                </div>
+                <div>
+                    {{#if financialPlan.aiRecommendations.riskWarnings.length}}
+                    <h4>Risk Warnings</h4>
+                    <ul>
+                        {{#each financialPlan.aiRecommendations.riskWarnings}}
+                        <li>{{this}}</li>
+                        {{/each}}
+                    </ul>
+                    {{/if}}
+                    {{#if financialPlan.aiRecommendations.opportunities.length}}
+                    <h4>Opportunities</h4>
+                    <ul>
+                        {{#each financialPlan.aiRecommendations.opportunities}}
+                        <li>{{this}}</li>
+                        {{/each}}
+                    </ul>
+                    {{/if}}
+                </div>
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- Review Schedule -->
+        <div class="advisor-section">
+            <h3>Review Schedule</h3>
+            <div class="advisor-details">
+                <div><strong>Frequency:</strong> <span>{{financialPlan.reviewSchedule.frequency}}</span></div>
+                <div><strong>Next Review Date:</strong> <span>{{#if financialPlan.reviewSchedule.nextReviewDate}}{{formatDate financialPlan.reviewSchedule.nextReviewDate}}{{else}}Not Scheduled{{/if}}</span></div>
+                {{#if financialPlan.reviewSchedule.reviewHistory.length}}
+                <div><strong>Review History:</strong></div>
+                <ul>
+                    {{#each financialPlan.reviewSchedule.reviewHistory}}
+                    <li>{{formatDate this.reviewDate}} - {{this.notes}}</li>
+                    {{/each}}
+                </ul>
+                {{/if}}
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="advisor-section">
+            <h3>Performance Metrics</h3>
+            <div class="grid-2">
+                <div>
+                    <div class="advisor-details">
+                        <div><strong>Adherence Score:</strong> <span>{{financialPlan.performanceMetrics.adherenceScore}}/10</span></div>
+                        <div><strong>Goals Achieved:</strong> <span>{{financialPlan.performanceMetrics.goalsAchieved}}</span></div>
+                        <div><strong>Debt Reduction Progress:</strong> <span>{{financialPlan.performanceMetrics.debtReductionProgress}}%</span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="advisor-details">
+                        <div><strong>Investment Growth:</strong> <span>{{financialPlan.performanceMetrics.investmentGrowth}}%</span></div>
+                        <div><strong>Last Updated:</strong> <span>{{#if financialPlan.performanceMetrics.lastUpdated}}{{formatDate financialPlan.performanceMetrics.lastUpdated}}{{else}}Not Available{{/if}}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PDF Reports History -->
+        {{#if financialPlan.pdfReports.length}}
+        <div class="advisor-section">
+            <h3>Generated Reports History</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Report Type</th>
+                        <th>Generated At</th>
+                        <th>Version</th>
+                        <th>File Size</th>
+                        <th>Generation Method</th>
+                        <th>Goals Count</th>
+                        <th>Total SIP Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each financialPlan.pdfReports}}
+                    <tr>
+                        <td>{{this.reportType}}</td>
+                        <td>{{#if this.generatedAt}}{{formatDate this.generatedAt}}{{else}}Not Available{{/if}}</td>
+                        <td>{{this.version}}</td>
+                        <td>{{this.fileSize}} bytes</td>
+                        <td>{{this.metadata.generationMethod}}</td>
+                        <td>{{this.metadata.contentSummary.goalsCount}}</td>
+                        <td class="currency">{{this.metadata.contentSummary.totalSIPAmount}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        {{/if}}
+    </div>
+    {{/if}}
+
     <!-- Always Show Test Section -->
     <div class="section" style="background-color: #e0f0ff; padding: 15px; margin: 10px 0; border: 2px solid #007acc;">
         <h3>Test Section - Always Visible</h3>

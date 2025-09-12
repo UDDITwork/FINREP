@@ -546,6 +546,9 @@ class PDFGenerationService {
       loeDocuments: clientData.loeDocuments || [],
       loeAutomation: clientData.loeAutomation || [],
       mutualFundExitStrategies: clientData.mutualFundExitStrategies || [],
+
+      // Comprehensive FinancialPlan Data - EXACT variable names from FinancialPlan.js model
+      financialPlan: this.prepareFinancialPlanData(clientData.financialPlans || []),
       
       // Complete Client.js model data for comprehensive access
       completeClientData: client,
@@ -2149,6 +2152,401 @@ class PDFGenerationService {
     if (Array.isArray(value)) return value;
     if (value === null || value === undefined) return [];
     return [];
+  }
+
+  /**
+   * Prepare comprehensive FinancialPlan data for PDF template
+   * @param {Array} financialPlans - Array of financial plan documents
+   * @returns {Object} - Formatted financial plan data
+   */
+  prepareFinancialPlanData(financialPlans) {
+    if (!financialPlans || financialPlans.length === 0) {
+      return this.getDefaultFinancialPlanData();
+    }
+
+    // Get the latest financial plan (most recent)
+    const latestPlan = financialPlans[0];
+    
+    if (!latestPlan) {
+      return this.getDefaultFinancialPlanData();
+    }
+
+    // Convert to plain object if it's a Mongoose document
+    const planData = latestPlan.toObject ? latestPlan.toObject() : latestPlan;
+
+    return {
+      // Core References - EXACT field names from FinancialPlan.js
+      clientId: planData.clientId || null,
+      advisorId: planData.advisorId || null,
+
+      // Plan Metadata - EXACT field names from FinancialPlan.js
+      planType: this.safeString(planData.planType) || 'cash_flow',
+      status: this.safeString(planData.status) || 'draft',
+      version: this.safeNumber(planData.version) || 1,
+
+      // Client Data Snapshot - EXACT field names from FinancialPlan.js
+      clientDataSnapshot: {
+        personalInfo: {
+          firstName: this.safeString(planData.clientDataSnapshot?.personalInfo?.firstName),
+          lastName: this.safeString(planData.clientDataSnapshot?.personalInfo?.lastName),
+          email: this.safeString(planData.clientDataSnapshot?.personalInfo?.email),
+          phoneNumber: this.safeString(planData.clientDataSnapshot?.personalInfo?.phoneNumber),
+          dateOfBirth: planData.clientDataSnapshot?.personalInfo?.dateOfBirth || null,
+          panNumber: this.safeString(planData.clientDataSnapshot?.personalInfo?.panNumber),
+          maritalStatus: this.safeString(planData.clientDataSnapshot?.personalInfo?.maritalStatus),
+          numberOfDependents: this.safeNumber(planData.clientDataSnapshot?.personalInfo?.numberOfDependents)
+        },
+        financialInfo: {
+          totalMonthlyIncome: this.safeNumber(planData.clientDataSnapshot?.financialInfo?.totalMonthlyIncome),
+          totalMonthlyExpenses: this.safeNumber(planData.clientDataSnapshot?.financialInfo?.totalMonthlyExpenses),
+          incomeType: this.safeString(planData.clientDataSnapshot?.financialInfo?.incomeType),
+          expenseBreakdown: {
+            housingRent: this.safeNumber(planData.clientDataSnapshot?.financialInfo?.expenseBreakdown?.housingRent),
+            foodGroceries: this.safeNumber(planData.clientDataSnapshot?.financialInfo?.expenseBreakdown?.foodGroceries),
+            transportation: this.safeNumber(planData.clientDataSnapshot?.financialInfo?.expenseBreakdown?.transportation),
+            utilities: this.safeNumber(planData.clientDataSnapshot?.financialInfo?.expenseBreakdown?.utilities),
+            entertainment: this.safeNumber(planData.clientDataSnapshot?.financialInfo?.expenseBreakdown?.entertainment),
+            healthcare: this.safeNumber(planData.clientDataSnapshot?.financialInfo?.expenseBreakdown?.healthcare),
+            otherExpenses: this.safeNumber(planData.clientDataSnapshot?.financialInfo?.expenseBreakdown?.otherExpenses)
+          }
+        },
+        investments: {
+          mutualFunds: {
+            totalValue: this.safeNumber(planData.clientDataSnapshot?.investments?.mutualFunds?.totalValue),
+            monthlyInvestment: this.safeNumber(planData.clientDataSnapshot?.investments?.mutualFunds?.monthlyInvestment)
+          },
+          directStocks: {
+            totalValue: this.safeNumber(planData.clientDataSnapshot?.investments?.directStocks?.totalValue)
+          },
+          ppf: {
+            currentBalance: this.safeNumber(planData.clientDataSnapshot?.investments?.ppf?.currentBalance),
+            annualContribution: this.safeNumber(planData.clientDataSnapshot?.investments?.ppf?.annualContribution)
+          },
+          epf: {
+            currentBalance: this.safeNumber(planData.clientDataSnapshot?.investments?.epf?.currentBalance)
+          },
+          nps: {
+            currentBalance: this.safeNumber(planData.clientDataSnapshot?.investments?.nps?.currentBalance)
+          },
+          elss: {
+            currentValue: this.safeNumber(planData.clientDataSnapshot?.investments?.elss?.currentValue)
+          },
+          fixedDeposits: {
+            totalValue: this.safeNumber(planData.clientDataSnapshot?.investments?.fixedDeposits?.totalValue)
+          },
+          otherInvestments: {
+            totalValue: this.safeNumber(planData.clientDataSnapshot?.investments?.otherInvestments?.totalValue)
+          }
+        },
+        debtsAndLiabilities: {
+          homeLoan: {
+            outstandingAmount: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.homeLoan?.outstandingAmount),
+            monthlyEMI: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.homeLoan?.monthlyEMI),
+            interestRate: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.homeLoan?.interestRate),
+            remainingTenure: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.homeLoan?.remainingTenure)
+          },
+          personalLoan: {
+            outstandingAmount: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.personalLoan?.outstandingAmount),
+            monthlyEMI: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.personalLoan?.monthlyEMI),
+            interestRate: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.personalLoan?.interestRate)
+          },
+          carLoan: {
+            outstandingAmount: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.carLoan?.outstandingAmount),
+            monthlyEMI: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.carLoan?.monthlyEMI),
+            interestRate: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.carLoan?.interestRate)
+          },
+          educationLoan: {
+            outstandingAmount: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.educationLoan?.outstandingAmount),
+            monthlyEMI: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.educationLoan?.monthlyEMI),
+            interestRate: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.educationLoan?.interestRate)
+          },
+          creditCards: {
+            totalOutstanding: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.creditCards?.totalOutstanding),
+            averageInterestRate: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.creditCards?.averageInterestRate),
+            monthlyPayment: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.creditCards?.monthlyPayment)
+          },
+          otherLoans: {
+            outstandingAmount: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.otherLoans?.outstandingAmount),
+            monthlyEMI: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.otherLoans?.monthlyEMI),
+            interestRate: this.safeNumber(planData.clientDataSnapshot?.debtsAndLiabilities?.otherLoans?.interestRate)
+          }
+        },
+        calculatedMetrics: {
+          totalMonthlyEMIs: this.safeNumber(planData.clientDataSnapshot?.calculatedMetrics?.totalMonthlyEMIs),
+          monthlySurplus: this.safeNumber(planData.clientDataSnapshot?.calculatedMetrics?.monthlySurplus),
+          emiRatio: this.safeNumber(planData.clientDataSnapshot?.calculatedMetrics?.emiRatio),
+          fixedExpenditureRatio: this.safeNumber(planData.clientDataSnapshot?.calculatedMetrics?.fixedExpenditureRatio),
+          savingsRate: this.safeNumber(planData.clientDataSnapshot?.calculatedMetrics?.savingsRate),
+          netWorth: this.safeNumber(planData.clientDataSnapshot?.calculatedMetrics?.netWorth),
+          debtToIncomeRatio: this.safeNumber(planData.clientDataSnapshot?.calculatedMetrics?.debtToIncomeRatio)
+        }
+      },
+
+      // Plan Details - Cash Flow Plan - EXACT field names from FinancialPlan.js
+      planDetails: {
+        cashFlowPlan: {
+          debtManagement: {
+            prioritizedDebts: this.safeArray(planData.planDetails?.cashFlowPlan?.debtManagement?.prioritizedDebts).map(debt => ({
+              debtType: this.safeString(debt.debtType),
+              outstandingAmount: this.safeNumber(debt.outstandingAmount),
+              currentEMI: this.safeNumber(debt.currentEMI),
+              recommendedEMI: this.safeNumber(debt.recommendedEMI),
+              interestRate: this.safeNumber(debt.interestRate),
+              priorityRank: this.safeNumber(debt.priorityRank),
+              reason: this.safeString(debt.reason),
+              projectedSavings: this.safeNumber(debt.projectedSavings),
+              revisedTenure: this.safeNumber(debt.revisedTenure)
+            })),
+            totalDebtReduction: this.safeNumber(planData.planDetails?.cashFlowPlan?.debtManagement?.totalDebtReduction),
+            totalInterestSavings: this.safeNumber(planData.planDetails?.cashFlowPlan?.debtManagement?.totalInterestSavings),
+            debtFreeDate: planData.planDetails?.cashFlowPlan?.debtManagement?.debtFreeDate || null
+          },
+          emergencyFundStrategy: {
+            targetAmount: this.safeNumber(planData.planDetails?.cashFlowPlan?.emergencyFundStrategy?.targetAmount),
+            currentAmount: this.safeNumber(planData.planDetails?.cashFlowPlan?.emergencyFundStrategy?.currentAmount),
+            gap: this.safeNumber(planData.planDetails?.cashFlowPlan?.emergencyFundStrategy?.gap),
+            monthlyAllocation: this.safeNumber(planData.planDetails?.cashFlowPlan?.emergencyFundStrategy?.monthlyAllocation),
+            timeline: this.safeNumber(planData.planDetails?.cashFlowPlan?.emergencyFundStrategy?.timeline),
+            investmentType: this.safeString(planData.planDetails?.cashFlowPlan?.emergencyFundStrategy?.investmentType),
+            fundRecommendations: this.safeArray(planData.planDetails?.cashFlowPlan?.emergencyFundStrategy?.fundRecommendations)
+          },
+          investmentRecommendations: {
+            monthlyInvestments: this.safeArray(planData.planDetails?.cashFlowPlan?.investmentRecommendations?.monthlyInvestments).map(investment => ({
+              fundName: this.safeString(investment.fundName),
+              fundType: this.safeString(investment.fundType),
+              category: this.safeString(investment.category),
+              monthlyAmount: this.safeNumber(investment.monthlyAmount),
+              purpose: this.safeString(investment.purpose),
+              expectedReturn: this.safeNumber(investment.expectedReturn),
+              riskLevel: this.safeString(investment.riskLevel)
+            })),
+            assetAllocation: {
+              equity: this.safeNumber(planData.planDetails?.cashFlowPlan?.investmentRecommendations?.assetAllocation?.equity),
+              debt: this.safeNumber(planData.planDetails?.cashFlowPlan?.investmentRecommendations?.assetAllocation?.debt),
+              gold: this.safeNumber(planData.planDetails?.cashFlowPlan?.investmentRecommendations?.assetAllocation?.gold),
+              others: this.safeNumber(planData.planDetails?.cashFlowPlan?.investmentRecommendations?.assetAllocation?.others)
+            },
+            totalMonthlyInvestment: this.safeNumber(planData.planDetails?.cashFlowPlan?.investmentRecommendations?.totalMonthlyInvestment),
+            projectedCorpus: {
+              year1: this.safeNumber(planData.planDetails?.cashFlowPlan?.investmentRecommendations?.projectedCorpus?.year1),
+              year3: this.safeNumber(planData.planDetails?.cashFlowPlan?.investmentRecommendations?.projectedCorpus?.year3),
+              year5: this.safeNumber(planData.planDetails?.cashFlowPlan?.investmentRecommendations?.projectedCorpus?.year5),
+              year10: this.safeNumber(planData.planDetails?.cashFlowPlan?.investmentRecommendations?.projectedCorpus?.year10)
+            }
+          },
+          cashFlowMetrics: {
+            currentEmiRatio: this.safeNumber(planData.planDetails?.cashFlowPlan?.cashFlowMetrics?.currentEmiRatio),
+            targetEmiRatio: this.safeNumber(planData.planDetails?.cashFlowPlan?.cashFlowMetrics?.targetEmiRatio),
+            currentSavingsRate: this.safeNumber(planData.planDetails?.cashFlowPlan?.cashFlowMetrics?.currentSavingsRate),
+            targetSavingsRate: this.safeNumber(planData.planDetails?.cashFlowPlan?.cashFlowMetrics?.targetSavingsRate),
+            currentFixedExpenditureRatio: this.safeNumber(planData.planDetails?.cashFlowPlan?.cashFlowMetrics?.currentFixedExpenditureRatio),
+            targetFixedExpenditureRatio: this.safeNumber(planData.planDetails?.cashFlowPlan?.cashFlowMetrics?.targetFixedExpenditureRatio),
+            financialHealthScore: this.safeNumber(planData.planDetails?.cashFlowPlan?.cashFlowMetrics?.financialHealthScore)
+          },
+          actionItems: this.safeArray(planData.planDetails?.cashFlowPlan?.actionItems).map(action => ({
+            action: this.safeString(action.action),
+            priority: this.safeString(action.priority),
+            timeline: this.safeString(action.timeline),
+            status: this.safeString(action.status),
+            completionDate: action.completionDate || null
+          }))
+        },
+        goalBasedPlan: {
+          selectedGoals: this.safeArray(planData.planDetails?.goalBasedPlan?.selectedGoals).map(goal => ({
+            goalName: this.safeString(goal.goalName),
+            targetAmount: this.safeNumber(goal.targetAmount),
+            targetDate: goal.targetDate || null,
+            priority: this.safeString(goal.priority),
+            monthlyAllocation: this.safeNumber(goal.monthlyAllocation),
+            investmentStrategy: this.safeString(goal.investmentStrategy)
+          })),
+          goalSpecificPlans: planData.planDetails?.goalBasedPlan?.goalSpecificPlans || {}
+        },
+        hybridPlan: {
+          cashFlowComponent: planData.planDetails?.hybridPlan?.cashFlowComponent || {},
+          goalBasedComponent: planData.planDetails?.hybridPlan?.goalBasedComponent || {}
+        }
+      },
+
+      // Advisor Recommendations - EXACT field names from FinancialPlan.js
+      advisorRecommendations: {
+        keyPoints: this.safeArray(planData.advisorRecommendations?.keyPoints),
+        detailedNotes: this.safeString(planData.advisorRecommendations?.detailedNotes),
+        customVariables: this.safeArray(planData.advisorRecommendations?.customVariables).map(variable => ({
+          variableName: this.safeString(variable.variableName),
+          value: variable.value,
+          description: this.safeString(variable.description)
+        }))
+      },
+
+      // AI Recommendations - EXACT field names from FinancialPlan.js
+      aiRecommendations: {
+        debtStrategy: this.safeString(planData.aiRecommendations?.debtStrategy),
+        emergencyFundAnalysis: this.safeString(planData.aiRecommendations?.emergencyFundAnalysis),
+        investmentAnalysis: this.safeString(planData.aiRecommendations?.investmentAnalysis),
+        cashFlowOptimization: this.safeString(planData.aiRecommendations?.cashFlowOptimization),
+        riskWarnings: this.safeArray(planData.aiRecommendations?.riskWarnings),
+        opportunities: this.safeArray(planData.aiRecommendations?.opportunities)
+      },
+
+      // Review & Tracking - EXACT field names from FinancialPlan.js
+      reviewSchedule: {
+        frequency: this.safeString(planData.reviewSchedule?.frequency) || 'quarterly',
+        nextReviewDate: planData.reviewSchedule?.nextReviewDate || null,
+        reviewHistory: this.safeArray(planData.reviewSchedule?.reviewHistory).map(review => ({
+          reviewDate: review.reviewDate || null,
+          reviewedBy: review.reviewedBy || null,
+          notes: this.safeString(review.notes),
+          adjustmentsMade: this.safeArray(review.adjustmentsMade)
+        }))
+      },
+
+      // Performance Metrics - EXACT field names from FinancialPlan.js
+      performanceMetrics: {
+        adherenceScore: this.safeNumber(planData.performanceMetrics?.adherenceScore),
+        goalsAchieved: this.safeNumber(planData.performanceMetrics?.goalsAchieved),
+        debtReductionProgress: this.safeNumber(planData.performanceMetrics?.debtReductionProgress),
+        investmentGrowth: this.safeNumber(planData.performanceMetrics?.investmentGrowth),
+        lastUpdated: planData.performanceMetrics?.lastUpdated || null
+      },
+
+      // Change History - EXACT field names from FinancialPlan.js
+      changeHistory: this.safeArray(planData.changeHistory).map(change => ({
+        changeDate: change.changeDate || null,
+        changedBy: change.changedBy || null,
+        changeType: this.safeString(change.changeType),
+        description: this.safeString(change.description),
+        previousValue: change.previousValue,
+        newValue: change.newValue
+      })),
+
+      // A/B Test Comparisons - EXACT field names from FinancialPlan.js
+      abTestComparisons: this.safeArray(planData.abTestComparisons).map(comparison => ({
+        comparisonId: comparison.comparisonId || null,
+        comparedWithPlanId: comparison.comparedWithPlanId || null,
+        comparisonDate: comparison.comparisonDate || null,
+        wasSelectedAsWinner: this.safeBoolean(comparison.wasSelectedAsWinner),
+        aiRecommendation: this.safeString(comparison.aiRecommendation)
+      })),
+
+      // PDF Reports Storage - EXACT field names from FinancialPlan.js
+      pdfReports: this.safeArray(planData.pdfReports).map(report => ({
+        reportType: this.safeString(report.reportType),
+        generatedAt: report.generatedAt || null,
+        version: this.safeNumber(report.version),
+        pdfData: report.pdfData || null,
+        fileSize: this.safeNumber(report.fileSize),
+        fileName: this.safeString(report.fileName),
+        metadata: {
+          generatedBy: report.metadata?.generatedBy || null,
+          clientId: report.metadata?.clientId || null,
+          planVersion: this.safeNumber(report.metadata?.planVersion),
+          generationMethod: this.safeString(report.metadata?.generationMethod) || 'frontend_jspdf',
+          contentSummary: {
+            goalsCount: this.safeNumber(report.metadata?.contentSummary?.goalsCount),
+            totalSIPAmount: this.safeNumber(report.metadata?.contentSummary?.totalSIPAmount),
+            hasRecommendations: this.safeBoolean(report.metadata?.contentSummary?.hasRecommendations)
+          }
+        }
+      })),
+
+      // Timestamps - EXACT field names from FinancialPlan.js
+      createdAt: planData.createdAt || null,
+      updatedAt: planData.updatedAt || null,
+
+      // Virtual fields from FinancialPlan.js
+      planAge: planData.planAge || 0,
+      isReviewDue: this.safeBoolean(planData.isReviewDue)
+    };
+  }
+
+  /**
+   * Get default financial plan data when no plan exists
+   * @returns {Object} - Default financial plan data
+   */
+  getDefaultFinancialPlanData() {
+    return {
+      clientId: null,
+      advisorId: null,
+      planType: 'cash_flow',
+      status: 'draft',
+      version: 1,
+      clientDataSnapshot: {
+        personalInfo: {
+          firstName: '',
+          lastName: '',
+          email: '',
+          phoneNumber: '',
+          dateOfBirth: null,
+          panNumber: '',
+          maritalStatus: '',
+          numberOfDependents: 0
+        },
+        financialInfo: {
+          totalMonthlyIncome: 0,
+          totalMonthlyExpenses: 0,
+          incomeType: '',
+          expenseBreakdown: {
+            housingRent: 0,
+            foodGroceries: 0,
+            transportation: 0,
+            utilities: 0,
+            entertainment: 0,
+            healthcare: 0,
+            otherExpenses: 0
+          }
+        },
+        investments: {
+          mutualFunds: { totalValue: 0, monthlyInvestment: 0 },
+          directStocks: { totalValue: 0 },
+          ppf: { currentBalance: 0, annualContribution: 0 },
+          epf: { currentBalance: 0 },
+          nps: { currentBalance: 0 },
+          elss: { currentValue: 0 },
+          fixedDeposits: { totalValue: 0 },
+          otherInvestments: { totalValue: 0 }
+        },
+        debtsAndLiabilities: {
+          homeLoan: { outstandingAmount: 0, monthlyEMI: 0, interestRate: 0, remainingTenure: 0 },
+          personalLoan: { outstandingAmount: 0, monthlyEMI: 0, interestRate: 0 },
+          carLoan: { outstandingAmount: 0, monthlyEMI: 0, interestRate: 0 },
+          educationLoan: { outstandingAmount: 0, monthlyEMI: 0, interestRate: 0 },
+          creditCards: { totalOutstanding: 0, averageInterestRate: 0, monthlyPayment: 0 },
+          otherLoans: { outstandingAmount: 0, monthlyEMI: 0, interestRate: 0 }
+        },
+        calculatedMetrics: {
+          totalMonthlyEMIs: 0,
+          monthlySurplus: 0,
+          emiRatio: 0,
+          fixedExpenditureRatio: 0,
+          savingsRate: 0,
+          netWorth: 0,
+          debtToIncomeRatio: 0
+        }
+      },
+      planDetails: {
+        cashFlowPlan: {
+          debtManagement: { prioritizedDebts: [], totalDebtReduction: 0, totalInterestSavings: 0, debtFreeDate: null },
+          emergencyFundStrategy: { targetAmount: 0, currentAmount: 0, gap: 0, monthlyAllocation: 0, timeline: 0, investmentType: '', fundRecommendations: [] },
+          investmentRecommendations: { monthlyInvestments: [], assetAllocation: { equity: 0, debt: 0, gold: 0, others: 0 }, totalMonthlyInvestment: 0, projectedCorpus: { year1: 0, year3: 0, year5: 0, year10: 0 } },
+          cashFlowMetrics: { currentEmiRatio: 0, targetEmiRatio: 0, currentSavingsRate: 0, targetSavingsRate: 0, currentFixedExpenditureRatio: 0, targetFixedExpenditureRatio: 0, financialHealthScore: 0 },
+          actionItems: []
+        },
+        goalBasedPlan: { selectedGoals: [], goalSpecificPlans: {} },
+        hybridPlan: { cashFlowComponent: {}, goalBasedComponent: {} }
+      },
+      advisorRecommendations: { keyPoints: [], detailedNotes: '', customVariables: [] },
+      aiRecommendations: { debtStrategy: '', emergencyFundAnalysis: '', investmentAnalysis: '', cashFlowOptimization: '', riskWarnings: [], opportunities: [] },
+      reviewSchedule: { frequency: 'quarterly', nextReviewDate: null, reviewHistory: [] },
+      performanceMetrics: { adherenceScore: 0, goalsAchieved: 0, debtReductionProgress: 0, investmentGrowth: 0, lastUpdated: null },
+      changeHistory: [],
+      abTestComparisons: [],
+      pdfReports: [],
+      createdAt: null,
+      updatedAt: null,
+      planAge: 0,
+      isReviewDue: false
+    };
   }
 
   /**
