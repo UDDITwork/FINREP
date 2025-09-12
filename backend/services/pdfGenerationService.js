@@ -550,6 +550,10 @@ class PDFGenerationService {
       // Comprehensive FinancialPlan Data - EXACT variable names from FinancialPlan.js model
       financialPlan: this.prepareFinancialPlanData(clientData.financialPlans || []),
       
+      // Comprehensive LOE Data - EXACT variable names from LOE.js and LOEAutomation.js models
+      loe: this.prepareLOEData(clientData.loeDocuments || []),
+      loeAutomation: this.prepareLOEAutomationData(clientData.loeAutomation || []),
+      
       // Complete Client.js model data for comprehensive access
       completeClientData: client,
 
@@ -2645,6 +2649,266 @@ class PDFGenerationService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Prepare comprehensive LOE data for PDF template
+   * @param {Array} loeDocuments - Array of LOE documents
+   * @returns {Object} - Formatted LOE data
+   */
+  prepareLOEData(loeDocuments) {
+    if (!loeDocuments || loeDocuments.length === 0) {
+      return this.getDefaultLOEData();
+    }
+    
+    const latestLOE = loeDocuments[0];
+    if (!latestLOE) {
+      return this.getDefaultLOEData();
+    }
+    
+    const loeData = latestLOE.toObject ? latestLOE.toObject() : latestLOE;
+    
+    return {
+      // Core References - EXACT field names from LOE.js
+      advisorId: loeData.advisorId || null,
+      clientId: loeData.clientId || null,
+      meetingId: loeData.meetingId || null,
+      
+      // Access & Status - EXACT field names from LOE.js
+      accessToken: this.safeString(loeData.accessToken) || '',
+      status: this.safeString(loeData.status) || 'draft',
+      
+      // Content - EXACT field names from LOE.js
+      content: {
+        services: {
+          financialPlanning: this.safeBoolean(loeData.content?.services?.financialPlanning) || true,
+          investmentAdvisory: this.safeBoolean(loeData.content?.services?.investmentAdvisory) || true,
+          brokerageServices: this.safeBoolean(loeData.content?.services?.brokerageServices) || true,
+          riskManagement: this.safeBoolean(loeData.content?.services?.riskManagement) || true
+        },
+        fees: {
+          planningFee: this.safeString(loeData.content?.fees?.planningFee) || '$5,000',
+          advisoryFeePercent: this.safeString(loeData.content?.fees?.advisoryFeePercent) || '1%',
+          advisoryFeeThreshold: this.safeString(loeData.content?.fees?.advisoryFeeThreshold) || '$1,000,000',
+          advisoryFeeReducedPercent: this.safeString(loeData.content?.fees?.advisoryFeeReducedPercent) || '0.75%'
+        },
+        customNotes: this.safeString(loeData.content?.customNotes) || '',
+        focusAreas: this.safeArray(loeData.content?.focusAreas) || []
+      },
+      
+      // Signatures - EXACT field names from LOE.js
+      signatures: {
+        client: {
+          data: this.safeString(loeData.signatures?.client?.data) || '',
+          timestamp: loeData.signatures?.client?.timestamp || null,
+          ipAddress: this.safeString(loeData.signatures?.client?.ipAddress) || '',
+          userAgent: this.safeString(loeData.signatures?.client?.userAgent) || ''
+        }
+      },
+      
+      // Tracking Timestamps - EXACT field names from LOE.js
+      sentAt: loeData.sentAt || null,
+      viewedAt: loeData.viewedAt || null,
+      signedAt: loeData.signedAt || null,
+      expiresAt: loeData.expiresAt || null,
+      
+      // Generated PDF URLs - EXACT field names from LOE.js
+      signedPdfUrl: this.safeString(loeData.signedPdfUrl) || '',
+      cloudinaryPdfUrl: this.safeString(loeData.cloudinaryPdfUrl) || '',
+      
+      // Email Tracking - EXACT field names from LOE.js
+      emailsSent: this.safeArray(loeData.emailsSent) || [],
+      
+      // Timestamps - EXACT field names from LOE.js
+      createdAt: loeData.createdAt || new Date(),
+      updatedAt: loeData.updatedAt || new Date(),
+      
+      // Calculated fields
+      isExpired: loeData.expiresAt ? new Date() > new Date(loeData.expiresAt) : false,
+      daysUntilExpiry: loeData.expiresAt ? Math.ceil((new Date(loeData.expiresAt) - new Date()) / (1000 * 60 * 60 * 24)) : 0,
+      hasSignature: !!loeData.signatures?.client?.data,
+      isSigned: loeData.status === 'signed'
+    };
+  }
+
+  /**
+   * Prepare comprehensive LOEAutomation data for PDF template
+   * @param {Array} loeAutomationDocs - Array of LOEAutomation documents
+   * @returns {Object} - Formatted LOEAutomation data
+   */
+  prepareLOEAutomationData(loeAutomationDocs) {
+    if (!loeAutomationDocs || loeAutomationDocs.length === 0) {
+      return this.getDefaultLOEAutomationData();
+    }
+    
+    const latestLOEAutomation = loeAutomationDocs[0];
+    if (!latestLOEAutomation) {
+      return this.getDefaultLOEAutomationData();
+    }
+    
+    const loeAutomationData = latestLOEAutomation.toObject ? latestLOEAutomation.toObject() : latestLOEAutomation;
+    
+    return {
+      // Core References - EXACT field names from LOEAutomation.js
+      advisorId: loeAutomationData.advisorId || null,
+      clientId: loeAutomationData.clientId || null,
+      
+      // Access & Status - EXACT field names from LOEAutomation.js
+      status: this.safeString(loeAutomationData.status) || 'draft',
+      accessToken: this.safeString(loeAutomationData.accessToken) || '',
+      clientAccessUrl: this.safeString(loeAutomationData.clientAccessUrl) || '',
+      
+      // Content - EXACT field names from LOEAutomation.js
+      content: {
+        customNotes: this.safeString(loeAutomationData.content?.customNotes) || '',
+        services: this.safeArray(loeAutomationData.content?.services) || [
+          'Comprehensive Financial Planning and Analysis',
+          'Investment Advisory and Portfolio Management',
+          'Risk Assessment and Management Strategies',
+          'Retirement Planning and Wealth Preservation',
+          'Tax-Efficient Investment Strategies',
+          'Regular Portfolio Reviews and Rebalancing'
+        ],
+        fees: this.safeArray(loeAutomationData.content?.fees) || [
+          'Initial Financial Planning Fee: $5,000',
+          'Ongoing Advisory Fee: 1% of assets under management',
+          'Reduced fee of 0.75% for assets above $1,000,000',
+          'Quarterly billing in advance'
+        ]
+      },
+      
+      // Signatures - EXACT field names from LOEAutomation.js
+      signatures: {
+        client: {
+          data: this.safeString(loeAutomationData.signatures?.client?.data) || '',
+          signedAt: loeAutomationData.signatures?.client?.signedAt || null,
+          ipAddress: this.safeString(loeAutomationData.signatures?.client?.ipAddress) || '',
+          userAgent: this.safeString(loeAutomationData.signatures?.client?.userAgent) || ''
+        }
+      },
+      
+      // Tracking Timestamps - EXACT field names from LOEAutomation.js
+      sentAt: loeAutomationData.sentAt || null,
+      viewedAt: loeAutomationData.viewedAt || null,
+      signedAt: loeAutomationData.signedAt || null,
+      expiresAt: loeAutomationData.expiresAt || null,
+      
+      // Generated PDF URLs - EXACT field names from LOEAutomation.js
+      signedPdfUrl: this.safeString(loeAutomationData.signedPdfUrl) || '',
+      cloudinaryPdfUrl: this.safeString(loeAutomationData.cloudinaryPdfUrl) || '',
+      
+      // Timestamps - EXACT field names from LOEAutomation.js
+      createdAt: loeAutomationData.createdAt || new Date(),
+      updatedAt: loeAutomationData.updatedAt || new Date(),
+      
+      // Calculated fields
+      isExpired: loeAutomationData.expiresAt ? new Date() > new Date(loeAutomationData.expiresAt) : false,
+      daysUntilExpiry: loeAutomationData.expiresAt ? Math.ceil((new Date(loeAutomationData.expiresAt) - new Date()) / (1000 * 60 * 60 * 24)) : 0,
+      hasSignature: !!loeAutomationData.signatures?.client?.data,
+      isSigned: loeAutomationData.status === 'signed'
+    };
+  }
+
+  /**
+   * Get default LOE data when no LOE exists
+   * @returns {Object} - Default LOE data
+   */
+  getDefaultLOEData() {
+    return {
+      advisorId: null,
+      clientId: null,
+      meetingId: null,
+      accessToken: '',
+      status: 'draft',
+      content: {
+        services: {
+          financialPlanning: true,
+          investmentAdvisory: true,
+          brokerageServices: true,
+          riskManagement: true
+        },
+        fees: {
+          planningFee: '$5,000',
+          advisoryFeePercent: '1%',
+          advisoryFeeThreshold: '$1,000,000',
+          advisoryFeeReducedPercent: '0.75%'
+        },
+        customNotes: '',
+        focusAreas: []
+      },
+      signatures: {
+        client: {
+          data: '',
+          timestamp: null,
+          ipAddress: '',
+          userAgent: ''
+        }
+      },
+      sentAt: null,
+      viewedAt: null,
+      signedAt: null,
+      expiresAt: null,
+      signedPdfUrl: '',
+      cloudinaryPdfUrl: '',
+      emailsSent: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isExpired: false,
+      daysUntilExpiry: 0,
+      hasSignature: false,
+      isSigned: false
+    };
+  }
+
+  /**
+   * Get default LOEAutomation data when no LOEAutomation exists
+   * @returns {Object} - Default LOEAutomation data
+   */
+  getDefaultLOEAutomationData() {
+    return {
+      advisorId: null,
+      clientId: null,
+      status: 'draft',
+      accessToken: '',
+      clientAccessUrl: '',
+      content: {
+        customNotes: '',
+        services: [
+          'Comprehensive Financial Planning and Analysis',
+          'Investment Advisory and Portfolio Management',
+          'Risk Assessment and Management Strategies',
+          'Retirement Planning and Wealth Preservation',
+          'Tax-Efficient Investment Strategies',
+          'Regular Portfolio Reviews and Rebalancing'
+        ],
+        fees: [
+          'Initial Financial Planning Fee: $5,000',
+          'Ongoing Advisory Fee: 1% of assets under management',
+          'Reduced fee of 0.75% for assets above $1,000,000',
+          'Quarterly billing in advance'
+        ]
+      },
+      signatures: {
+        client: {
+          data: '',
+          signedAt: null,
+          ipAddress: '',
+          userAgent: ''
+        }
+      },
+      sentAt: null,
+      viewedAt: null,
+      signedAt: null,
+      expiresAt: null,
+      signedPdfUrl: '',
+      cloudinaryPdfUrl: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isExpired: false,
+      daysUntilExpiry: 0,
+      hasSignature: false,
+      isSigned: false
+    };
   }
 }
 

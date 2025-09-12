@@ -2346,6 +2346,298 @@
     </div>
     {{/if}}
 
+    <!-- Comprehensive LOE (Letter of Engagement) Analysis -->
+    {{#if loe}}
+    <div class="section">
+        <h2>Letter of Engagement (LOE) Analysis</h2>
+        
+        <!-- LOE Overview -->
+        <div class="advisor-section">
+            <h3>LOE Overview</h3>
+            <div class="advisor-details">
+                <div><strong>Status:</strong> <span class="status-badge status-{{loe.status}}">{{loe.status}}</span></div>
+                <div><strong>Created:</strong> <span>{{#if loe.createdAt}}{{formatDate loe.createdAt}}{{else}}Not Available{{/if}}</span></div>
+                <div><strong>Last Updated:</strong> <span>{{#if loe.updatedAt}}{{formatDate loe.updatedAt}}{{else}}Not Available{{/if}}</span></div>
+                <div><strong>Expires:</strong> <span>{{#if loe.expiresAt}}{{formatDate loe.expiresAt}}{{else}}Not Set{{/if}}</span></div>
+                <div><strong>Days Until Expiry:</strong> <span>{{loe.daysUntilExpiry}}</span></div>
+                <div><strong>Is Expired:</strong> <span>{{#if loe.isExpired}}Yes{{else}}No{{/if}}</span></div>
+                <div><strong>Has Signature:</strong> <span>{{#if loe.hasSignature}}Yes{{else}}No{{/if}}</span></div>
+                <div><strong>Is Signed:</strong> <span>{{#if loe.isSigned}}Yes{{else}}No{{/if}}</span></div>
+            </div>
+        </div>
+
+        <!-- LOE Services -->
+        <div class="advisor-section">
+            <h3>Services Covered</h3>
+            <div class="grid-2">
+                <div>
+                    <div class="advisor-details">
+                        <div><strong>Financial Planning:</strong> <span>{{#if loe.content.services.financialPlanning}}Yes{{else}}No{{/if}}</span></div>
+                        <div><strong>Investment Advisory:</strong> <span>{{#if loe.content.services.investmentAdvisory}}Yes{{else}}No{{/if}}</span></div>
+                        <div><strong>Brokerage Services:</strong> <span>{{#if loe.content.services.brokerageServices}}Yes{{else}}No{{/if}}</span></div>
+                        <div><strong>Risk Management:</strong> <span>{{#if loe.content.services.riskManagement}}Yes{{else}}No{{/if}}</span></div>
+                    </div>
+                </div>
+                <div>
+                    {{#if loe.content.focusAreas.length}}
+                    <h4>Focus Areas</h4>
+                    <ul>
+                        {{#each loe.content.focusAreas}}
+                        <li>{{this}}</li>
+                        {{/each}}
+                    </ul>
+                    {{/if}}
+                </div>
+            </div>
+        </div>
+
+        <!-- LOE Fee Structure -->
+        <div class="advisor-section">
+            <h3>Fee Structure</h3>
+            <div class="grid-2">
+                <div>
+                    <div class="advisor-details">
+                        <div><strong>Planning Fee:</strong> <span class="currency">{{loe.content.fees.planningFee}}</span></div>
+                        <div><strong>Advisory Fee:</strong> <span>{{loe.content.fees.advisoryFeePercent}}</span></div>
+                        <div><strong>Fee Threshold:</strong> <span class="currency">{{loe.content.fees.advisoryFeeThreshold}}</span></div>
+                        <div><strong>Reduced Fee:</strong> <span>{{loe.content.fees.advisoryFeeReducedPercent}}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOE Timeline -->
+        <div class="advisor-section">
+            <h3>LOE Timeline</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Created</td>
+                        <td>{{#if loe.createdAt}}{{formatDate loe.createdAt}}{{else}}-{{/if}}</td>
+                        <td class="status-badge status-draft">Draft</td>
+                    </tr>
+                    <tr>
+                        <td>Sent to Client</td>
+                        <td>{{#if loe.sentAt}}{{formatDate loe.sentAt}}{{else}}-{{/if}}</td>
+                        <td class="status-badge status-sent">Sent</td>
+                    </tr>
+                    <tr>
+                        <td>Viewed by Client</td>
+                        <td>{{#if loe.viewedAt}}{{formatDate loe.viewedAt}}{{else}}-{{/if}}</td>
+                        <td class="status-badge status-viewed">Viewed</td>
+                    </tr>
+                    <tr>
+                        <td>Signed by Client</td>
+                        <td>{{#if loe.signedAt}}{{formatDate loe.signedAt}}{{else}}-{{/if}}</td>
+                        <td class="status-badge status-signed">Signed</td>
+                    </tr>
+                    <tr>
+                        <td>Expires</td>
+                        <td>{{#if loe.expiresAt}}{{formatDate loe.expiresAt}}{{else}}-{{/if}}</td>
+                        <td class="status-badge {{#if loe.isExpired}}status-expired{{else}}status-active{{/if}}">{{#if loe.isExpired}}Expired{{else}}Active{{/if}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- LOE Custom Notes -->
+        {{#if loe.content.customNotes}}
+        <div class="advisor-section">
+            <h3>Custom Notes</h3>
+            <div class="advisor-details">
+                <p>{{loe.content.customNotes}}</p>
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- LOE Email Tracking -->
+        {{#if loe.emailsSent.length}}
+        <div class="advisor-section">
+            <h3>Email Tracking History</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Email Type</th>
+                        <th>Sent To</th>
+                        <th>Sent At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each loe.emailsSent}}
+                    <tr>
+                        <td>{{this.type}}</td>
+                        <td>{{this.sentTo}}</td>
+                        <td>{{#if this.sentAt}}{{formatDate this.sentAt}}{{else}}-{{/if}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        {{/if}}
+
+        <!-- LOE Signature Details -->
+        {{#if loe.hasSignature}}
+        <div class="advisor-section">
+            <h3>Digital Signature Details</h3>
+            <div class="advisor-details">
+                <div><strong>Signed At:</strong> <span>{{#if loe.signatures.client.timestamp}}{{formatDate loe.signatures.client.timestamp}}{{else}}Not Available{{/if}}</span></div>
+                <div><strong>IP Address:</strong> <span>{{loe.signatures.client.ipAddress}}</span></div>
+                <div><strong>User Agent:</strong> <span>{{loe.signatures.client.userAgent}}</span></div>
+                <div><strong>Signature Data:</strong> <span>{{#if loe.signatures.client.data}}Available (Base64){{else}}Not Available{{/if}}</span></div>
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- LOE PDF URLs -->
+        {{#if loe.signedPdfUrl}}
+        <div class="advisor-section">
+            <h3>Generated Documents</h3>
+            <div class="advisor-details">
+                <div><strong>Signed PDF URL:</strong> <span>{{loe.signedPdfUrl}}</span></div>
+                {{#if loe.cloudinaryPdfUrl}}
+                <div><strong>Cloudinary PDF URL:</strong> <span>{{loe.cloudinaryPdfUrl}}</span></div>
+                {{/if}}
+            </div>
+        </div>
+        {{/if}}
+    </div>
+    {{/if}}
+
+    <!-- Comprehensive LOE Automation Analysis -->
+    {{#if loeAutomation}}
+    <div class="section">
+        <h2>LOE Automation Analysis</h2>
+        
+        <!-- LOE Automation Overview -->
+        <div class="advisor-section">
+            <h3>LOE Automation Overview</h3>
+            <div class="advisor-details">
+                <div><strong>Status:</strong> <span class="status-badge status-{{loeAutomation.status}}">{{loeAutomation.status}}</span></div>
+                <div><strong>Created:</strong> <span>{{#if loeAutomation.createdAt}}{{formatDate loeAutomation.createdAt}}{{else}}Not Available{{/if}}</span></div>
+                <div><strong>Last Updated:</strong> <span>{{#if loeAutomation.updatedAt}}{{formatDate loeAutomation.updatedAt}}{{else}}Not Available{{/if}}</span></div>
+                <div><strong>Expires:</strong> <span>{{#if loeAutomation.expiresAt}}{{formatDate loeAutomation.expiresAt}}{{else}}Not Set{{/if}}</span></div>
+                <div><strong>Days Until Expiry:</strong> <span>{{loeAutomation.daysUntilExpiry}}</span></div>
+                <div><strong>Is Expired:</strong> <span>{{#if loeAutomation.isExpired}}Yes{{else}}No{{/if}}</span></div>
+                <div><strong>Has Signature:</strong> <span>{{#if loeAutomation.hasSignature}}Yes{{else}}No{{/if}}</span></div>
+                <div><strong>Is Signed:</strong> <span>{{#if loeAutomation.isSigned}}Yes{{else}}No{{/if}}</span></div>
+                <div><strong>Client Access URL:</strong> <span>{{loeAutomation.clientAccessUrl}}</span></div>
+            </div>
+        </div>
+
+        <!-- LOE Automation Services -->
+        <div class="advisor-section">
+            <h3>Services Covered</h3>
+            {{#if loeAutomation.content.services.length}}
+            <ul>
+                {{#each loeAutomation.content.services}}
+                <li>{{this}}</li>
+                {{/each}}
+            </ul>
+            {{else}}
+            <p>No services specified</p>
+            {{/if}}
+        </div>
+
+        <!-- LOE Automation Fee Structure -->
+        <div class="advisor-section">
+            <h3>Fee Structure</h3>
+            {{#if loeAutomation.content.fees.length}}
+            <ul>
+                {{#each loeAutomation.content.fees}}
+                <li>{{this}}</li>
+                {{/each}}
+            </ul>
+            {{else}}
+            <p>No fees specified</p>
+            {{/if}}
+        </div>
+
+        <!-- LOE Automation Timeline -->
+        <div class="advisor-section">
+            <h3>LOE Automation Timeline</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Created</td>
+                        <td>{{#if loeAutomation.createdAt}}{{formatDate loeAutomation.createdAt}}{{else}}-{{/if}}</td>
+                        <td class="status-badge status-draft">Draft</td>
+                    </tr>
+                    <tr>
+                        <td>Sent to Client</td>
+                        <td>{{#if loeAutomation.sentAt}}{{formatDate loeAutomation.sentAt}}{{else}}-{{/if}}</td>
+                        <td class="status-badge status-sent">Sent</td>
+                    </tr>
+                    <tr>
+                        <td>Viewed by Client</td>
+                        <td>{{#if loeAutomation.viewedAt}}{{formatDate loeAutomation.viewedAt}}{{else}}-{{/if}}</td>
+                        <td class="status-badge status-viewed">Viewed</td>
+                    </tr>
+                    <tr>
+                        <td>Signed by Client</td>
+                        <td>{{#if loeAutomation.signedAt}}{{formatDate loeAutomation.signedAt}}{{else}}-{{/if}}</td>
+                        <td class="status-badge status-signed">Signed</td>
+                    </tr>
+                    <tr>
+                        <td>Expires</td>
+                        <td>{{#if loeAutomation.expiresAt}}{{formatDate loeAutomation.expiresAt}}{{else}}-{{/if}}</td>
+                        <td class="status-badge {{#if loeAutomation.isExpired}}status-expired{{else}}status-active{{/if}}">{{#if loeAutomation.isExpired}}Expired{{else}}Active{{/if}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- LOE Automation Custom Notes -->
+        {{#if loeAutomation.content.customNotes}}
+        <div class="advisor-section">
+            <h3>Custom Notes</h3>
+            <div class="advisor-details">
+                <p>{{loeAutomation.content.customNotes}}</p>
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- LOE Automation Signature Details -->
+        {{#if loeAutomation.hasSignature}}
+        <div class="advisor-section">
+            <h3>Digital Signature Details</h3>
+            <div class="advisor-details">
+                <div><strong>Signed At:</strong> <span>{{#if loeAutomation.signatures.client.signedAt}}{{formatDate loeAutomation.signatures.client.signedAt}}{{else}}Not Available{{/if}}</span></div>
+                <div><strong>IP Address:</strong> <span>{{loeAutomation.signatures.client.ipAddress}}</span></div>
+                <div><strong>User Agent:</strong> <span>{{loeAutomation.signatures.client.userAgent}}</span></div>
+                <div><strong>Signature Data:</strong> <span>{{#if loeAutomation.signatures.client.data}}Available (Base64){{else}}Not Available{{/if}}</span></div>
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- LOE Automation PDF URLs -->
+        {{#if loeAutomation.signedPdfUrl}}
+        <div class="advisor-section">
+            <h3>Generated Documents</h3>
+            <div class="advisor-details">
+                <div><strong>Signed PDF URL:</strong> <span>{{loeAutomation.signedPdfUrl}}</span></div>
+                {{#if loeAutomation.cloudinaryPdfUrl}}
+                <div><strong>Cloudinary PDF URL:</strong> <span>{{loeAutomation.cloudinaryPdfUrl}}</span></div>
+                {{/if}}
+            </div>
+        </div>
+        {{/if}}
+    </div>
+    {{/if}}
+
     <!-- Always Show Test Section -->
     <div class="section" style="background-color: #e0f0ff; padding: 15px; margin: 10px 0; border: 2px solid #007acc;">
         <h3>Test Section - Always Visible</h3>
