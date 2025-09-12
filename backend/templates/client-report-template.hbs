@@ -774,11 +774,15 @@
             <!-- Basic Information -->
             <div class="advisor-section">
                 <h3>Basic Information</h3>
-        <div class="advisor-details">
-                    <div><strong>Advisor:</strong> <span>{{vault.advisorName}}</span></div>
-                    <div><strong>Email:</strong> <span>{{vault.email}}</span></div>
-                    <div><strong>Phone:</strong> <span>{{vault.phoneNumber}}</span></div>
-                    <div><strong>Revenue Model:</strong> <span>{{vault.revenueModel}}</span></div>
+                <div class="advisor-details">
+                    <div><strong>First Name:</strong> <span>{{#if vault.firstName}}{{vault.firstName}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Last Name:</strong> <span>{{#if vault.lastName}}{{vault.lastName}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Email:</strong> <span>{{#if vault.email}}{{vault.email}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Phone Number:</strong> <span>{{#if vault.phoneNumber}}{{vault.phoneNumber}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Firm Name:</strong> <span>{{#if vault.firmName}}{{vault.firmName}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Revenue Model:</strong> <span>{{#if vault.revenueModel}}{{vault.revenueModel}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Status:</strong> <span>{{#if vault.status}}{{vault.status}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Email Verified:</strong> <span>{{#if vault.isEmailVerified}}Yes{{else}}No{{/if}}</span></div>
                 </div>
             </div>
 
@@ -786,59 +790,152 @@
             <div class="advisor-section">
                 <h3>Registration Details</h3>
                 <div class="advisor-details">
-                    <div><strong>SEBI Reg:</strong> <span>{{vault.sebiRegNumber}}</span></div>
-                    <div><strong>FPSB No:</strong> <span>{{vault.fpsbNumber}}</span></div>
-                    <div><strong>RIA No:</strong> <span>{{vault.riaNumber}}</span></div>
-                    <div><strong>ARN No:</strong> <span>{{vault.arnNumber}}</span></div>
-                    <div><strong>AMFI Reg:</strong> <span>{{vault.amfiRegNumber}}</span></div>
+                    <div><strong>SEBI Registration Number:</strong> <span>{{#if vault.sebiRegNumber}}{{vault.sebiRegNumber}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>FPSB Number:</strong> <span>{{#if vault.fpsbNumber}}{{vault.fpsbNumber}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>RIA Number:</strong> <span>{{#if vault.riaNumber}}{{vault.riaNumber}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>ARN Number:</strong> <span>{{#if vault.arnNumber}}{{vault.arnNumber}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>AMFI Registration Number:</strong> <span>{{#if vault.amfiRegNumber}}{{vault.amfiRegNumber}}{{else}}Not Available{{/if}}</span></div>
+                </div>
+            </div>
+
+            <!-- Branding Information -->
+            <div class="advisor-section">
+                <h3>Branding Information</h3>
+                <div class="advisor-details">
+                    <div><strong>Primary Color:</strong> <span>{{#if vault.branding.primaryColor}}{{vault.branding.primaryColor}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Secondary Color:</strong> <span>{{#if vault.branding.secondaryColor}}{{vault.branding.secondaryColor}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Accent Color:</strong> <span>{{#if vault.branding.accentColor}}{{vault.branding.accentColor}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Logo URL:</strong> <span>{{#if vault.branding.logo.url}}{{vault.branding.logo.url}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Logo Alt Text:</strong> <span>{{#if vault.branding.logo.altText}}{{vault.branding.logo.altText}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Primary Font:</strong> <span>{{#if vault.branding.typography.primaryFont}}{{vault.branding.typography.primaryFont}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Secondary Font:</strong> <span>{{#if vault.branding.typography.secondaryFont}}{{vault.branding.typography.secondaryFont}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Font Size:</strong> <span>{{#if vault.branding.typography.fontSize}}{{vault.branding.typography.fontSize}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Tagline:</strong> <span>{{#if vault.branding.tagline}}{{vault.branding.tagline}}{{else}}Not Available{{/if}}</span></div>
+                </div>
+            </div>
+
+            <!-- Digital Presence -->
+            <div class="advisor-section">
+                <h3>Digital Presence</h3>
+                <div class="advisor-details">
+                    <div><strong>Website:</strong> <span>{{#if vault.digitalPresence.website}}{{vault.digitalPresence.website}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>LinkedIn:</strong> <span>{{#if vault.digitalPresence.linkedin}}{{vault.digitalPresence.linkedin}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Twitter:</strong> <span>{{#if vault.digitalPresence.twitter}}{{vault.digitalPresence.twitter}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Facebook:</strong> <span>{{#if vault.digitalPresence.facebook}}{{vault.digitalPresence.facebook}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Instagram:</strong> <span>{{#if vault.digitalPresence.instagram}}{{vault.digitalPresence.instagram}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>YouTube:</strong> <span>{{#if vault.digitalPresence.youtube}}{{vault.digitalPresence.youtube}}{{else}}Not Available{{/if}}</span></div>
+                </div>
+            </div>
+
+            <!-- White Label Configuration -->
+            <div class="advisor-section">
+                <h3>White Label Configuration</h3>
+                <div class="advisor-details">
+                    <div><strong>White Label Enabled:</strong> <span>{{#if vault.whiteLabel.isEnabled}}Yes{{else}}No{{/if}}</span></div>
+                    <div><strong>Company Name:</strong> <span>{{#if vault.whiteLabel.companyName}}{{vault.whiteLabel.companyName}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Custom Domain:</strong> <span>{{#if vault.whiteLabel.customDomain}}{{vault.whiteLabel.customDomain}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>API Keys Count:</strong> <span>{{#if vault.whiteLabel.apiKeys.length}}{{vault.whiteLabel.apiKeys.length}}{{else}}0{{/if}}</span></div>
+                </div>
+            </div>
+
+            <!-- Scheduling Preferences -->
+            <div class="advisor-section">
+                <h3>Scheduling Preferences</h3>
+                <div class="advisor-details">
+                    <div><strong>Appointment Duration:</strong> <span>{{#if vault.scheduling.appointmentDuration}}{{vault.scheduling.appointmentDuration}} minutes{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Timezone:</strong> <span>{{#if vault.scheduling.timezone}}{{vault.scheduling.timezone}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Buffer Time Before:</strong> <span>{{#if vault.scheduling.bufferTime.before}}{{vault.scheduling.bufferTime.before}} minutes{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Buffer Time After:</strong> <span>{{#if vault.scheduling.bufferTime.after}}{{vault.scheduling.bufferTime.after}} minutes{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Working Days:</strong> 
+                        <span>
+                            {{#if vault.scheduling.workingHours.monday.isWorking}}Mon{{/if}}
+                            {{#if vault.scheduling.workingHours.tuesday.isWorking}} Tue{{/if}}
+                            {{#if vault.scheduling.workingHours.wednesday.isWorking}} Wed{{/if}}
+                            {{#if vault.scheduling.workingHours.thursday.isWorking}} Thu{{/if}}
+                            {{#if vault.scheduling.workingHours.friday.isWorking}} Fri{{/if}}
+                            {{#if vault.scheduling.workingHours.saturday.isWorking}} Sat{{/if}}
+                            {{#if vault.scheduling.workingHours.sunday.isWorking}} Sun{{/if}}
+                            {{#unless vault.scheduling.workingHours.monday.isWorking}}{{#unless vault.scheduling.workingHours.tuesday.isWorking}}{{#unless vault.scheduling.workingHours.wednesday.isWorking}}{{#unless vault.scheduling.workingHours.thursday.isWorking}}{{#unless vault.scheduling.workingHours.friday.isWorking}}{{#unless vault.scheduling.workingHours.saturday.isWorking}}{{#unless vault.scheduling.workingHours.sunday.isWorking}}Not Available{{/unless}}{{/unless}}{{/unless}}{{/unless}}{{/unless}}{{/unless}}{{/unless}}
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Certifications -->
-        {{#if vault.certifications.length}}
         <div class="certifications-section">
             <h3>Professional Certifications</h3>
+            {{#if vault.certifications.length}}
             <div class="certifications-grid">
                 {{#each vault.certifications}}
                 <div class="certification-card">
-                    <h4>{{this.name}}</h4>
-                    <p><strong>Issuing Body:</strong> {{this.issuingBody}}</p>
-                    <p><strong>Issue Date:</strong> {{this.issueDate}}</p>
-                    <p><strong>Expiry Date:</strong> {{this.expiryDate}}</p>
-                    {{#if this.certificateNumber}}
-                        <p><strong>Cert No:</strong> {{this.certificateNumber}}</p>
-                    {{/if}}
-                    <span class="certification-status {{#if this.isExpired}}cert-expired{{else}}cert-active{{/if}}">
-                        {{#if this.isExpired}}Expired{{else}}Active{{/if}}
-                    </span>
-                </div>
-                {{/each}}
-            </div>
-        </div>
-        {{/if}}
-
-        <!-- Memberships -->
-        {{#if vault.memberships.length}}
-        <div class="certifications-section">
-            <h3>Professional Memberships</h3>
-            <div class="certifications-grid">
-                {{#each vault.memberships}}
-                <div class="certification-card">
-                    <h4>{{this.organization}}</h4>
-                    <p><strong>Type:</strong> {{this.membershipType}}</p>
-                    <p><strong>Member Since:</strong> {{this.memberSince}}</p>
-                    {{#if this.membershipNumber}}
-                        <p><strong>Member No:</strong> {{this.membershipNumber}}</p>
-                    {{/if}}
+                    <h4>{{#if this.name}}{{this.name}}{{else}}Not Available{{/if}}</h4>
+                    <p><strong>Issuing Body:</strong> {{#if this.issuingBody}}{{this.issuingBody}}{{else}}Not Available{{/if}}</p>
+                    <p><strong>Issue Date:</strong> {{#if this.issueDate}}{{this.issueDate}}{{else}}Not Available{{/if}}</p>
+                    <p><strong>Expiry Date:</strong> {{#if this.expiryDate}}{{this.expiryDate}}{{else}}Not Available{{/if}}</p>
+                    <p><strong>Certificate Number:</strong> {{#if this.certificateNumber}}{{this.certificateNumber}}{{else}}Not Available{{/if}}</p>
                     <span class="certification-status {{#if this.isActive}}cert-active{{else}}cert-expired{{/if}}">
                         {{#if this.isActive}}Active{{else}}Inactive{{/if}}
                     </span>
                 </div>
                 {{/each}}
             </div>
+            {{else}}
+            <div class="advisor-details">
+                <div><strong>Certifications:</strong> <span>Not Available</span></div>
+            </div>
+            {{/if}}
         </div>
-        {{/if}}
+
+        <!-- Memberships -->
+        <div class="certifications-section">
+            <h3>Professional Memberships</h3>
+            {{#if vault.memberships.length}}
+            <div class="certifications-grid">
+                {{#each vault.memberships}}
+                <div class="certification-card">
+                    <h4>{{#if this.organization}}{{this.organization}}{{else}}Not Available{{/if}}</h4>
+                    <p><strong>Membership Type:</strong> {{#if this.membershipType}}{{this.membershipType}}{{else}}Not Available{{/if}}</p>
+                    <p><strong>Member Since:</strong> {{#if this.memberSince}}{{this.memberSince}}{{else}}Not Available{{/if}}</p>
+                    <p><strong>Membership Number:</strong> {{#if this.membershipNumber}}{{this.membershipNumber}}{{else}}Not Available{{/if}}</p>
+                    <span class="certification-status {{#if this.isActive}}cert-active{{else}}cert-expired{{/if}}">
+                        {{#if this.isActive}}Active{{else}}Inactive{{/if}}
+                    </span>
+                </div>
+                {{/each}}
+            </div>
+            {{else}}
+            <div class="advisor-details">
+                <div><strong>Memberships:</strong> <span>Not Available</span></div>
+            </div>
+            {{/if}}
+        </div>
+
+        <!-- Documents -->
+        <div class="certifications-section">
+            <h3>Professional Documents</h3>
+            {{#if vault.documents.length}}
+            <div class="certifications-grid">
+                {{#each vault.documents}}
+                <div class="certification-card">
+                    <h4>{{#if this.name}}{{this.name}}{{else}}Not Available{{/if}}</h4>
+                    <p><strong>Description:</strong> {{#if this.description}}{{this.description}}{{else}}Not Available{{/if}}</p>
+                    <p><strong>Category:</strong> {{#if this.category}}{{this.category}}{{else}}Not Available{{/if}}</p>
+                    <p><strong>File URL:</strong> {{#if this.fileUrl}}{{this.fileUrl}}{{else}}Not Available{{/if}}</p>
+                    <p><strong>File Size:</strong> {{#if this.fileSize}}{{this.fileSize}} bytes{{else}}Not Available{{/if}}</p>
+                    <p><strong>Uploaded At:</strong> {{#if this.uploadedAt}}{{this.uploadedAt}}{{else}}Not Available{{/if}}</p>
+                    <span class="certification-status {{#if this.isActive}}cert-active{{else}}cert-expired{{/if}}">
+                        {{#if this.isActive}}Active{{else}}Inactive{{/if}}
+                    </span>
+                </div>
+                {{/each}}
+            </div>
+            {{else}}
+            <div class="advisor-details">
+                <div><strong>Documents:</strong> <span>Not Available</span></div>
+            </div>
+            {{/if}}
+        </div>
 
         <!-- Digital Presence -->
         {{#if vault.hasSocialMedia}}
@@ -933,7 +1030,7 @@
         </div>
     </div>
 
-    <!-- Client Information -->
+    <!-- Comprehensive Client Information from Client.js Model -->
     <div class="client-card">
         <h2>{{client.name}}</h2>
         <div class="client-info">
@@ -941,16 +1038,332 @@
                 <strong>Email:</strong> {{client.email}}<br>
                 <strong>Phone:</strong> {{client.phoneNumber}}<br>
                 <strong>Age:</strong> {{client.age}} years<br>
-                <strong>Occupation:</strong> {{client.occupation}}
+                <strong>Date of Birth:</strong> {{formatDate client.dateOfBirth}}<br>
+                <strong>PAN Number:</strong> {{client.panNumber}}<br>
+                <strong>Gender:</strong> {{client.gender}}<br>
+                <strong>Occupation:</strong> {{client.occupation}}<br>
+                <strong>Employer/Business:</strong> {{client.employerBusinessName}}
             </div>
             <div>
                 <strong>Income Type:</strong> {{client.incomeType}}<br>
                 <strong>Marital Status:</strong> {{client.maritalStatus}}<br>
-                <strong>Dependents:</strong> {{client.dependents}}<br>
-                <strong>Address:</strong> {{client.address}}
+                <strong>Dependents:</strong> {{client.numberOfDependents}}<br>
+                <strong>Address:</strong> {{client.address}}<br>
+                <strong>KYC Status:</strong> {{client.kycStatus}}<br>
+                <strong>Onboarding Step:</strong> {{client.onboardingStep}}/7<br>
+                <strong>Status:</strong> {{client.status}}<br>
+                <strong>Last Active:</strong> {{formatDate client.lastActiveDate}}
             </div>
         </div>
     </div>
+
+    <!-- Detailed Financial Information from Client.js Model -->
+    <div class="section">
+        <h2>Detailed Financial Information</h2>
+        <div class="grid-3">
+            <!-- Income Details -->
+            <div class="advisor-section">
+                <h3>Income Details</h3>
+                <div class="advisor-details">
+                    <div><strong>Total Monthly Income:</strong> <span class="currency">{{financialMetrics.totalMonthlyIncome}}</span></div>
+                    <div><strong>Annual Income:</strong> <span class="currency">{{financialMetrics.annualIncome}}</span></div>
+                    <div><strong>Additional Income:</strong> <span class="currency">{{financialMetrics.additionalIncome}}</span></div>
+                    <div><strong>Total Monthly Expenses:</strong> <span class="currency">{{financialMetrics.totalMonthlyExpenses}}</span></div>
+                    <div><strong>Annual Taxes:</strong> <span class="currency">{{financialMetrics.annualTaxes}}</span></div>
+                    <div><strong>Annual Vacation Expenses:</strong> <span class="currency">{{financialMetrics.annualVacationExpenses}}</span></div>
+                </div>
+            </div>
+
+            <!-- Asset Breakdown -->
+            <div class="advisor-section">
+                <h3>Asset Breakdown</h3>
+                <div class="advisor-details">
+                    <div><strong>Cash & Bank Savings:</strong> <span class="currency">{{financialMetrics.cashBankSavings}}</span></div>
+                    <div><strong>Real Estate:</strong> <span class="currency">{{financialMetrics.realEstate}}</span></div>
+                    <div><strong>Equity Investments:</strong> <span class="currency">{{financialMetrics.equityInvestments}}</span></div>
+                    <div><strong>Fixed Income Investments:</strong> <span class="currency">{{financialMetrics.fixedIncomeInvestments}}</span></div>
+                    <div><strong>Other Investments:</strong> <span class="currency">{{financialMetrics.otherInvestments}}</span></div>
+                    <div><strong>Total Assets:</strong> <span class="currency">{{financialMetrics.totalAssets}}</span></div>
+                </div>
+            </div>
+
+            <!-- Liability Breakdown -->
+            <div class="advisor-section">
+                <h3>Liability Breakdown</h3>
+                <div class="advisor-details">
+                    <div><strong>Home Loan Outstanding:</strong> <span class="currency">{{financialMetrics.homeLoanOutstanding}}</span></div>
+                    <div><strong>Personal Loan Outstanding:</strong> <span class="currency">{{financialMetrics.personalLoanOutstanding}}</span></div>
+                    <div><strong>Car Loan Outstanding:</strong> <span class="currency">{{financialMetrics.carLoanOutstanding}}</span></div>
+                    <div><strong>Education Loan Outstanding:</strong> <span class="currency">{{financialMetrics.educationLoanOutstanding}}</span></div>
+                    <div><strong>Credit Card Debt:</strong> <span class="currency">{{financialMetrics.creditCardDebt}}</span></div>
+                    <div><strong>Other Loans Outstanding:</strong> <span class="currency">{{financialMetrics.otherLoansOutstanding}}</span></div>
+                    <div><strong>Total Liabilities:</strong> <span class="currency">{{financialMetrics.totalLiabilities}}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insurance Coverage from Client.js Model -->
+    <div class="section">
+        <h2>Insurance Coverage Analysis</h2>
+        <div class="grid-2">
+            <div class="advisor-section">
+                <h3>Life Insurance</h3>
+                <div class="advisor-details">
+                    <div><strong>Has Insurance:</strong> <span>{{#if client.insuranceCoverage.lifeInsurance.hasInsurance}}Yes{{else}}No{{/if}}</span></div>
+                    <div><strong>Cover Amount:</strong> <span class="currency">{{financialMetrics.lifeInsuranceCover}}</span></div>
+                    <div><strong>Annual Premium:</strong> <span class="currency">{{client.insuranceCoverage.lifeInsurance.annualPremium}}</span></div>
+                    <div><strong>Insurance Type:</strong> <span>{{client.insuranceCoverage.lifeInsurance.insuranceType}}</span></div>
+                </div>
+            </div>
+
+            <div class="advisor-section">
+                <h3>Health Insurance</h3>
+                <div class="advisor-details">
+                    <div><strong>Has Insurance:</strong> <span>{{#if client.insuranceCoverage.healthInsurance.hasInsurance}}Yes{{else}}No{{/if}}</span></div>
+                    <div><strong>Cover Amount:</strong> <span class="currency">{{financialMetrics.healthInsuranceCover}}</span></div>
+                    <div><strong>Annual Premium:</strong> <span class="currency">{{client.insuranceCoverage.healthInsurance.annualPremium}}</span></div>
+                    <div><strong>Family Members:</strong> <span>{{client.insuranceCoverage.healthInsurance.familyMembers}}</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="advisor-section">
+            <h3>Other Insurance</h3>
+            <div class="advisor-details">
+                <div><strong>Vehicle Insurance:</strong> <span>{{#if client.insuranceCoverage.vehicleInsurance.hasInsurance}}Yes{{else}}No{{/if}} - Premium: <span class="currency">{{client.insuranceCoverage.vehicleInsurance.annualPremium}}</span></span></div>
+                <div><strong>Other Insurance:</strong> <span>{{#if client.insuranceCoverage.otherInsurance.hasInsurance}}Yes{{else}}No{{/if}} - Types: {{client.insuranceCoverage.otherInsurance.insuranceTypes}} - Premium: <span class="currency">{{client.insuranceCoverage.otherInsurance.annualPremium}}</span></span></div>
+                <div><strong>Total Insurance Premiums:</strong> <span class="currency">{{financialMetrics.totalInsurancePremiums}}</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enhanced Financial Goals from Client.js Model -->
+    <div class="section">
+        <h2>Enhanced Financial Goals</h2>
+        <div class="grid-2">
+            <div class="advisor-section">
+                <h3>Emergency Fund</h3>
+                <div class="advisor-details">
+                    <div><strong>Priority:</strong> <span>{{client.enhancedFinancialGoals.emergencyFund.priority}}</span></div>
+                    <div><strong>Target Amount:</strong> <span class="currency">{{client.enhancedFinancialGoals.emergencyFund.targetAmount}}</span></div>
+                    <div><strong>Coverage:</strong> <span>{{financialMetrics.emergencyFundCoverage}} months of expenses</span></div>
+                </div>
+            </div>
+
+            <div class="advisor-section">
+                <h3>Child Education</h3>
+                <div class="advisor-details">
+                    <div><strong>Applicable:</strong> <span>{{#if client.enhancedFinancialGoals.childEducation.isApplicable}}Yes{{else}}No{{/if}}</span></div>
+                    <div><strong>Target Amount:</strong> <span class="currency">{{client.enhancedFinancialGoals.childEducation.targetAmount}}</span></div>
+                    <div><strong>Target Year:</strong> <span>{{client.enhancedFinancialGoals.childEducation.targetYear}}</span></div>
+                </div>
+            </div>
+
+            <div class="advisor-section">
+                <h3>Home Purchase</h3>
+                <div class="advisor-details">
+                    <div><strong>Applicable:</strong> <span>{{#if client.enhancedFinancialGoals.homePurchase.isApplicable}}Yes{{else}}No{{/if}}</span></div>
+                    <div><strong>Target Amount:</strong> <span class="currency">{{client.enhancedFinancialGoals.homePurchase.targetAmount}}</span></div>
+                    <div><strong>Target Year:</strong> <span>{{client.enhancedFinancialGoals.homePurchase.targetYear}}</span></div>
+                </div>
+            </div>
+
+            <div class="advisor-section">
+                <h3>Marriage of Daughter</h3>
+                <div class="advisor-details">
+                    <div><strong>Applicable:</strong> <span>{{#if client.enhancedFinancialGoals.marriageOfDaughter.isApplicable}}Yes{{else}}No{{/if}}</span></div>
+                    <div><strong>Target Amount:</strong> <span class="currency">{{client.enhancedFinancialGoals.marriageOfDaughter.targetAmount}}</span></div>
+                    <div><strong>Target Year:</strong> <span>{{client.enhancedFinancialGoals.marriageOfDaughter.targetYear}}</span></div>
+                    <div><strong>Daughter's Current Age:</strong> <span>{{client.enhancedFinancialGoals.marriageOfDaughter.daughterCurrentAge}} years</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Goals -->
+        {{#if client.enhancedFinancialGoals.customGoals.length}}
+        <div class="advisor-section">
+            <h3>Custom Goals</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Goal Name</th>
+                        <th>Target Amount</th>
+                        <th>Target Year</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each client.enhancedFinancialGoals.customGoals}}
+                    <tr>
+                        <td>{{this.goalName}}</td>
+                        <td class="currency">{{this.targetAmount}}</td>
+                        <td>{{this.targetYear}}</td>
+                        <td>{{this.priority}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+        {{/if}}
+    </div>
+
+    <!-- Major Goals from Client.js Model -->
+    {{#if client.majorGoals.length}}
+    <div class="section">
+        <h2>Major Financial Goals</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Goal Name</th>
+                    <th>Target Amount</th>
+                    <th>Target Year</th>
+                    <th>Priority</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each client.majorGoals}}
+                <tr>
+                    <td>{{this.goalName}}</td>
+                    <td class="currency">{{this.targetAmount}}</td>
+                    <td>{{this.targetYear}}</td>
+                    <td>{{this.priority}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
+    {{/if}}
+
+    <!-- Retirement Planning from Client.js Model -->
+    <div class="section">
+        <h2>Retirement Planning</h2>
+        <div class="grid-2">
+            <div class="advisor-section">
+                <h3>Retirement Details</h3>
+                <div class="advisor-details">
+                    <div><strong>Current Age:</strong> <span>{{client.retirementPlanning.currentAge}} years</span></div>
+                    <div><strong>Retirement Age:</strong> <span>{{client.retirementPlanning.retirementAge}} years</span></div>
+                    <div><strong>Years to Retirement:</strong> <span>{{client.retirementPlanning.retirementAge}} - {{client.retirementPlanning.currentAge}} = {{subtract client.retirementPlanning.retirementAge client.retirementPlanning.currentAge}} years</span></div>
+                    <div><strong>Has Retirement Corpus:</strong> <span>{{#if client.retirementPlanning.hasRetirementCorpus}}Yes{{else}}No{{/if}}</span></div>
+                </div>
+            </div>
+
+            <div class="advisor-section">
+                <h3>Corpus Details</h3>
+                <div class="advisor-details">
+                    <div><strong>Current Corpus:</strong> <span class="currency">{{client.retirementPlanning.currentRetirementCorpus}}</span></div>
+                    <div><strong>Target Corpus:</strong> <span class="currency">{{client.retirementPlanning.targetRetirementCorpus}}</span></div>
+                    <div><strong>Corpus Gap:</strong> <span class="currency">{{subtract client.retirementPlanning.targetRetirementCorpus client.retirementPlanning.currentRetirementCorpus}}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Progress from Client.js Model -->
+    <div class="section">
+        <h2>Onboarding Progress</h2>
+        <div class="advisor-section">
+            <h3>Form Completion Status</h3>
+            <div class="advisor-details">
+                <div><strong>Current Step:</strong> <span>{{client.formProgress.currentStep}} of 7</span></div>
+                <div><strong>Step 1 Completed:</strong> <span>{{#if client.formProgress.step1Completed}}Yes{{else}}No{{/if}}</span></div>
+                <div><strong>Step 2 Completed:</strong> <span>{{#if client.formProgress.step2Completed}}Yes{{else}}No{{/if}}</span></div>
+                <div><strong>Step 3 Completed:</strong> <span>{{#if client.formProgress.step3Completed}}Yes{{else}}No{{/if}}</span></div>
+                <div><strong>Step 4 Completed:</strong> <span>{{#if client.formProgress.step4Completed}}Yes{{else}}No{{/if}}</span></div>
+                <div><strong>Step 5 Completed:</strong> <span>{{#if client.formProgress.step5Completed}}Yes{{else}}No{{/if}}</span></div>
+                <div><strong>Step 6 Completed:</strong> <span>{{#if client.formProgress.step6Completed}}Yes{{else}}No{{/if}}</span></div>
+                <div><strong>Step 7 Completed:</strong> <span>{{#if client.formProgress.step7Completed}}Yes{{else}}No{{/if}}</span></div>
+                <div><strong>Last Saved:</strong> <span>{{formatDate client.formProgress.lastSavedAt}}</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bank Details from Client.js Model -->
+    <div class="section">
+        <h2>Banking Information</h2>
+        <div class="advisor-section">
+            <h3>Bank Account Details</h3>
+            <div class="advisor-details">
+                <div><strong>Bank Name:</strong> <span>{{client.bankDetails.bankName}}</span></div>
+                <div><strong>Branch Name:</strong> <span>{{client.bankDetails.branchName}}</span></div>
+                <div><strong>Account Number:</strong> <span>{{client.bankDetails.accountNumber}}</span></div>
+                <div><strong>IFSC Code:</strong> <span>{{client.bankDetails.ifscCode}}</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KYC Documents from Client.js Model -->
+    {{#if client.kycDocuments.length}}
+    <div class="section">
+        <h2>KYC Documentation</h2>
+        <div class="advisor-section">
+            <h3>Uploaded Documents</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Document Type</th>
+                        <th>File Name</th>
+                        <th>Upload Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each client.kycDocuments}}
+                    <tr>
+                        <td>{{this.type}}</td>
+                        <td>{{this.fileName}}</td>
+                        <td>{{formatDate this.uploadDate}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {{/if}}
+
+    <!-- Communication Preferences from Client.js Model -->
+    <div class="section">
+        <h2>Communication Preferences</h2>
+        <div class="advisor-section">
+            <h3>Preferred Communication Channels</h3>
+            <div class="advisor-details">
+                <div><strong>Email:</strong> <span>{{#if client.communicationPreferences.email}}Enabled{{else}}Disabled{{/if}}</span></div>
+                <div><strong>SMS:</strong> <span>{{#if client.communicationPreferences.sms}}Enabled{{else}}Disabled{{/if}}</span></div>
+                <div><strong>Phone:</strong> <span>{{#if client.communicationPreferences.phone}}Enabled{{else}}Disabled{{/if}}</span></div>
+                <div><strong>WhatsApp:</strong> <span>{{#if client.communicationPreferences.whatsapp}}Enabled{{else}}Disabled{{/if}}</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compliance Status from Client.js Model -->
+    <div class="section">
+        <h2>Compliance Status</h2>
+        <div class="grid-2">
+            <div class="advisor-section">
+                <h3>FATCA Status</h3>
+                <div class="advisor-details">
+                    <div><strong>Status:</strong> <span class="status-badge status-{{client.fatcaStatus}}">{{client.fatcaStatus}}</span></div>
+                </div>
+            </div>
+
+            <div class="advisor-section">
+                <h3>CRS Status</h3>
+                <div class="advisor-details">
+                    <div><strong>Status:</strong> <span class="status-badge status-{{client.crsStatus}}">{{client.crsStatus}}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Notes from Client.js Model -->
+    {{#if client.notes}}
+    <div class="section">
+        <h2>Additional Notes</h2>
+        <div class="advisor-section">
+            <p>{{client.notes}}</p>
+        </div>
+    </div>
+    {{/if}}
 
     <!-- Key Performance Indicators -->
     <div class="section">
@@ -1214,6 +1627,299 @@
         {{/each}}
         {{/if}}
     </div>
+
+    <!-- AB Testing Sessions -->
+    <!-- Debug: ABTestSessions Data -->
+    <div class="section" style="background-color: #f0f0f0; padding: 10px; margin: 10px 0;">
+        <h4>Debug: ABTestSessions Data</h4>
+        <p><strong>abTestSessions exists:</strong> {{#if abTestSessions}}Yes{{else}}No{{/if}}</p>
+        <p><strong>abTestSessions length:</strong> {{#if abTestSessions}}{{abTestSessions.length}}{{else}}0{{/if}}</p>
+        <p><strong>abTestSessions type:</strong> {{#if abTestSessions}}Array{{else}}Undefined{{/if}}</p>
+        <p><strong>Debug Info - abTestSessionsExists:</strong> {{#if debugInfo.abTestSessionsExists}}Yes{{else}}No{{/if}}</p>
+        <p><strong>Debug Info - abTestSessionsLength:</strong> {{debugInfo.abTestSessionsLength}}</p>
+        <p><strong>Debug Info - abTestSessionsType:</strong> {{debugInfo.abTestSessionsType}}</p>
+        <p><strong>Available Data Keys:</strong> {{debugInfo.allDataKeys}}</p>
+    </div>
+    
+    {{#if abTestSessions}}
+    {{#if abTestSessions.length}}
+    <div class="section">
+        <h2>AB Testing & Investment Analysis Sessions</h2>
+        
+        {{#each abTestSessions}}
+        <div class="section" style="margin-bottom: 40px; border: 1px solid var(--border-gray); border-radius: 10px; padding: 25px;">
+            <h3>Session: {{#if this.sessionId}}{{this.sessionId}}{{else}}Session {{@index}}{{/if}}</h3>
+            
+            <!-- Session Overview -->
+            <div class="advisor-section">
+                <h4>Session Overview</h4>
+                <div class="advisor-details">
+                    <div><strong>Session ID:</strong> <span>{{#if this.sessionId}}{{this.sessionId}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Status:</strong> <span class="status-badge status-{{this.status}}">{{#if this.status}}{{this.status}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Start Time:</strong> <span>{{#if this.sessionStartTime}}{{formatDate this.sessionStartTime}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>End Time:</strong> <span>{{#if this.sessionEndTime}}{{formatDate this.sessionEndTime}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Duration:</strong> <span>{{#if this.sessionDurationMinutes}}{{this.sessionDurationMinutes}} minutes{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Completion Rate:</strong> <span>{{#if this.completionPercentage}}{{this.completionPercentage}}%{{else}}Not Available{{/if}}</span></div>
+                </div>
+            </div>
+
+            <!-- Client Data Snapshot -->
+            {{#if this.clientDataSnapshot}}
+            <div class="advisor-section">
+                <h4>Client Data Snapshot</h4>
+                <div class="grid-2">
+                    <div>
+                        <h5>Personal Information</h5>
+                        <div class="advisor-details">
+                            <div><strong>First Name:</strong> <span>{{#if this.clientDataSnapshot.personalInfo.firstName}}{{this.clientDataSnapshot.personalInfo.firstName}}{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Last Name:</strong> <span>{{#if this.clientDataSnapshot.personalInfo.lastName}}{{this.clientDataSnapshot.personalInfo.lastName}}{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Age:</strong> <span>{{#if this.clientDataSnapshot.personalInfo.age}}{{this.clientDataSnapshot.personalInfo.age}} years{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Email:</strong> <span>{{#if this.clientDataSnapshot.personalInfo.email}}{{this.clientDataSnapshot.personalInfo.email}}{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Phone:</strong> <span>{{#if this.clientDataSnapshot.personalInfo.phoneNumber}}{{this.clientDataSnapshot.personalInfo.phoneNumber}}{{else}}Not Available{{/if}}</span></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h5>Financial Information</h5>
+                        <div class="advisor-details">
+                            <div><strong>Monthly Income:</strong> <span class="currency">{{#if this.clientDataSnapshot.financialInfo.totalMonthlyIncome}}{{this.clientDataSnapshot.financialInfo.totalMonthlyIncome}}{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Monthly Expenses:</strong> <span class="currency">{{#if this.clientDataSnapshot.financialInfo.totalMonthlyExpenses}}{{this.clientDataSnapshot.financialInfo.totalMonthlyExpenses}}{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Income Type:</strong> <span>{{#if this.clientDataSnapshot.financialInfo.incomeType}}{{this.clientDataSnapshot.financialInfo.incomeType}}{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Net Worth:</strong> <span class="currency">{{#if this.clientDataSnapshot.financialInfo.netWorth}}{{this.clientDataSnapshot.financialInfo.netWorth}}{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Existing Investments:</strong> <span class="currency">{{#if this.clientDataSnapshot.existingInvestments.totalValue}}{{this.clientDataSnapshot.existingInvestments.totalValue}}{{else}}Not Available{{/if}}</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{/if}}
+
+            <!-- Risk Profile -->
+            {{#if this.riskProfile}}
+            <div class="advisor-section">
+                <h4>Risk Assessment Results</h4>
+                <div class="grid-2">
+                    <div>
+                        <h5>Risk Score Analysis</h5>
+                        <div class="advisor-details">
+                            <div><strong>Total Score:</strong> <span>{{#if this.riskProfile.calculatedRiskScore.totalScore}}{{this.riskProfile.calculatedRiskScore.totalScore}}{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Max Possible Score:</strong> <span>{{#if this.riskProfile.calculatedRiskScore.maxPossibleScore}}{{this.riskProfile.calculatedRiskScore.maxPossibleScore}}{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Risk Percentage:</strong> <span>{{#if this.riskProfile.calculatedRiskScore.riskPercentage}}{{this.riskProfile.calculatedRiskScore.riskPercentage}}%{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Risk Category:</strong> <span class="status-badge status-{{this.riskProfile.calculatedRiskScore.riskCategory}}">{{#if this.riskProfile.calculatedRiskScore.riskCategory}}{{this.riskProfile.calculatedRiskScore.riskCategory}}{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Risk Level:</strong> <span>{{#if this.riskProfile.calculatedRiskScore.riskLevel}}{{this.riskProfile.calculatedRiskScore.riskLevel}}{{else}}Not Available{{/if}}</span></div>
+                        </div>
+                    </div>
+                    <div>
+                        <h5>Recommended Allocation</h5>
+                        <div class="advisor-details">
+                            <div><strong>Equity Allocation:</strong> <span>{{#if this.riskProfile.recommendedAllocation.equity}}{{this.riskProfile.recommendedAllocation.equity}}%{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Debt Allocation:</strong> <span>{{#if this.riskProfile.recommendedAllocation.debt}}{{this.riskProfile.recommendedAllocation.debt}}%{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Alternatives Allocation:</strong> <span>{{#if this.riskProfile.recommendedAllocation.alternatives}}{{this.riskProfile.recommendedAllocation.alternatives}}%{{else}}Not Available{{/if}}</span></div>
+                            <div><strong>Assessment Timestamp:</strong> <span>{{#if this.riskProfile.assessmentTimestamp}}{{formatDate this.riskProfile.assessmentTimestamp}}{{else}}Not Available{{/if}}</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{/if}}
+
+            <!-- Investment Scenarios -->
+            {{#if this.scenarios.length}}
+            <div class="advisor-section">
+                <h4>Investment Scenarios ({{this.scenarios.length}} scenarios)</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Scenario Name</th>
+                            <th>Type</th>
+                            <th>Expected Return</th>
+                            <th>Risk Level</th>
+                            <th>Equity %</th>
+                            <th>Debt %</th>
+                            <th>Selected</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each this.scenarios}}
+                        <tr>
+                            <td>{{#if this.scenarioName}}{{this.scenarioName}}{{else}}Not Available{{/if}}</td>
+                            <td>{{#if this.scenarioType}}{{this.scenarioType}}{{else}}Not Available{{/if}}</td>
+                            <td>{{#if this.parameters.expectedReturn}}{{this.parameters.expectedReturn}}%{{else}}Not Available{{/if}}</td>
+                            <td>{{#if this.parameters.riskLevel}}{{this.parameters.riskLevel}}{{else}}Not Available{{/if}}</td>
+                            <td>{{#if this.parameters.equityAllocation}}{{this.parameters.equityAllocation}}%{{else}}Not Available{{/if}}</td>
+                            <td>{{#if this.parameters.debtAllocation}}{{this.parameters.debtAllocation}}%{{else}}Not Available{{/if}}</td>
+                            <td>{{#if this.isSelected}}<span class="status-badge status-active">Selected</span>{{else}}<span class="status-badge status-inactive">Not Selected</span>{{/if}}</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+            {{/if}}
+
+            <!-- Simulation Results -->
+            {{#if this.simulationResults.length}}
+            <div class="advisor-section">
+                <h4>Monte Carlo Simulation Results</h4>
+                {{#each this.simulationResults}}
+                <div style="margin-bottom: 20px; border: 1px solid var(--border-gray); border-radius: 8px; padding: 15px;">
+                    <h5>Scenario: {{#if this.scenarioId}}{{this.scenarioId}}{{else}}Scenario {{@index}}{{/if}}</h5>
+                    <div class="grid-2">
+                        <div>
+                            <h6>Portfolio Value Distribution</h6>
+                            <div class="advisor-details">
+                                <div><strong>P10:</strong> <span class="currency">{{#if this.portfolioValueDistribution.p10}}{{this.portfolioValueDistribution.p10}}{{else}}Not Available{{/if}}</span></div>
+                                <div><strong>P25:</strong> <span class="currency">{{#if this.portfolioValueDistribution.p25}}{{this.portfolioValueDistribution.p25}}{{else}}Not Available{{/if}}</span></div>
+                                <div><strong>P50 (Median):</strong> <span class="currency">{{#if this.portfolioValueDistribution.p50}}{{this.portfolioValueDistribution.p50}}{{else}}Not Available{{/if}}</span></div>
+                                <div><strong>P75:</strong> <span class="currency">{{#if this.portfolioValueDistribution.p75}}{{this.portfolioValueDistribution.p75}}{{else}}Not Available{{/if}}</span></div>
+                                <div><strong>P90:</strong> <span class="currency">{{#if this.portfolioValueDistribution.p90}}{{this.portfolioValueDistribution.p90}}{{else}}Not Available{{/if}}</span></div>
+                                <div><strong>Mean:</strong> <span class="currency">{{#if this.portfolioValueDistribution.mean}}{{this.portfolioValueDistribution.mean}}{{else}}Not Available{{/if}}</span></div>
+                            </div>
+                        </div>
+                        <div>
+                            <h6>Risk Metrics</h6>
+                            <div class="advisor-details">
+                                <div><strong>Volatility:</strong> <span>{{#if this.riskMetrics.volatility}}{{this.riskMetrics.volatility}}%{{else}}Not Available{{/if}}</span></div>
+                                <div><strong>Max Drawdown:</strong> <span>{{#if this.riskMetrics.maxDrawdown}}{{this.riskMetrics.maxDrawdown}}%{{else}}Not Available{{/if}}</span></div>
+                                <div><strong>Value at Risk (95%):</strong> <span>{{#if this.riskMetrics.valueAtRisk95}}{{this.riskMetrics.valueAtRisk95}}%{{else}}Not Available{{/if}}</span></div>
+                                <div><strong>Sharpe Ratio:</strong> <span>{{#if this.riskMetrics.sharpeRatio}}{{this.riskMetrics.sharpeRatio}}{{else}}Not Available{{/if}}</span></div>
+                                <div><strong>Success Rate:</strong> <span>{{#if this.riskMetrics.successRate}}{{this.riskMetrics.successRate}}%{{else}}Not Available{{/if}}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{/each}}
+            </div>
+            {{/if}}
+
+            <!-- Final Recommendations -->
+            {{#if this.finalRecommendations}}
+            <div class="advisor-section">
+                <h4>Final Recommendations</h4>
+                <div class="advisor-details">
+                    <div><strong>Recommended Scenario:</strong> <span>{{#if this.finalRecommendations.recommendedScenario}}{{this.finalRecommendations.recommendedScenario}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Reason:</strong> <span>{{#if this.finalRecommendations.reasonForRecommendation}}{{this.finalRecommendations.reasonForRecommendation}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Next Review Date:</strong> <span>{{#if this.finalRecommendations.nextReviewDate}}{{formatDate this.finalRecommendations.nextReviewDate}}{{else}}Not Available{{/if}}</span></div>
+                </div>
+                {{#if this.finalRecommendations.keyInsights.length}}
+                <h5>Key Insights</h5>
+                <ul>
+                    {{#each this.finalRecommendations.keyInsights}}
+                    <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+                {{/if}}
+                {{#if this.finalRecommendations.actionItems.length}}
+                <h5>Action Items</h5>
+                <ul>
+                    {{#each this.finalRecommendations.actionItems}}
+                    <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+                {{/if}}
+            </div>
+            {{/if}}
+
+            <!-- AI Analysis -->
+            {{#if this.aiAnalysis}}
+            <div class="advisor-section">
+                <h4>AI Analysis & Recommendations</h4>
+                <div class="advisor-details">
+                    <div><strong>Overall Recommendation:</strong> <span>{{#if this.aiAnalysis.overallRecommendation}}{{this.aiAnalysis.overallRecommendation}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Confidence Score:</strong> <span>{{#if this.aiAnalysis.confidenceScore}}{{this.aiAnalysis.confidenceScore}}%{{else}}Not Available{{/if}}</span></div>
+                </div>
+                {{#if this.aiAnalysis.riskAnalysis}}
+                <p><strong>Risk Analysis:</strong> {{this.aiAnalysis.riskAnalysis}}</p>
+                {{/if}}
+                {{#if this.aiAnalysis.behavioralGuidance}}
+                <p><strong>Behavioral Guidance:</strong> {{this.aiAnalysis.behavioralGuidance}}</p>
+                {{/if}}
+            </div>
+            {{/if}}
+
+            <!-- Performance Metrics -->
+            {{#if this.performanceMetrics}}
+            <div class="advisor-section">
+                <h4>Session Performance Metrics</h4>
+                <div class="advisor-details">
+                    <div><strong>Client Engagement Score:</strong> <span>{{#if this.performanceMetrics.clientEngagementScore}}{{this.performanceMetrics.clientEngagementScore}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Session Completion Rate:</strong> <span>{{#if this.performanceMetrics.sessionCompletionRate}}{{this.performanceMetrics.sessionCompletionRate}}%{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Decisions Changed Count:</strong> <span>{{#if this.performanceMetrics.decisionsChangedCount}}{{this.performanceMetrics.decisionsChangedCount}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Questions Asked Count:</strong> <span>{{#if this.performanceMetrics.questionsAskedCount}}{{this.performanceMetrics.questionsAskedCount}}{{else}}Not Available{{/if}}</span></div>
+                </div>
+            </div>
+            {{/if}}
+        </div>
+        {{/each}}
+    </div>
+    {{/if}}
+    {{/if}}
+    
+    <!-- Always Show Test Section -->
+    <div class="section" style="background-color: #e0f0ff; padding: 15px; margin: 10px 0; border: 2px solid #007acc;">
+        <h3>Test Section - Always Visible</h3>
+        <p>This section should always be visible in the PDF to test if template is working.</p>
+        <p><strong>Current Time:</strong> {{reportMetadata.generatedAt}}</p>
+        <p><strong>Report Version:</strong> {{reportMetadata.reportVersion}}</p>
+    </div>
+
+    <!-- Client Invitations -->
+    {{#if clientInvitations.length}}
+    <div class="section">
+        <h2>Client Invitation History</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Client Email</th>
+                    <th>Client Name</th>
+                    <th>Status</th>
+                    <th>Invitation Source</th>
+                    <th>Sent At</th>
+                    <th>Opened At</th>
+                    <th>Completed At</th>
+                    <th>Expires At</th>
+                    <th>Email Attempts</th>
+                    <th>Reminders Sent</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each clientInvitations}}
+                <tr>
+                    <td>{{#if this.clientEmail}}{{this.clientEmail}}{{else}}Not Available{{/if}}</td>
+                    <td>{{#if this.clientFirstName}}{{this.clientFirstName}}{{else}}Not Available{{/if}} {{#if this.clientLastName}}{{this.clientLastName}}{{else}}{{/if}}</td>
+                    <td>
+                        <span class="status-badge status-{{this.status}}">{{this.status}}</span>
+                    </td>
+                    <td>{{#if this.invitationSource}}{{this.invitationSource}}{{else}}Not Available{{/if}}</td>
+                    <td>{{#if this.sentAt}}{{formatDate this.sentAt}}{{else}}Not Sent{{/if}}</td>
+                    <td>{{#if this.openedAt}}{{formatDate this.openedAt}}{{else}}Not Opened{{/if}}</td>
+                    <td>{{#if this.completedAt}}{{formatDate this.completedAt}}{{else}}Not Completed{{/if}}</td>
+                    <td>{{#if this.expiresAt}}{{formatDate this.expiresAt}}{{else}}Not Available{{/if}}</td>
+                    <td>{{#if this.emailAttempts}}{{this.emailAttempts}}{{else}}0{{/if}}</td>
+                    <td>{{#if this.remindersSent}}{{this.remindersSent}}{{else}}0{{/if}}</td>
+                    <td>{{#if this.notes}}{{this.notes}}{{else}}No Notes{{/if}}</td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+        
+        <!-- CAS Upload Data Section -->
+        {{#each clientInvitations}}
+        {{#if this.casUploadData}}
+        <div class="section" style="margin-top: 30px;">
+            <h3>CAS Upload Data - {{#if this.clientFirstName}}{{this.clientFirstName}}{{else}}Client{{/if}}</h3>
+            <div class="advisor-section">
+                <div class="advisor-details">
+                    <div><strong>File Name:</strong> <span>{{#if this.casUploadData.fileName}}{{this.casUploadData.fileName}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>File Path:</strong> <span>{{#if this.casUploadData.filePath}}{{this.casUploadData.filePath}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>File Size:</strong> <span>{{#if this.casUploadData.fileSize}}{{this.casUploadData.fileSize}} bytes{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Uploaded At:</strong> <span>{{#if this.casUploadData.uploadedAt}}{{formatDate this.casUploadData.uploadedAt}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Event ID:</strong> <span>{{#if this.casUploadData.eventId}}{{this.casUploadData.eventId}}{{else}}Not Available{{/if}}</span></div>
+                    <div><strong>Password Protected:</strong> <span>{{#if this.casUploadData.password}}Yes{{else}}No{{/if}}</span></div>
+                </div>
+            </div>
+        </div>
+        {{/if}}
+        {{/each}}
+    </div>
+    {{/if}}
 
     <!-- Meeting History -->
     {{#if meetings.length}}

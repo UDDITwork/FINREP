@@ -202,9 +202,9 @@ router.post('/test-generate', async (req, res) => {
       taxPlanning: null
     };
     
-    // Generate PDF using the service directly
-    const PDFGenerationService = require('../services/pdfGenerationService');
-    const pdfService = new PDFGenerationService();
+    // Generate PDF using the simple service directly
+    const SimplePDFGenerationService = require('../services/simplePdfGenerationService');
+    const pdfService = new SimplePDFGenerationService();
     
     const pdfBuffer = await pdfService.generateClientReport(mockClientData, mockClientData.vault);
     
@@ -232,10 +232,32 @@ router.post('/test-generate', async (req, res) => {
   }
 });
 
+// PDF Diagnostic endpoint
+router.get('/diagnostic/:clientId', auth, async (req, res) => {
+  try {
+    const diagnosticController = require('../controllers/pdfDiagnosticController');
+    await diagnosticController.runDiagnostics(req, res);
+  } catch (error) {
+    logger.error('❌ [PDF ROUTES] Error in diagnostic route', {
+      error: error.message,
+      stack: error.stack,
+      clientId: req.params.clientId,
+      advisorId: req.advisor?.id
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'PDF diagnostic failed',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
 // Log route registration
 logger.info('📄 [PDF ROUTES] Routes registered:');
 logger.info('   • POST /api/pdf/generate-client-report/:clientId');
 logger.info('   • GET /api/pdf/health');
+logger.info('   • GET /api/pdf/diagnostic/:clientId');
 logger.info('   • GET /api/pdf/debug/clients');
 logger.info('   • GET /api/pdf/debug/client/:customId');
 logger.info('   • POST /api/pdf/test-generate');

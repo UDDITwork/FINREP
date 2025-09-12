@@ -12,11 +12,13 @@
 
 const { logger } = require('../utils/logger');
 const PDFGenerationService = require('../services/pdfGenerationService');
+const SimplePDFGenerationService = require('../services/simplePdfGenerationService');
 const clientReportsController = require('./clientReportsController');
 
 class PDFController {
   constructor() {
     this.pdfService = new PDFGenerationService();
+    this.simplePdfService = new SimplePDFGenerationService();
   }
 
   /**
@@ -123,11 +125,41 @@ class PDFController {
         vaultDataResponse.success = true;
       }
 
-      // Step 3: Generate PDF
-      const pdfBuffer = await this.pdfService.generateClientReport(
-        clientDataResponse.data,
-        vaultDataResponse.data
-      );
+      // Step 3: Generate PDF using main service for comprehensive vault data
+      let pdfBuffer;
+      try {
+        pdfBuffer = await this.pdfService.generateClientReport(
+          clientDataResponse.data,
+          vaultDataResponse.data
+        );
+        
+        // Check if we got a fallback PDF (very small size indicates fallback)
+        if (pdfBuffer.length < 50000) { // Less than 50KB likely indicates fallback
+          logger.warn('⚠️ [PDF CONTROLLER] Main service returned small PDF, likely fallback', {
+            pdfSize: `${Math.round(pdfBuffer.length / 1024)}KB`
+          });
+        }
+      } catch (error) {
+        logger.error('❌ [PDF CONTROLLER] Main PDF service failed completely', { 
+          error: error.message,
+          stack: error.stack
+        });
+        
+        // Only use simple service as last resort for critical errors
+        try {
+          pdfBuffer = await this.simplePdfService.generateClientReport(
+            clientDataResponse.data,
+            vaultDataResponse.data
+          );
+          logger.info('✅ [PDF CONTROLLER] Fallback to simple service successful');
+        } catch (fallbackError) {
+          logger.error('❌ [PDF CONTROLLER] Both PDF services failed', {
+            mainError: error.message,
+            fallbackError: fallbackError.message
+          });
+          throw new Error('PDF generation failed completely');
+        }
+      }
 
       const duration = Date.now() - startTime;
       const clientName = clientDataResponse.data.client?.firstName || 'Client';

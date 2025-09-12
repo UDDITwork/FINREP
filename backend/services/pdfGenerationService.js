@@ -33,17 +33,62 @@ class PDFGenerationService {
         advisorId: vaultData?.advisorId
       });
 
-      // Step 1: Generate charts
-      const charts = await this.generateCharts(clientData);
+      // Step 1: Generate charts with error handling
+      let charts = {};
+      try {
+        charts = await this.generateCharts(clientData);
+        logger.info('✅ [PDF GENERATION] Charts generated successfully');
+      } catch (chartError) {
+        logger.warn('⚠️ [PDF GENERATION] Chart generation failed, continuing without charts', {
+          error: chartError.message
+        });
+        charts = {};
+      }
       
-      // Step 2: Prepare template data
+      // Step 2: Prepare template data with comprehensive validation
       const templateData = this.prepareTemplateData(clientData, vaultData, charts);
       
-      // Step 3: Render HTML template
-      const htmlContent = await this.renderTemplate(templateData);
+      // Step 3: Render HTML template with error handling
+      let htmlContent;
+      try {
+        htmlContent = await this.renderTemplate(templateData);
+        logger.info('✅ [PDF GENERATION] Template rendered successfully', {
+          htmlLength: htmlContent.length,
+          clientId: clientData.client?._id
+        });
+      } catch (templateError) {
+        logger.error('❌ [PDF GENERATION] Template rendering failed, using fallback', {
+          error: templateError.message,
+          stack: templateError.stack,
+          clientId: clientData.client?._id
+        });
+        htmlContent = this.generateFallbackHTML(templateData);
+      }
       
-      // Step 4: Convert HTML to PDF
-      const pdfBuffer = await this.htmlToPdf(htmlContent);
+      // Step 4: Convert HTML to PDF with retry logic
+      let pdfBuffer;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          pdfBuffer = await this.htmlToPdf(htmlContent);
+          break;
+        } catch (pdfError) {
+          retryCount++;
+          logger.warn(`⚠️ [PDF GENERATION] PDF conversion attempt ${retryCount} failed`, {
+            error: pdfError.message,
+            retryCount
+          });
+          
+          if (retryCount >= maxRetries) {
+            throw pdfError;
+          }
+          
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+        }
+      }
       
       logger.info('✅ [PDF GENERATION] Client report generated successfully', {
         clientId: clientData.client?._id,
@@ -53,12 +98,21 @@ class PDFGenerationService {
       return pdfBuffer;
 
     } catch (error) {
-      logger.error('❌ [PDF GENERATION] Error generating client report', {
+      logger.error('❌ [PDF GENERATION] Critical error in PDF generation', {
         error: error.message,
         stack: error.stack,
         clientId: clientData.client?._id
       });
-      throw error;
+      
+      // Return a minimal PDF as last resort
+      try {
+        return await this.generateMinimalPDF(clientData, vaultData);
+      } catch (fallbackError) {
+        logger.error('❌ [PDF GENERATION] Even fallback PDF generation failed', {
+          error: fallbackError.message
+        });
+        throw error;
+      }
     }
   }
 
@@ -133,94 +187,344 @@ class PDFGenerationService {
    * @returns {Object} - Template data
    */
   prepareTemplateData(clientData, vaultData, charts) {
-    const client = clientData.client || {};
-    const financialData = client.financialData || {};
-    const goals = client.goals || [];
-    const assets = client.assets || [];
-    const liabilities = client.liabilities || [];
+    try {
+      const client = clientData.client || {};
+      
+      // Ensure all required fields exist with safe defaults
+      const safeClient = this.sanitizeClientData(client);
+    
+      // Extract financial data from Client.js model structure with safe defaults
+      const totalMonthlyIncome = this.safeNumber(safeClient.totalMonthlyIncome);
+      const totalMonthlyExpenses = this.safeNumber(safeClient.totalMonthlyExpenses);
+      const annualIncome = this.safeNumber(safeClient.annualIncome);
+      const additionalIncome = this.safeNumber(safeClient.additionalIncome);
+    
+      // Calculate monthly income from various sources
+      const calculatedMonthlyIncome = totalMonthlyIncome || (annualIncome / 12) + (additionalIncome / 12);
+      
+      // Calculate monthly expenses from Client.js model with safe defaults
+      const monthlyExpenses = safeClient.monthlyExpenses || {};
+      const calculatedMonthlyExpenses = totalMonthlyExpenses || 
+        this.safeNumber(monthlyExpenses.housingRent) +
+        this.safeNumber(monthlyExpenses.groceriesUtilitiesFood) +
+        this.safeNumber(monthlyExpenses.transportation) +
+        this.safeNumber(monthlyExpenses.education) +
+        this.safeNumber(monthlyExpenses.healthcare) +
+        this.safeNumber(monthlyExpenses.entertainment) +
+        this.safeNumber(monthlyExpenses.insurancePremiums) +
+        this.safeNumber(monthlyExpenses.loanEmis) +
+        this.safeNumber(monthlyExpenses.otherExpenses);
 
-    // Ensure assets and liabilities are arrays
-    const safeAssets = Array.isArray(assets) ? assets : [];
-    const safeLiabilities = Array.isArray(liabilities) ? liabilities : [];
+      // Calculate assets from Client.js model structure with safe defaults
+      const assets = safeClient.assets || {};
+      const totalAssets = 
+        this.safeNumber(assets.cashBankSavings) +
+        this.safeNumber(assets.realEstate) +
+        this.safeNumber(assets.investments?.equity?.mutualFunds) +
+        this.safeNumber(assets.investments?.equity?.directStocks) +
+        this.safeNumber(assets.investments?.fixedIncome?.ppf) +
+        this.safeNumber(assets.investments?.fixedIncome?.epf) +
+        this.safeNumber(assets.investments?.fixedIncome?.nps) +
+        this.safeNumber(assets.investments?.fixedIncome?.fixedDeposits) +
+        this.safeNumber(assets.investments?.fixedIncome?.bondsDebentures) +
+        this.safeNumber(assets.investments?.fixedIncome?.nsc) +
+        this.safeNumber(assets.investments?.other?.ulip) +
+        this.safeNumber(assets.investments?.other?.otherInvestments);
 
-    // Calculate key metrics
-    const totalAssets = safeAssets.reduce((sum, asset) => sum + (asset.value || 0), 0);
-    const totalLiabilities = safeLiabilities.reduce((sum, liability) => sum + (liability.amount || 0), 0);
-    const netWorth = totalAssets - totalLiabilities;
-    const monthlyIncome = financialData.monthlyIncome || 0;
-    const monthlyExpenses = financialData.monthlyExpenses || 0;
-    const savingsRate = monthlyIncome > 0 ? ((monthlyIncome - monthlyExpenses) / monthlyIncome * 100) : 0;
+      // Calculate liabilities from Client.js model structure with safe defaults
+      const liabilities = safeClient.liabilities || {};
+      const debtsAndLiabilities = safeClient.debtsAndLiabilities || {};
+      const totalLiabilities = 
+        this.safeNumber(liabilities.loans) +
+        this.safeNumber(liabilities.creditCardDebt) +
+        this.safeNumber(debtsAndLiabilities.homeLoan?.outstandingAmount) +
+        this.safeNumber(debtsAndLiabilities.personalLoan?.outstandingAmount) +
+        this.safeNumber(debtsAndLiabilities.carLoan?.outstandingAmount) +
+        this.safeNumber(debtsAndLiabilities.educationLoan?.outstandingAmount) +
+        this.safeNumber(debtsAndLiabilities.goldLoan?.outstandingAmount) +
+        this.safeNumber(debtsAndLiabilities.businessLoan?.outstandingAmount) +
+        this.safeNumber(debtsAndLiabilities.creditCards?.totalOutstanding) +
+        this.safeNumber(debtsAndLiabilities.otherLoans?.outstandingAmount);
 
-    // Goal progress calculation
-    const goalProgress = goals.map(goal => {
-      const currentAmount = goal.currentAmount || 0;
-      const targetAmount = goal.targetAmount || 1;
+      const netWorth = totalAssets - totalLiabilities;
+      const savingsRate = calculatedMonthlyIncome > 0 ? ((calculatedMonthlyIncome - calculatedMonthlyExpenses) / calculatedMonthlyIncome * 100) : 0;
+
+      // Goal progress calculation from Client.js model with safe defaults
+      const majorGoals = this.safeArray(safeClient.majorGoals);
+      const enhancedFinancialGoals = safeClient.enhancedFinancialGoals || {};
+      const customGoals = this.safeArray(enhancedFinancialGoals.customGoals);
+    
+      // Combine all goals from different sources with safe defaults
+      const allGoals = [
+        ...majorGoals.map(goal => ({
+          name: this.safeString(goal.goalName) || 'Unnamed Goal',
+          targetAmount: this.safeNumber(goal.targetAmount),
+          currentAmount: 0, // This would need to be calculated from actual progress
+          targetYear: this.safeNumber(goal.targetYear) || new Date().getFullYear() + 5,
+          priority: this.safeString(goal.priority) || 'Medium'
+        })),
+        ...customGoals.map(goal => ({
+          name: this.safeString(goal.goalName) || 'Custom Goal',
+          targetAmount: this.safeNumber(goal.targetAmount),
+          currentAmount: 0, // This would need to be calculated from actual progress
+          targetYear: this.safeNumber(goal.targetYear) || new Date().getFullYear() + 5,
+          priority: this.safeString(goal.priority) || 'Medium'
+        }))
+      ];
+
+      // Add enhanced financial goals with safe defaults
+      if (this.safeNumber(enhancedFinancialGoals.emergencyFund?.targetAmount) > 0) {
+        allGoals.push({
+          name: 'Emergency Fund',
+          targetAmount: this.safeNumber(enhancedFinancialGoals.emergencyFund.targetAmount),
+          currentAmount: 0, // This would need to be calculated
+          targetYear: new Date().getFullYear() + 1,
+          priority: this.safeString(enhancedFinancialGoals.emergencyFund.priority) || 'High'
+        });
+      }
+
+      if (enhancedFinancialGoals.childEducation?.isApplicable) {
+        allGoals.push({
+          name: 'Child Education',
+          targetAmount: this.safeNumber(enhancedFinancialGoals.childEducation.targetAmount),
+          currentAmount: 0, // This would need to be calculated
+          targetYear: this.safeNumber(enhancedFinancialGoals.childEducation.targetYear) || new Date().getFullYear() + 10,
+          priority: 'High'
+        });
+      }
+
+      if (enhancedFinancialGoals.homePurchase?.isApplicable) {
+        allGoals.push({
+          name: 'Home Purchase',
+          targetAmount: this.safeNumber(enhancedFinancialGoals.homePurchase.targetAmount),
+          currentAmount: 0, // This would need to be calculated
+          targetYear: this.safeNumber(enhancedFinancialGoals.homePurchase.targetYear) || new Date().getFullYear() + 5,
+          priority: 'High'
+        });
+      }
+
+      if (enhancedFinancialGoals.marriageOfDaughter?.isApplicable) {
+        allGoals.push({
+          name: 'Marriage of Daughter',
+          targetAmount: this.safeNumber(enhancedFinancialGoals.marriageOfDaughter.targetAmount),
+          currentAmount: 0, // This would need to be calculated
+          targetYear: this.safeNumber(enhancedFinancialGoals.marriageOfDaughter.targetYear) || new Date().getFullYear() + 15,
+          priority: 'Medium'
+        });
+      }
+
+      const goalProgress = allGoals.map(goal => {
+        const currentAmount = this.safeNumber(goal.currentAmount);
+        const targetAmount = this.safeNumber(goal.targetAmount) || 1;
+        return {
+          ...goal,
+          progressPercentage: Math.min((currentAmount / targetAmount) * 100, 100),
+          remainingAmount: Math.max(targetAmount - currentAmount, 0)
+        };
+      });
+
+      const avgGoalProgress = goalProgress.length > 0 
+        ? goalProgress.reduce((sum, goal) => sum + goal.progressPercentage, 0) / goalProgress.length 
+        : 0;
+
+      // Risk assessment with safe data
+      const riskScore = this.calculateRiskScore({ client: safeClient });
+      const riskLevel = this.getRiskLevel(riskScore);
+
+      // Prepare alerts and recommendations with safe data
+      const alerts = this.generateAlerts({ client: safeClient });
+      const recommendations = this.generateRecommendations({ client: safeClient });
+
       return {
-        ...goal,
-        progressPercentage: Math.min((currentAmount / targetAmount) * 100, 100),
-        remainingAmount: Math.max(targetAmount - currentAmount, 0)
-      };
-    });
+        // Comprehensive Header data
+        vault: this.prepareVaultHeaderData(vaultData),
 
-    const avgGoalProgress = goalProgress.length > 0 
-      ? goalProgress.reduce((sum, goal) => sum + goal.progressPercentage, 0) / goalProgress.length 
-      : 0;
-
-    // Risk assessment
-    const riskScore = this.calculateRiskScore(clientData);
-    const riskLevel = this.getRiskLevel(riskScore);
-
-    // Prepare alerts and recommendations
-    const alerts = this.generateAlerts(clientData);
-    const recommendations = this.generateRecommendations(clientData);
-
-    return {
-      // Comprehensive Header data
-      vault: this.prepareVaultHeaderData(vaultData),
-
-      // Client data
-      client: {
-        name: `${client.firstName || ''} ${client.lastName || ''}`.trim(),
-        email: client.email || '',
-        phoneNumber: client.phoneNumber || '',
-        dateOfBirth: client.dateOfBirth || '',
-        age: this.calculateAge(client.dateOfBirth),
-        occupation: client.occupation || '',
-        incomeType: client.incomeType || '',
-        maritalStatus: client.maritalStatus || '',
-        dependents: client.dependents || 0,
-        address: client.address || ''
+        // Client data - ALL fields from Client.js model with safe defaults
+        client: {
+          // Personal Information - EXACT field names from Client.js
+          firstName: this.safeString(safeClient.firstName),
+          lastName: this.safeString(safeClient.lastName),
+          name: `${this.safeString(safeClient.firstName)} ${this.safeString(safeClient.lastName)}`.trim() || 'Client Name',
+          email: this.safeString(safeClient.email),
+          phoneNumber: this.safeString(safeClient.phoneNumber),
+          dateOfBirth: this.safeString(safeClient.dateOfBirth),
+          age: this.calculateAge(safeClient.dateOfBirth),
+          panNumber: this.safeString(safeClient.panNumber),
+          maritalStatus: this.safeString(safeClient.maritalStatus),
+          numberOfDependents: this.safeNumber(safeClient.numberOfDependents),
+          dependents: this.safeNumber(safeClient.numberOfDependents), // Alias for template compatibility
+          gender: this.safeString(safeClient.gender),
+        
+          // Address Information - EXACT field names from Client.js
+          address: safeClient.address ? 
+            `${this.safeString(safeClient.address.street)}, ${this.safeString(safeClient.address.city)}, ${this.safeString(safeClient.address.state)} ${this.safeString(safeClient.address.zipCode)}, ${this.safeString(safeClient.address.country) || 'India'}`.replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, '') : '',
+          addressDetails: safeClient.address || {},
+        
+          // Income & Employment - EXACT field names from Client.js
+          occupation: this.safeString(safeClient.occupation),
+          employerBusinessName: this.safeString(safeClient.employerBusinessName),
+          totalMonthlyIncome: this.safeNumber(safeClient.totalMonthlyIncome),
+          incomeType: this.safeString(safeClient.incomeType),
+          totalMonthlyExpenses: this.safeNumber(safeClient.totalMonthlyExpenses),
+          annualIncome: this.safeNumber(safeClient.annualIncome),
+          additionalIncome: this.safeNumber(safeClient.additionalIncome),
+        
+          // Expense Breakdown - EXACT field names from Client.js
+          expenseBreakdown: safeClient.expenseBreakdown || {},
+          monthlyExpenses: safeClient.monthlyExpenses || {},
+          expenseNotes: this.safeString(safeClient.expenseNotes),
+          annualTaxes: this.safeNumber(safeClient.annualTaxes),
+          annualVacationExpenses: this.safeNumber(safeClient.annualVacationExpenses),
+        
+          // Retirement Planning - EXACT field names from Client.js
+          retirementPlanning: safeClient.retirementPlanning || {},
+          
+          // Major Goals - EXACT field names from Client.js
+          majorGoals: this.safeArray(safeClient.majorGoals),
+          
+          // Assets - EXACT field names from Client.js
+          assets: safeClient.assets || {},
+          
+          // Debts & Liabilities - EXACT field names from Client.js
+          debtsAndLiabilities: safeClient.debtsAndLiabilities || {},
+          liabilities: safeClient.liabilities || {},
+          
+          // Insurance Coverage - EXACT field names from Client.js
+          insuranceCoverage: safeClient.insuranceCoverage || {},
+          
+          // Enhanced Financial Goals - EXACT field names from Client.js
+          enhancedFinancialGoals: safeClient.enhancedFinancialGoals || {},
+          
+          // Enhanced Risk Profile - EXACT field names from Client.js
+          enhancedRiskProfile: safeClient.enhancedRiskProfile || {},
+          
+          // Form Progress - EXACT field names from Client.js
+          formProgress: safeClient.formProgress || {},
+        
+          // Draft Data - EXACT field names from Client.js
+          draftData: safeClient.draftData || {},
+          
+          // Original Fields - EXACT field names from Client.js
+          netWorth: this.safeNumber(safeClient.netWorth),
+          monthlySavingsTarget: this.safeNumber(safeClient.monthlySavingsTarget),
+          investmentExperience: this.safeString(safeClient.investmentExperience),
+          riskTolerance: this.safeString(safeClient.riskTolerance),
+          investmentGoals: this.safeArray(safeClient.investmentGoals),
+          investmentHorizon: this.safeString(safeClient.investmentHorizon),
+          
+          // KYC Information - EXACT field names from Client.js
+          aadharNumber: this.safeString(safeClient.aadharNumber),
+          kycStatus: this.safeString(safeClient.kycStatus) || 'pending',
+          kycDocuments: this.safeArray(safeClient.kycDocuments),
+          
+          // CAS Data - EXACT field names from Client.js
+          casData: safeClient.casData || {},
+          
+          // Bank Details - EXACT field names from Client.js
+          bankDetails: safeClient.bankDetails || {},
+          
+          // Advisor Relationship - EXACT field names from Client.js
+          advisor: safeClient.advisor || null,
+          
+          // Status and Tracking - EXACT field names from Client.js
+          status: this.safeString(safeClient.status) || 'invited',
+          onboardingStep: this.safeNumber(safeClient.onboardingStep),
+          lastActiveDate: safeClient.lastActiveDate || new Date(),
+          
+          // Communication Preferences - EXACT field names from Client.js
+          communicationPreferences: safeClient.communicationPreferences || {},
+          
+          // Additional Notes - EXACT field names from Client.js
+          notes: this.safeString(safeClient.notes),
+          
+          // Compliance - EXACT field names from Client.js
+          fatcaStatus: this.safeString(safeClient.fatcaStatus) || 'pending',
+          crsStatus: this.safeString(safeClient.crsStatus) || 'pending',
+          
+          // Timestamps - EXACT field names from Client.js
+          createdAt: safeClient.createdAt || new Date(),
+          updatedAt: safeClient.updatedAt || new Date(),
+          
+          // Virtual fields - calculated from other fields
+          fullName: `${this.safeString(safeClient.firstName)} ${this.safeString(safeClient.lastName)}`.trim(),
+          totalPortfolioValue: this.safeNumber(safeClient.casData?.parsedData?.summary?.total_value),
+          hasCASData: safeClient.casData && safeClient.casData.casStatus !== 'not_uploaded',
+          calculatedFinancials: safeClient.calculatedFinancials || {}
       },
 
-      // Financial metrics
+      // Financial metrics - calculated from Client.js model data
       financialMetrics: {
         netWorth: netWorth,
         totalAssets: totalAssets,
         totalLiabilities: totalLiabilities,
-        monthlyIncome: monthlyIncome,
-        monthlyExpenses: monthlyExpenses,
+        monthlyIncome: calculatedMonthlyIncome,
+        monthlyExpenses: calculatedMonthlyExpenses,
         savingsRate: savingsRate,
-        emergencyFund: financialData.emergencyFund || 0,
-        emergencyFundCoverage: monthlyExpenses > 0 ? (financialData.emergencyFund || 0) / monthlyExpenses : 0,
-        debtToIncomeRatio: monthlyIncome > 0 ? totalLiabilities / (monthlyIncome * 12) : 0
+        emergencyFund: client.enhancedFinancialGoals?.emergencyFund?.targetAmount || 0,
+        emergencyFundCoverage: calculatedMonthlyExpenses > 0 ? (client.enhancedFinancialGoals?.emergencyFund?.targetAmount || 0) / calculatedMonthlyExpenses : 0,
+        debtToIncomeRatio: calculatedMonthlyIncome > 0 ? totalLiabilities / (calculatedMonthlyIncome * 12) : 0,
+        
+        // Additional financial metrics from Client.js model
+        annualIncome: annualIncome,
+        additionalIncome: additionalIncome,
+        totalMonthlyIncome: totalMonthlyIncome,
+        totalMonthlyExpenses: totalMonthlyExpenses,
+        annualTaxes: client.annualTaxes || 0,
+        annualVacationExpenses: client.annualVacationExpenses || 0,
+        
+        // Asset breakdown from Client.js model
+        cashBankSavings: assets.cashBankSavings || 0,
+        realEstate: assets.realEstate || 0,
+        equityInvestments: (assets.investments?.equity?.mutualFunds || 0) + (assets.investments?.equity?.directStocks || 0),
+        fixedIncomeInvestments: (assets.investments?.fixedIncome?.ppf || 0) + (assets.investments?.fixedIncome?.epf || 0) + 
+                               (assets.investments?.fixedIncome?.nps || 0) + (assets.investments?.fixedIncome?.fixedDeposits || 0) +
+                               (assets.investments?.fixedIncome?.bondsDebentures || 0) + (assets.investments?.fixedIncome?.nsc || 0),
+        otherInvestments: (assets.investments?.other?.ulip || 0) + (assets.investments?.other?.otherInvestments || 0),
+        
+        // Liability breakdown from Client.js model
+        homeLoanOutstanding: debtsAndLiabilities.homeLoan?.outstandingAmount || 0,
+        personalLoanOutstanding: debtsAndLiabilities.personalLoan?.outstandingAmount || 0,
+        carLoanOutstanding: debtsAndLiabilities.carLoan?.outstandingAmount || 0,
+        educationLoanOutstanding: debtsAndLiabilities.educationLoan?.outstandingAmount || 0,
+        creditCardDebt: debtsAndLiabilities.creditCards?.totalOutstanding || 0,
+        otherLoansOutstanding: debtsAndLiabilities.otherLoans?.outstandingAmount || 0,
+        
+        // Insurance coverage from Client.js model
+        lifeInsuranceCover: client.insuranceCoverage?.lifeInsurance?.totalCoverAmount || 0,
+        healthInsuranceCover: client.insuranceCoverage?.healthInsurance?.totalCoverAmount || 0,
+        totalInsurancePremiums: (client.insuranceCoverage?.lifeInsurance?.annualPremium || 0) + 
+                               (client.insuranceCoverage?.healthInsurance?.annualPremium || 0) +
+                               (client.insuranceCoverage?.vehicleInsurance?.annualPremium || 0) +
+                               (client.insuranceCoverage?.otherInsurance?.annualPremium || 0)
       },
 
-      // Goals and progress
+      // Goals and progress - from Client.js model
       goals: {
         list: goalProgress,
-        totalGoals: goals.length,
+        totalGoals: goalProgress.length,
         avgProgress: avgGoalProgress,
         completedGoals: goalProgress.filter(g => g.progressPercentage >= 100).length,
         onTrackGoals: goalProgress.filter(g => g.progressPercentage >= 75 && g.progressPercentage < 100).length,
-        needsAttentionGoals: goalProgress.filter(g => g.progressPercentage < 75).length
+        needsAttentionGoals: goalProgress.filter(g => g.progressPercentage < 75).length,
+        
+        // Enhanced goals from Client.js model
+        majorGoals: client.majorGoals || [],
+        enhancedFinancialGoals: client.enhancedFinancialGoals || {},
+        customGoals: client.enhancedFinancialGoals?.customGoals || []
       },
 
-      // Risk assessment
+      // Risk assessment - from Client.js model
       riskAssessment: {
         score: riskScore,
         level: riskLevel,
         description: this.getRiskDescription(riskLevel),
-        recommendations: this.getRiskRecommendations(riskLevel)
+        recommendations: this.getRiskRecommendations(riskLevel),
+        
+        // Enhanced risk profile from Client.js model
+        enhancedRiskProfile: client.enhancedRiskProfile || {},
+        investmentExperience: client.enhancedRiskProfile?.investmentExperience || client.investmentExperience || '',
+        riskTolerance: client.enhancedRiskProfile?.riskTolerance || client.riskTolerance || '',
+        monthlyInvestmentCapacity: client.enhancedRiskProfile?.monthlyInvestmentCapacity || 0
       },
 
       // Charts
@@ -230,21 +534,69 @@ class PDFGenerationService {
       alerts: alerts,
       recommendations: recommendations,
 
-      // Additional data sections
+      // Additional data sections - ALL from Client.js model and related collections
       estateInformation: clientData.estateInformation || null,
       taxPlanning: clientData.taxPlanning || null,
       mutualFundRecommend: clientData.mutualFundRecommend || [],
       meetings: clientData.meetings || [],
       chatHistory: clientData.chatHistory || [],
+      clientInvitations: clientData.clientInvitations || [],
+      abTestSessions: clientData.abTestSessions || [],
+      financialPlans: clientData.financialPlans || [],
+      loeDocuments: clientData.loeDocuments || [],
+      loeAutomation: clientData.loeAutomation || [],
+      mutualFundExitStrategies: clientData.mutualFundExitStrategies || [],
+      
+      // Complete Client.js model data for comprehensive access
+      completeClientData: client,
 
-      // Report metadata
-      reportMetadata: {
-        generatedAt: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
-        reportPeriod: this.getReportPeriod(),
-        reportVersion: '1.0',
-        confidentiality: 'CONFIDENTIAL - For authorized use only'
-      }
-    };
+      // Debug information
+      debugInfo: {
+        abTestSessionsExists: !!clientData.abTestSessions,
+        abTestSessionsLength: clientData.abTestSessions ? clientData.abTestSessions.length : 0,
+        abTestSessionsType: typeof clientData.abTestSessions,
+        allDataKeys: Object.keys(clientData || {})
+      },
+
+        // Report metadata
+        reportMetadata: {
+          generatedAt: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+          reportPeriod: this.getReportPeriod(),
+          reportVersion: '1.0',
+          confidentiality: 'CONFIDENTIAL - For authorized use only'
+        }
+      };
+    } catch (error) {
+      logger.error('❌ [PDF GENERATION] Error preparing template data', {
+        error: error.message,
+        stack: error.stack
+      });
+      
+      // Return minimal template data as fallback
+      return {
+        vault: this.prepareVaultHeaderData(vaultData),
+        client: this.getDefaultClientData(),
+        financialMetrics: {
+          netWorth: 0,
+          totalAssets: 0,
+          totalLiabilities: 0,
+          monthlyIncome: 0,
+          monthlyExpenses: 0,
+          savingsRate: 0
+        },
+        goals: { list: [], totalGoals: 0, avgProgress: 0 },
+        riskAssessment: { score: 5, level: 'Moderate', description: 'Risk assessment pending' },
+        charts: {},
+        alerts: [],
+        recommendations: [],
+        reportMetadata: {
+          generatedAt: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+          reportPeriod: this.getReportPeriod(),
+          reportVersion: '1.0',
+          confidentiality: 'CONFIDENTIAL - For authorized use only'
+        }
+      };
+    }
   }
 
   /**
@@ -261,19 +613,31 @@ class PDFGenerationService {
       const templatePath = path.join(this.templatePath, 'client-report-template.hbs');
       const templateContent = await fs.readFile(templatePath, 'utf8');
       
+      logger.info('📄 [PDF GENERATION] Template loaded', {
+        templateSize: templateContent.length,
+        templatePath
+      });
+      
       // Compile template
       const template = handlebars.compile(templateContent);
       
       // Render with data
       const html = template(templateData);
       
-      logger.info('✅ [PDF GENERATION] Template rendered successfully');
+      logger.info('✅ [PDF GENERATION] Template rendered successfully', {
+        htmlLength: html.length,
+        hasClientData: !!templateData.client,
+        hasVaultData: !!templateData.vault
+      });
       return html;
 
     } catch (error) {
       logger.error('❌ [PDF GENERATION] Error rendering template', {
         error: error.message,
-        stack: error.stack
+        stack: error.stack,
+        templateDataKeys: Object.keys(templateData || {}),
+        clientDataKeys: Object.keys(templateData?.client || {}),
+        vaultDataKeys: Object.keys(templateData?.vault || {})
       });
       throw error;
     }
@@ -308,6 +672,60 @@ class PDFGenerationService {
       }
       return options.inverse(this);
     });
+
+    // Math operations helpers
+    handlebars.registerHelper('subtract', function(a, b) {
+      const numA = parseFloat(a) || 0;
+      const numB = parseFloat(b) || 0;
+      return numA - numB;
+    });
+
+    handlebars.registerHelper('add', function(a, b) {
+      const numA = parseFloat(a) || 0;
+      const numB = parseFloat(b) || 0;
+      return numA + numB;
+    });
+
+    handlebars.registerHelper('multiply', function(a, b) {
+      const numA = parseFloat(a) || 0;
+      const numB = parseFloat(b) || 0;
+      return numA * numB;
+    });
+
+    handlebars.registerHelper('divide', function(a, b) {
+      const numA = parseFloat(a) || 0;
+      const numB = parseFloat(b) || 1;
+      return b !== 0 ? numA / numB : 0;
+    });
+
+    // Safe math helper for complex expressions
+    handlebars.registerHelper('safeMath', function(expression) {
+      try {
+        // Replace template variables with safe numbers
+        const safeExpression = expression.replace(/\{\{([^}]+)\}\}/g, (match, varName) => {
+          const value = this[varName.trim()];
+          return parseFloat(value) || 0;
+        });
+        return eval(safeExpression) || 0;
+      } catch (error) {
+        return 0;
+      }
+    });
+
+    // Safe property access helper
+    handlebars.registerHelper('safe', function(obj, path) {
+      if (!obj || !path) return '';
+      const keys = path.split('.');
+      let result = obj;
+      for (const key of keys) {
+        if (result && typeof result === 'object' && key in result) {
+          result = result[key];
+        } else {
+          return '';
+        }
+      }
+      return result || '';
+    });
   }
 
   /**
@@ -321,7 +739,7 @@ class PDFGenerationService {
     try {
       logger.info('🔄 [PDF GENERATION] Converting HTML to PDF');
 
-      // Launch browser with enhanced configuration
+      // Launch browser with enhanced configuration for stability
       browser = await puppeteer.launch({
         headless: true,
         args: [
@@ -333,16 +751,33 @@ class PDFGenerationService {
           '--no-zygote',
           '--disable-gpu',
           '--disable-web-security',
-          '--disable-features=VizDisplayCompositor'
+          '--disable-features=VizDisplayCompositor',
+          '--memory-pressure-off',
+          '--max_old_space_size=4096',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding'
         ],
-        timeout: 60000 // 60 seconds timeout for browser launch
+        timeout: 120000, // 2 minutes timeout for browser launch
+        protocolTimeout: 120000 // 2 minutes protocol timeout
       });
 
       const page = await browser.newPage();
       
-      // Set page timeout and disable images for faster loading
-      page.setDefaultTimeout(60000); // 60 seconds
-      page.setDefaultNavigationTimeout(60000); // 60 seconds
+      // Set page timeout and memory management
+      page.setDefaultTimeout(120000); // 2 minutes
+      page.setDefaultNavigationTimeout(120000); // 2 minutes
+      
+      // Set viewport for consistent rendering
+      await page.setViewport({ width: 1200, height: 800, deviceScaleFactor: 1 });
+      
+      // Enable JavaScript but disable unnecessary features
+      await page.setJavaScriptEnabled(true);
+      
+      // Set extra HTTP headers for better compatibility
+      await page.setExtraHTTPHeaders({
+        'Accept-Language': 'en-US,en;q=0.9'
+      });
       
       // Block external resources to prevent timeout issues
       await page.setRequestInterception(true);
@@ -364,16 +799,21 @@ class PDFGenerationService {
         }
       });
       
-      // Set content with shorter timeout and different wait condition
+      // Set content with enhanced timeout and wait condition
       await page.setContent(htmlContent, { 
         waitUntil: 'domcontentloaded', // Changed from 'networkidle0' to avoid waiting for external resources
-        timeout: 30000 // 30 seconds timeout
+        timeout: 60000 // 1 minute timeout
       });
       
-      // Wait a bit for any remaining content to load
-      await page.waitForTimeout(2000);
+      // Wait for any remaining content to load with memory management
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Generate PDF
+      // Force garbage collection if available
+      if (global.gc) {
+        global.gc();
+      }
+      
+      // Generate PDF with enhanced configuration
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
@@ -391,7 +831,9 @@ class PDFGenerationService {
             <span style="margin-left: 20px;">Generated on ${new Date().toLocaleDateString('en-IN')}</span>
           </div>
         `,
-        timeout: 30000 // 30 seconds timeout for PDF generation
+        timeout: 120000, // 2 minutes timeout for PDF generation
+        preferCSSPageSize: true,
+        omitBackground: false
       });
 
       logger.info('✅ [PDF GENERATION] PDF generated successfully', {
@@ -408,7 +850,23 @@ class PDFGenerationService {
       throw error;
     } finally {
       if (browser) {
-        await browser.close();
+        try {
+          // Close all pages first
+          const pages = await browser.pages();
+          await Promise.all(pages.map(page => page.close().catch(() => {})));
+          
+          // Close browser
+          await browser.close();
+          
+          // Force garbage collection if available
+          if (global.gc) {
+            global.gc();
+          }
+        } catch (cleanupError) {
+          logger.warn('⚠️ [PDF GENERATION] Error during cleanup', {
+            error: cleanupError.message
+          });
+        }
       }
     }
   }
@@ -420,13 +878,40 @@ class PDFGenerationService {
    */
   calculateRiskScore(clientData) {
     const client = clientData.client || {};
-    const financialData = client.financialData || {};
-    const assets = client.assets || [];
-    const liabilities = client.liabilities || [];
+    
+    // Extract data from Client.js model structure
+    const totalMonthlyIncome = client.totalMonthlyIncome || 0;
+    const annualIncome = client.annualIncome || 0;
+    const additionalIncome = client.additionalIncome || 0;
+    const monthlyIncome = totalMonthlyIncome || (annualIncome / 12) + (additionalIncome / 12);
+    
+    const totalMonthlyExpenses = client.totalMonthlyExpenses || 0;
+    const monthlyExpenses = client.monthlyExpenses || {};
+    const calculatedMonthlyExpenses = totalMonthlyExpenses || 
+      (monthlyExpenses.housingRent || 0) +
+      (monthlyExpenses.groceriesUtilitiesFood || 0) +
+      (monthlyExpenses.transportation || 0) +
+      (monthlyExpenses.education || 0) +
+      (monthlyExpenses.healthcare || 0) +
+      (monthlyExpenses.entertainment || 0) +
+      (monthlyExpenses.insurancePremiums || 0) +
+      (monthlyExpenses.loanEmis || 0) +
+      (monthlyExpenses.otherExpenses || 0);
 
-    // Ensure assets and liabilities are arrays
-    const safeAssets = Array.isArray(assets) ? assets : [];
-    const safeLiabilities = Array.isArray(liabilities) ? liabilities : [];
+    // Calculate liabilities from Client.js model
+    const liabilities = client.liabilities || {};
+    const debtsAndLiabilities = client.debtsAndLiabilities || {};
+    const totalLiabilities = 
+      (liabilities.loans || 0) +
+      (liabilities.creditCardDebt || 0) +
+      (debtsAndLiabilities.homeLoan?.outstandingAmount || 0) +
+      (debtsAndLiabilities.personalLoan?.outstandingAmount || 0) +
+      (debtsAndLiabilities.carLoan?.outstandingAmount || 0) +
+      (debtsAndLiabilities.educationLoan?.outstandingAmount || 0) +
+      (debtsAndLiabilities.goldLoan?.outstandingAmount || 0) +
+      (debtsAndLiabilities.businessLoan?.outstandingAmount || 0) +
+      (debtsAndLiabilities.creditCards?.totalOutstanding || 0) +
+      (debtsAndLiabilities.otherLoans?.outstandingAmount || 0);
 
     let riskScore = 5; // Base score
 
@@ -436,29 +921,37 @@ class PDFGenerationService {
     else if (age > 50) riskScore -= 1;
 
     // Income stability
-    if (client.incomeType === 'salaried') riskScore -= 1;
-    else if (client.incomeType === 'business') riskScore += 1;
+    if (client.incomeType === 'Salaried') riskScore -= 1;
+    else if (client.incomeType === 'Business') riskScore += 1;
 
     // Debt to income ratio
-    const monthlyIncome = financialData.monthlyIncome || 0;
-    const totalLiabilities = safeLiabilities.reduce((sum, liability) => sum + (liability.amount || 0), 0);
     const debtToIncomeRatio = monthlyIncome > 0 ? totalLiabilities / (monthlyIncome * 12) : 0;
     
     if (debtToIncomeRatio > 0.4) riskScore += 2;
     else if (debtToIncomeRatio < 0.2) riskScore -= 1;
 
     // Emergency fund
-    const emergencyFund = financialData.emergencyFund || 0;
-    const monthlyExpenses = financialData.monthlyExpenses || 0;
-    const emergencyCoverage = monthlyExpenses > 0 ? emergencyFund / monthlyExpenses : 0;
+    const emergencyFund = client.enhancedFinancialGoals?.emergencyFund?.targetAmount || 0;
+    const emergencyCoverage = calculatedMonthlyExpenses > 0 ? emergencyFund / calculatedMonthlyExpenses : 0;
     
     if (emergencyCoverage < 3) riskScore += 1;
     else if (emergencyCoverage > 6) riskScore -= 1;
 
-    // Investment diversification
-    const equityInvestments = safeAssets.filter(asset => asset.type === 'equity').length;
-    if (equityInvestments > 5) riskScore += 1;
-    else if (equityInvestments < 2) riskScore -= 1;
+    // Investment diversification from Client.js model
+    const assets = client.assets || {};
+    const equityInvestments = (assets.investments?.equity?.mutualFunds || 0) + (assets.investments?.equity?.directStocks || 0);
+    const fixedIncomeInvestments = (assets.investments?.fixedIncome?.ppf || 0) + (assets.investments?.fixedIncome?.epf || 0) + 
+                                  (assets.investments?.fixedIncome?.nps || 0) + (assets.investments?.fixedIncome?.fixedDeposits || 0) +
+                                  (assets.investments?.fixedIncome?.bondsDebentures || 0) + (assets.investments?.fixedIncome?.nsc || 0);
+    
+    if (equityInvestments > 0 && fixedIncomeInvestments > 0) riskScore -= 1; // Diversified
+    else if (equityInvestments > 0 && fixedIncomeInvestments === 0) riskScore += 1; // Only equity
+    else if (equityInvestments === 0 && fixedIncomeInvestments > 0) riskScore -= 2; // Conservative
+
+    // Investment experience from Client.js model
+    const investmentExperience = client.enhancedRiskProfile?.investmentExperience || client.investmentExperience || '';
+    if (investmentExperience.includes('Expert') || investmentExperience.includes('Advanced')) riskScore -= 1;
+    else if (investmentExperience.includes('Beginner')) riskScore += 1;
 
     return Math.max(1, Math.min(10, riskScore));
   }
@@ -529,45 +1022,118 @@ class PDFGenerationService {
   generateAlerts(clientData) {
     const alerts = [];
     const client = clientData.client || {};
-    const financialData = client.financialData || {};
-    const assets = client.assets || [];
-    const liabilities = client.liabilities || [];
+    
+    // Extract data from Client.js model structure
+    const totalMonthlyIncome = client.totalMonthlyIncome || 0;
+    const annualIncome = client.annualIncome || 0;
+    const additionalIncome = client.additionalIncome || 0;
+    const monthlyIncome = totalMonthlyIncome || (annualIncome / 12) + (additionalIncome / 12);
+    
+    const totalMonthlyExpenses = client.totalMonthlyExpenses || 0;
+    const monthlyExpenses = client.monthlyExpenses || {};
+    const calculatedMonthlyExpenses = totalMonthlyExpenses || 
+      (monthlyExpenses.housingRent || 0) +
+      (monthlyExpenses.groceriesUtilitiesFood || 0) +
+      (monthlyExpenses.transportation || 0) +
+      (monthlyExpenses.education || 0) +
+      (monthlyExpenses.healthcare || 0) +
+      (monthlyExpenses.entertainment || 0) +
+      (monthlyExpenses.insurancePremiums || 0) +
+      (monthlyExpenses.loanEmis || 0) +
+      (monthlyExpenses.otherExpenses || 0);
 
-    // Ensure assets and liabilities are arrays
-    const safeAssets = Array.isArray(assets) ? assets : [];
-    const safeLiabilities = Array.isArray(liabilities) ? liabilities : [];
+    // Calculate liabilities from Client.js model
+    const liabilities = client.liabilities || {};
+    const debtsAndLiabilities = client.debtsAndLiabilities || {};
+    const totalLiabilities = 
+      (liabilities.loans || 0) +
+      (liabilities.creditCardDebt || 0) +
+      (debtsAndLiabilities.homeLoan?.outstandingAmount || 0) +
+      (debtsAndLiabilities.personalLoan?.outstandingAmount || 0) +
+      (debtsAndLiabilities.carLoan?.outstandingAmount || 0) +
+      (debtsAndLiabilities.educationLoan?.outstandingAmount || 0) +
+      (debtsAndLiabilities.goldLoan?.outstandingAmount || 0) +
+      (debtsAndLiabilities.businessLoan?.outstandingAmount || 0) +
+      (debtsAndLiabilities.creditCards?.totalOutstanding || 0) +
+      (debtsAndLiabilities.otherLoans?.outstandingAmount || 0);
 
-    // Emergency fund check
-    const emergencyFund = financialData.emergencyFund || 0;
-    const monthlyExpenses = financialData.monthlyExpenses || 0;
-    if (emergencyFund < monthlyExpenses * 3) {
+    // Emergency fund check from Client.js model
+    const emergencyFund = client.enhancedFinancialGoals?.emergencyFund?.targetAmount || 0;
+    if (emergencyFund < calculatedMonthlyExpenses * 3) {
       alerts.push({
         type: 'warning',
         title: 'Insufficient Emergency Fund',
-        message: `Emergency fund covers only ${Math.round(emergencyFund / monthlyExpenses)} months of expenses. Recommended: 6 months.`,
+        message: `Emergency fund target is ₹${emergencyFund.toLocaleString('en-IN')}, covering only ${Math.round(emergencyFund / calculatedMonthlyExpenses)} months of expenses. Recommended: 6 months (₹${(calculatedMonthlyExpenses * 6).toLocaleString('en-IN')}).`,
         priority: 'high'
       });
     }
 
     // Debt to income ratio
-    const monthlyIncome = financialData.monthlyIncome || 0;
-    const totalLiabilities = safeLiabilities.reduce((sum, liability) => sum + (liability.amount || 0), 0);
     const debtToIncomeRatio = monthlyIncome > 0 ? totalLiabilities / (monthlyIncome * 12) : 0;
     if (debtToIncomeRatio > 0.4) {
       alerts.push({
         type: 'danger',
         title: 'High Debt Burden',
-        message: `Debt-to-income ratio is ${Math.round(debtToIncomeRatio * 100)}%. Consider debt consolidation.`,
+        message: `Debt-to-income ratio is ${Math.round(debtToIncomeRatio * 100)}%. Total debt: ₹${totalLiabilities.toLocaleString('en-IN')}. Consider debt consolidation.`,
         priority: 'urgent'
       });
     }
 
-    // Investment diversification
-    if (safeAssets.length < 3) {
+    // Investment diversification from Client.js model
+    const assets = client.assets || {};
+    const equityInvestments = (assets.investments?.equity?.mutualFunds || 0) + (assets.investments?.equity?.directStocks || 0);
+    const fixedIncomeInvestments = (assets.investments?.fixedIncome?.ppf || 0) + (assets.investments?.fixedIncome?.epf || 0) + 
+                                  (assets.investments?.fixedIncome?.nps || 0) + (assets.investments?.fixedIncome?.fixedDeposits || 0) +
+                                  (assets.investments?.fixedIncome?.bondsDebentures || 0) + (assets.investments?.fixedIncome?.nsc || 0);
+    const otherInvestments = (assets.investments?.other?.ulip || 0) + (assets.investments?.other?.otherInvestments || 0);
+    
+    const totalInvestments = equityInvestments + fixedIncomeInvestments + otherInvestments;
+    if (totalInvestments > 0) {
+      const equityPercentage = (equityInvestments / totalInvestments) * 100;
+      const fixedIncomePercentage = (fixedIncomeInvestments / totalInvestments) * 100;
+      
+      if (equityPercentage > 80) {
+        alerts.push({
+          type: 'warning',
+          title: 'High Equity Allocation',
+          message: `Equity allocation is ${Math.round(equityPercentage)}%. Consider diversifying with fixed income instruments.`,
+          priority: 'medium'
+        });
+      } else if (fixedIncomePercentage > 90) {
       alerts.push({
         type: 'info',
-        title: 'Limited Diversification',
-        message: 'Consider diversifying investments across different asset classes.',
+          title: 'Conservative Investment Approach',
+          message: `Fixed income allocation is ${Math.round(fixedIncomePercentage)}%. Consider adding some equity for better returns.`,
+          priority: 'low'
+        });
+      }
+    } else {
+      alerts.push({
+        type: 'info',
+        title: 'No Investment Portfolio',
+        message: 'No investments found. Consider starting with SIPs in mutual funds for long-term wealth creation.',
+        priority: 'medium'
+      });
+    }
+
+    // Insurance coverage check from Client.js model
+    const lifeInsuranceCover = client.insuranceCoverage?.lifeInsurance?.totalCoverAmount || 0;
+    const recommendedLifeCover = monthlyIncome * 12 * 10; // 10x annual income
+    if (lifeInsuranceCover < recommendedLifeCover) {
+      alerts.push({
+        type: 'warning',
+        title: 'Insufficient Life Insurance Coverage',
+        message: `Current coverage: ₹${lifeInsuranceCover.toLocaleString('en-IN')}. Recommended: ₹${recommendedLifeCover.toLocaleString('en-IN')} (10x annual income).`,
+        priority: 'high'
+      });
+    }
+
+    // KYC status check from Client.js model
+    if (client.kycStatus === 'pending' || client.kycStatus === 'in_progress') {
+      alerts.push({
+        type: 'warning',
+        title: 'KYC Incomplete',
+        message: `KYC status: ${client.kycStatus}. Please complete KYC documentation for seamless investment experience.`,
         priority: 'medium'
       });
     }
@@ -583,15 +1149,48 @@ class PDFGenerationService {
   generateRecommendations(clientData) {
     const recommendations = [];
     const client = clientData.client || {};
-    const goals = client.goals || [];
+    
+    // Extract data from Client.js model structure
+    const totalMonthlyIncome = client.totalMonthlyIncome || 0;
+    const annualIncome = client.annualIncome || 0;
+    const additionalIncome = client.additionalIncome || 0;
+    const monthlyIncome = totalMonthlyIncome || (annualIncome / 12) + (additionalIncome / 12);
 
-    // Goal-based recommendations
-    const incompleteGoals = goals.filter(goal => (goal.currentAmount || 0) < (goal.targetAmount || 0));
-    if (incompleteGoals.length > 0) {
+    // Goal-based recommendations from Client.js model
+    const majorGoals = client.majorGoals || [];
+    const enhancedFinancialGoals = client.enhancedFinancialGoals || {};
+    const customGoals = enhancedFinancialGoals.customGoals || [];
+    
+    const allGoals = [
+      ...majorGoals,
+      ...customGoals,
+      ...(enhancedFinancialGoals.emergencyFund?.targetAmount > 0 ? [{
+        goalName: 'Emergency Fund',
+        targetAmount: enhancedFinancialGoals.emergencyFund.targetAmount,
+        priority: enhancedFinancialGoals.emergencyFund.priority || 'High'
+      }] : []),
+      ...(enhancedFinancialGoals.childEducation?.isApplicable ? [{
+        goalName: 'Child Education',
+        targetAmount: enhancedFinancialGoals.childEducation.targetAmount,
+        priority: 'High'
+      }] : []),
+      ...(enhancedFinancialGoals.homePurchase?.isApplicable ? [{
+        goalName: 'Home Purchase',
+        targetAmount: enhancedFinancialGoals.homePurchase.targetAmount,
+        priority: 'High'
+      }] : []),
+      ...(enhancedFinancialGoals.marriageOfDaughter?.isApplicable ? [{
+        goalName: 'Marriage of Daughter',
+        targetAmount: enhancedFinancialGoals.marriageOfDaughter.targetAmount,
+        priority: 'Medium'
+      }] : [])
+    ];
+
+    if (allGoals.length > 0) {
       recommendations.push({
         category: 'Goal Achievement',
-        title: 'Accelerate Goal Funding',
-        description: `Focus on ${incompleteGoals.length} incomplete goals with increased SIP amounts.`,
+        title: 'Focus on Financial Goals',
+        description: `You have ${allGoals.length} financial goals with total target of ₹${allGoals.reduce((sum, goal) => sum + (goal.targetAmount || 0), 0).toLocaleString('en-IN')}. Consider starting SIPs to achieve these goals.`,
         priority: 'high',
         timeline: 'Next 3 months'
       });
@@ -602,21 +1201,101 @@ class PDFGenerationService {
       recommendations.push({
         category: 'Tax Optimization',
         title: 'Maximize Tax Savings',
-        description: 'Utilize available deductions and tax-saving investments.',
+        description: 'Utilize available deductions and tax-saving investments like ELSS, PPF, and NPS.',
+        priority: 'medium',
+        timeline: 'Before March 31'
+      });
+    } else if (monthlyIncome > 0) {
+      recommendations.push({
+        category: 'Tax Optimization',
+        title: 'Start Tax Planning',
+        description: `With annual income of ₹${(monthlyIncome * 12).toLocaleString('en-IN')}, consider tax-saving investments to reduce tax liability.`,
         priority: 'medium',
         timeline: 'Before March 31'
       });
     }
 
-    // Insurance recommendations
-    const monthlyIncome = client.financialData?.monthlyIncome || 0;
-    if (monthlyIncome > 0) {
+    // Insurance recommendations from Client.js model
+    const lifeInsuranceCover = client.insuranceCoverage?.lifeInsurance?.totalCoverAmount || 0;
+    const healthInsuranceCover = client.insuranceCoverage?.healthInsurance?.totalCoverAmount || 0;
+    const recommendedLifeCover = monthlyIncome * 12 * 10; // 10x annual income
+    
+    if (lifeInsuranceCover < recommendedLifeCover) {
       recommendations.push({
         category: 'Risk Management',
         title: 'Adequate Life Insurance',
-        description: `Ensure life insurance coverage of ₹${Math.round(monthlyIncome * 12 * 10)} (10x annual income).`,
+        description: `Current coverage: ₹${lifeInsuranceCover.toLocaleString('en-IN')}. Recommended: ₹${recommendedLifeCover.toLocaleString('en-IN')} (10x annual income).`,
         priority: 'high',
         timeline: 'Next 6 months'
+      });
+    }
+
+    if (healthInsuranceCover === 0) {
+      recommendations.push({
+        category: 'Risk Management',
+        title: 'Health Insurance Coverage',
+        description: 'Consider getting health insurance to protect against medical emergencies.',
+        priority: 'high',
+        timeline: 'Next 3 months'
+      });
+    }
+
+    // Investment recommendations from Client.js model
+    const assets = client.assets || {};
+    const equityInvestments = (assets.investments?.equity?.mutualFunds || 0) + (assets.investments?.equity?.directStocks || 0);
+    const fixedIncomeInvestments = (assets.investments?.fixedIncome?.ppf || 0) + (assets.investments?.fixedIncome?.epf || 0) + 
+                                  (assets.investments?.fixedIncome?.nps || 0) + (assets.investments?.fixedIncome?.fixedDeposits || 0) +
+                                  (assets.investments?.fixedIncome?.bondsDebentures || 0) + (assets.investments?.fixedIncome?.nsc || 0);
+    const totalInvestments = equityInvestments + fixedIncomeInvestments;
+    
+    if (totalInvestments === 0 && monthlyIncome > 0) {
+      recommendations.push({
+        category: 'Investment Planning',
+        title: 'Start Systematic Investment',
+        description: `Consider starting SIPs with ₹${Math.round(monthlyIncome * 0.2).toLocaleString('en-IN')} per month (20% of income) in diversified mutual funds.`,
+        priority: 'high',
+        timeline: 'Next month'
+      });
+    } else if (equityInvestments === 0 && fixedIncomeInvestments > 0) {
+      recommendations.push({
+        category: 'Investment Planning',
+        title: 'Diversify with Equity',
+        description: 'Consider adding equity mutual funds to your portfolio for better long-term returns.',
+        priority: 'medium',
+        timeline: 'Next 6 months'
+      });
+    }
+
+    // Retirement planning recommendations from Client.js model
+    const retirementPlanning = client.retirementPlanning || {};
+    const currentAge = retirementPlanning.currentAge || this.calculateAge(client.dateOfBirth);
+    const retirementAge = retirementPlanning.retirementAge || 60;
+    const currentCorpus = retirementPlanning.currentRetirementCorpus || 0;
+    const targetCorpus = retirementPlanning.targetRetirementCorpus || 0;
+    
+    if (currentAge > 0 && retirementAge > currentAge && targetCorpus > 0) {
+      const yearsToRetirement = retirementAge - currentAge;
+      const monthlySIPRequired = targetCorpus / (yearsToRetirement * 12);
+      
+      if (currentCorpus < targetCorpus * 0.1) { // Less than 10% of target
+        recommendations.push({
+          category: 'Retirement Planning',
+          title: 'Accelerate Retirement Savings',
+          description: `Target corpus: ₹${targetCorpus.toLocaleString('en-IN')}. Consider monthly SIP of ₹${Math.round(monthlySIPRequired).toLocaleString('en-IN')} to achieve this goal.`,
+          priority: 'high',
+          timeline: 'Next 3 months'
+        });
+      }
+    }
+
+    // KYC completion recommendation
+    if (client.kycStatus === 'pending' || client.kycStatus === 'in_progress') {
+      recommendations.push({
+        category: 'Compliance',
+        title: 'Complete KYC Documentation',
+        description: 'Complete KYC documentation to enable seamless investment transactions.',
+        priority: 'medium',
+        timeline: 'Next 2 weeks'
       });
     }
 
@@ -920,6 +1599,654 @@ class PDFGenerationService {
   maskApiKey(apiKey) {
     if (!apiKey || apiKey.length < 8) return '****';
     return apiKey.substring(0, 4) + '****' + apiKey.substring(apiKey.length - 4);
+  }
+
+  /**
+   * Sanitize client data to ensure all fields exist with safe defaults
+   * @param {Object} client - Client data
+   * @returns {Object} - Sanitized client data
+   */
+  sanitizeClientData(client) {
+    if (!client || typeof client !== 'object') {
+      return this.getDefaultClientData();
+    }
+
+    return {
+      // Personal Information
+      firstName: this.safeString(client.firstName),
+      lastName: this.safeString(client.lastName),
+      email: this.safeString(client.email),
+      phoneNumber: this.safeString(client.phoneNumber),
+      dateOfBirth: this.safeString(client.dateOfBirth),
+      panNumber: this.safeString(client.panNumber),
+      maritalStatus: this.safeString(client.maritalStatus),
+      numberOfDependents: this.safeNumber(client.numberOfDependents),
+      gender: this.safeString(client.gender),
+      
+      // Address Information
+      address: {
+        street: this.safeString(client.address?.street),
+        city: this.safeString(client.address?.city),
+        state: this.safeString(client.address?.state),
+        zipCode: this.safeString(client.address?.zipCode),
+        country: this.safeString(client.address?.country) || 'India'
+      },
+      
+      // Income & Employment
+      occupation: this.safeString(client.occupation),
+      employerBusinessName: this.safeString(client.employerBusinessName),
+      totalMonthlyIncome: this.safeNumber(client.totalMonthlyIncome),
+      incomeType: this.safeString(client.incomeType),
+      totalMonthlyExpenses: this.safeNumber(client.totalMonthlyExpenses),
+      annualIncome: this.safeNumber(client.annualIncome),
+      additionalIncome: this.safeNumber(client.additionalIncome),
+      
+      // Expense Breakdown
+      expenseBreakdown: {
+        showBreakdown: this.safeBoolean(client.expenseBreakdown?.showBreakdown),
+        housingRent: this.safeNumber(client.expenseBreakdown?.housingRent),
+        foodGroceries: this.safeNumber(client.expenseBreakdown?.foodGroceries),
+        transportation: this.safeNumber(client.expenseBreakdown?.transportation),
+        utilities: this.safeNumber(client.expenseBreakdown?.utilities),
+        entertainment: this.safeNumber(client.expenseBreakdown?.entertainment),
+        healthcare: this.safeNumber(client.expenseBreakdown?.healthcare)
+      },
+      
+      // Monthly Expenses
+      monthlyExpenses: {
+        housingRent: this.safeNumber(client.monthlyExpenses?.housingRent),
+        groceriesUtilitiesFood: this.safeNumber(client.monthlyExpenses?.groceriesUtilitiesFood),
+        transportation: this.safeNumber(client.monthlyExpenses?.transportation),
+        education: this.safeNumber(client.monthlyExpenses?.education),
+        healthcare: this.safeNumber(client.monthlyExpenses?.healthcare),
+        entertainment: this.safeNumber(client.monthlyExpenses?.entertainment),
+        insurancePremiums: this.safeNumber(client.monthlyExpenses?.insurancePremiums),
+        loanEmis: this.safeNumber(client.monthlyExpenses?.loanEmis),
+        otherExpenses: this.safeNumber(client.monthlyExpenses?.otherExpenses)
+      },
+      
+      // Annual Expenses
+      expenseNotes: this.safeString(client.expenseNotes),
+      annualTaxes: this.safeNumber(client.annualTaxes),
+      annualVacationExpenses: this.safeNumber(client.annualVacationExpenses),
+      
+      // Retirement Planning
+      retirementPlanning: {
+        currentAge: this.safeNumber(client.retirementPlanning?.currentAge),
+        retirementAge: this.safeNumber(client.retirementPlanning?.retirementAge) || 60,
+        hasRetirementCorpus: this.safeBoolean(client.retirementPlanning?.hasRetirementCorpus),
+        currentRetirementCorpus: this.safeNumber(client.retirementPlanning?.currentRetirementCorpus),
+        targetRetirementCorpus: this.safeNumber(client.retirementPlanning?.targetRetirementCorpus)
+      },
+      
+      // Major Goals
+      majorGoals: this.safeArray(client.majorGoals),
+      
+      // Assets
+      assets: {
+        cashBankSavings: this.safeNumber(client.assets?.cashBankSavings),
+        realEstate: this.safeNumber(client.assets?.realEstate),
+        investments: {
+          equity: {
+            mutualFunds: this.safeNumber(client.assets?.investments?.equity?.mutualFunds),
+            directStocks: this.safeNumber(client.assets?.investments?.equity?.directStocks)
+          },
+          fixedIncome: {
+            ppf: this.safeNumber(client.assets?.investments?.fixedIncome?.ppf),
+            epf: this.safeNumber(client.assets?.investments?.fixedIncome?.epf),
+            nps: this.safeNumber(client.assets?.investments?.fixedIncome?.nps),
+            fixedDeposits: this.safeNumber(client.assets?.investments?.fixedIncome?.fixedDeposits),
+            bondsDebentures: this.safeNumber(client.assets?.investments?.fixedIncome?.bondsDebentures),
+            nsc: this.safeNumber(client.assets?.investments?.fixedIncome?.nsc)
+          },
+          other: {
+            ulip: this.safeNumber(client.assets?.investments?.other?.ulip),
+            otherInvestments: this.safeNumber(client.assets?.investments?.other?.otherInvestments)
+          }
+        }
+      },
+      
+      // Debts & Liabilities
+      debtsAndLiabilities: {
+        homeLoan: {
+          hasLoan: this.safeBoolean(client.debtsAndLiabilities?.homeLoan?.hasLoan),
+          outstandingAmount: this.safeNumber(client.debtsAndLiabilities?.homeLoan?.outstandingAmount),
+          monthlyEMI: this.safeNumber(client.debtsAndLiabilities?.homeLoan?.monthlyEMI),
+          interestRate: this.safeNumber(client.debtsAndLiabilities?.homeLoan?.interestRate),
+          remainingTenure: this.safeNumber(client.debtsAndLiabilities?.homeLoan?.remainingTenure)
+        },
+        personalLoan: {
+          hasLoan: this.safeBoolean(client.debtsAndLiabilities?.personalLoan?.hasLoan),
+          outstandingAmount: this.safeNumber(client.debtsAndLiabilities?.personalLoan?.outstandingAmount),
+          monthlyEMI: this.safeNumber(client.debtsAndLiabilities?.personalLoan?.monthlyEMI),
+          interestRate: this.safeNumber(client.debtsAndLiabilities?.personalLoan?.interestRate)
+        },
+        carLoan: {
+          hasLoan: this.safeBoolean(client.debtsAndLiabilities?.carLoan?.hasLoan),
+          outstandingAmount: this.safeNumber(client.debtsAndLiabilities?.carLoan?.outstandingAmount),
+          monthlyEMI: this.safeNumber(client.debtsAndLiabilities?.carLoan?.monthlyEMI),
+          interestRate: this.safeNumber(client.debtsAndLiabilities?.carLoan?.interestRate)
+        },
+        educationLoan: {
+          hasLoan: this.safeBoolean(client.debtsAndLiabilities?.educationLoan?.hasLoan),
+          outstandingAmount: this.safeNumber(client.debtsAndLiabilities?.educationLoan?.outstandingAmount),
+          monthlyEMI: this.safeNumber(client.debtsAndLiabilities?.educationLoan?.monthlyEMI),
+          interestRate: this.safeNumber(client.debtsAndLiabilities?.educationLoan?.interestRate)
+        },
+        goldLoan: {
+          hasLoan: this.safeBoolean(client.debtsAndLiabilities?.goldLoan?.hasLoan),
+          outstandingAmount: this.safeNumber(client.debtsAndLiabilities?.goldLoan?.outstandingAmount),
+          monthlyEMI: this.safeNumber(client.debtsAndLiabilities?.goldLoan?.monthlyEMI),
+          interestRate: this.safeNumber(client.debtsAndLiabilities?.goldLoan?.interestRate)
+        },
+        businessLoan: {
+          hasLoan: this.safeBoolean(client.debtsAndLiabilities?.businessLoan?.hasLoan),
+          outstandingAmount: this.safeNumber(client.debtsAndLiabilities?.businessLoan?.outstandingAmount),
+          monthlyEMI: this.safeNumber(client.debtsAndLiabilities?.businessLoan?.monthlyEMI),
+          interestRate: this.safeNumber(client.debtsAndLiabilities?.businessLoan?.interestRate)
+        },
+        creditCards: {
+          hasDebt: this.safeBoolean(client.debtsAndLiabilities?.creditCards?.hasDebt),
+          totalOutstanding: this.safeNumber(client.debtsAndLiabilities?.creditCards?.totalOutstanding),
+          monthlyPayment: this.safeNumber(client.debtsAndLiabilities?.creditCards?.monthlyPayment),
+          averageInterestRate: this.safeNumber(client.debtsAndLiabilities?.creditCards?.averageInterestRate)
+        },
+        otherLoans: {
+          hasLoan: this.safeBoolean(client.debtsAndLiabilities?.otherLoans?.hasLoan),
+          loanType: this.safeString(client.debtsAndLiabilities?.otherLoans?.loanType),
+          outstandingAmount: this.safeNumber(client.debtsAndLiabilities?.otherLoans?.outstandingAmount),
+          monthlyEMI: this.safeNumber(client.debtsAndLiabilities?.otherLoans?.monthlyEMI),
+          interestRate: this.safeNumber(client.debtsAndLiabilities?.otherLoans?.interestRate)
+        }
+      },
+      
+      // Legacy Liabilities
+      liabilities: {
+        loans: this.safeNumber(client.liabilities?.loans),
+        creditCardDebt: this.safeNumber(client.liabilities?.creditCardDebt)
+      },
+      
+      // Insurance Coverage
+      insuranceCoverage: {
+        lifeInsurance: {
+          hasInsurance: this.safeBoolean(client.insuranceCoverage?.lifeInsurance?.hasInsurance),
+          totalCoverAmount: this.safeNumber(client.insuranceCoverage?.lifeInsurance?.totalCoverAmount),
+          annualPremium: this.safeNumber(client.insuranceCoverage?.lifeInsurance?.annualPremium),
+          insuranceType: this.safeString(client.insuranceCoverage?.lifeInsurance?.insuranceType)
+        },
+        healthInsurance: {
+          hasInsurance: this.safeBoolean(client.insuranceCoverage?.healthInsurance?.hasInsurance),
+          totalCoverAmount: this.safeNumber(client.insuranceCoverage?.healthInsurance?.totalCoverAmount),
+          annualPremium: this.safeNumber(client.insuranceCoverage?.healthInsurance?.annualPremium),
+          familyMembers: this.safeNumber(client.insuranceCoverage?.healthInsurance?.familyMembers) || 1
+        },
+        vehicleInsurance: {
+          hasInsurance: this.safeBoolean(client.insuranceCoverage?.vehicleInsurance?.hasInsurance),
+          annualPremium: this.safeNumber(client.insuranceCoverage?.vehicleInsurance?.annualPremium)
+        },
+        otherInsurance: {
+          hasInsurance: this.safeBoolean(client.insuranceCoverage?.otherInsurance?.hasInsurance),
+          insuranceTypes: this.safeString(client.insuranceCoverage?.otherInsurance?.insuranceTypes),
+          annualPremium: this.safeNumber(client.insuranceCoverage?.otherInsurance?.annualPremium)
+        }
+      },
+      
+      // Enhanced Financial Goals
+      enhancedFinancialGoals: {
+        emergencyFund: {
+          priority: this.safeString(client.enhancedFinancialGoals?.emergencyFund?.priority) || 'High',
+          targetAmount: this.safeNumber(client.enhancedFinancialGoals?.emergencyFund?.targetAmount)
+        },
+        childEducation: {
+          isApplicable: this.safeBoolean(client.enhancedFinancialGoals?.childEducation?.isApplicable),
+          targetAmount: this.safeNumber(client.enhancedFinancialGoals?.childEducation?.targetAmount),
+          targetYear: this.safeNumber(client.enhancedFinancialGoals?.childEducation?.targetYear)
+        },
+        homePurchase: {
+          isApplicable: this.safeBoolean(client.enhancedFinancialGoals?.homePurchase?.isApplicable),
+          targetAmount: this.safeNumber(client.enhancedFinancialGoals?.homePurchase?.targetAmount),
+          targetYear: this.safeNumber(client.enhancedFinancialGoals?.homePurchase?.targetYear)
+        },
+        marriageOfDaughter: {
+          isApplicable: this.safeBoolean(client.enhancedFinancialGoals?.marriageOfDaughter?.isApplicable),
+          targetAmount: this.safeNumber(client.enhancedFinancialGoals?.marriageOfDaughter?.targetAmount),
+          targetYear: this.safeNumber(client.enhancedFinancialGoals?.marriageOfDaughter?.targetYear),
+          daughterCurrentAge: this.safeNumber(client.enhancedFinancialGoals?.marriageOfDaughter?.daughterCurrentAge)
+        },
+        customGoals: this.safeArray(client.enhancedFinancialGoals?.customGoals)
+      },
+      
+      // Enhanced Risk Profile
+      enhancedRiskProfile: {
+        investmentExperience: this.safeString(client.enhancedRiskProfile?.investmentExperience),
+        riskTolerance: this.safeString(client.enhancedRiskProfile?.riskTolerance),
+        monthlyInvestmentCapacity: this.safeNumber(client.enhancedRiskProfile?.monthlyInvestmentCapacity)
+      },
+      
+      // Form Progress
+      formProgress: {
+        step1Completed: this.safeBoolean(client.formProgress?.step1Completed),
+        step2Completed: this.safeBoolean(client.formProgress?.step2Completed),
+        step3Completed: this.safeBoolean(client.formProgress?.step3Completed),
+        step4Completed: this.safeBoolean(client.formProgress?.step4Completed),
+        step5Completed: this.safeBoolean(client.formProgress?.step5Completed),
+        step6Completed: this.safeBoolean(client.formProgress?.step6Completed),
+        step7Completed: this.safeBoolean(client.formProgress?.step7Completed),
+        currentStep: this.safeNumber(client.formProgress?.currentStep) || 1,
+        lastSavedAt: client.formProgress?.lastSavedAt || new Date()
+      },
+      
+      // KYC Information
+      aadharNumber: this.safeString(client.aadharNumber),
+      kycStatus: this.safeString(client.kycStatus) || 'pending',
+      kycDocuments: this.safeArray(client.kycDocuments),
+      
+      // Bank Details
+      bankDetails: {
+        accountNumber: this.safeString(client.bankDetails?.accountNumber),
+        ifscCode: this.safeString(client.bankDetails?.ifscCode),
+        bankName: this.safeString(client.bankDetails?.bankName),
+        branchName: this.safeString(client.bankDetails?.branchName)
+      },
+      
+      // Status and Tracking
+      status: this.safeString(client.status) || 'invited',
+      onboardingStep: this.safeNumber(client.onboardingStep) || 0,
+      lastActiveDate: client.lastActiveDate || new Date(),
+      
+      // Communication Preferences
+      communicationPreferences: {
+        email: this.safeBoolean(client.communicationPreferences?.email),
+        sms: this.safeBoolean(client.communicationPreferences?.sms),
+        phone: this.safeBoolean(client.communicationPreferences?.phone),
+        whatsapp: this.safeBoolean(client.communicationPreferences?.whatsapp)
+      },
+      
+      // Compliance
+      fatcaStatus: this.safeString(client.fatcaStatus) || 'pending',
+      crsStatus: this.safeString(client.crsStatus) || 'pending',
+      
+      // Additional Data
+      notes: this.safeString(client.notes),
+      createdAt: client.createdAt || new Date(),
+      updatedAt: client.updatedAt || new Date()
+    };
+  }
+
+  /**
+   * Get default client data when no client exists
+   * @returns {Object} - Default client data
+   */
+  getDefaultClientData() {
+    return {
+      firstName: 'Client',
+      lastName: 'Name',
+      email: 'client@example.com',
+      phoneNumber: '',
+      dateOfBirth: '',
+      panNumber: '',
+      maritalStatus: 'Single',
+      numberOfDependents: 0,
+      gender: '',
+      address: {
+        street: '',
+        city: '',
+        state: '',
+        zipCode: '',
+        country: 'India'
+      },
+      occupation: '',
+      employerBusinessName: '',
+      totalMonthlyIncome: 0,
+      incomeType: 'Salaried',
+      totalMonthlyExpenses: 0,
+      annualIncome: 0,
+      additionalIncome: 0,
+      expenseBreakdown: {
+        showBreakdown: false,
+        housingRent: 0,
+        foodGroceries: 0,
+        transportation: 0,
+        utilities: 0,
+        entertainment: 0,
+        healthcare: 0
+      },
+      monthlyExpenses: {
+        housingRent: 0,
+        groceriesUtilitiesFood: 0,
+        transportation: 0,
+        education: 0,
+        healthcare: 0,
+        entertainment: 0,
+        insurancePremiums: 0,
+        loanEmis: 0,
+        otherExpenses: 0
+      },
+      expenseNotes: '',
+      annualTaxes: 0,
+      annualVacationExpenses: 0,
+      retirementPlanning: {
+        currentAge: 0,
+        retirementAge: 60,
+        hasRetirementCorpus: false,
+        currentRetirementCorpus: 0,
+        targetRetirementCorpus: 0
+      },
+      majorGoals: [],
+      assets: {
+        cashBankSavings: 0,
+        realEstate: 0,
+        investments: {
+          equity: {
+            mutualFunds: 0,
+            directStocks: 0
+          },
+          fixedIncome: {
+            ppf: 0,
+            epf: 0,
+            nps: 0,
+            fixedDeposits: 0,
+            bondsDebentures: 0,
+            nsc: 0
+          },
+          other: {
+            ulip: 0,
+            otherInvestments: 0
+          }
+        }
+      },
+      debtsAndLiabilities: {
+        homeLoan: {
+          hasLoan: false,
+          outstandingAmount: 0,
+          monthlyEMI: 0,
+          interestRate: 0,
+          remainingTenure: 0
+        },
+        personalLoan: {
+          hasLoan: false,
+          outstandingAmount: 0,
+          monthlyEMI: 0,
+          interestRate: 0
+        },
+        carLoan: {
+          hasLoan: false,
+          outstandingAmount: 0,
+          monthlyEMI: 0,
+          interestRate: 0
+        },
+        educationLoan: {
+          hasLoan: false,
+          outstandingAmount: 0,
+          monthlyEMI: 0,
+          interestRate: 0
+        },
+        goldLoan: {
+          hasLoan: false,
+          outstandingAmount: 0,
+          monthlyEMI: 0,
+          interestRate: 0
+        },
+        businessLoan: {
+          hasLoan: false,
+          outstandingAmount: 0,
+          monthlyEMI: 0,
+          interestRate: 0
+        },
+        creditCards: {
+          hasDebt: false,
+          totalOutstanding: 0,
+          monthlyPayment: 0,
+          averageInterestRate: 36
+        },
+        otherLoans: {
+          hasLoan: false,
+          loanType: '',
+          outstandingAmount: 0,
+          monthlyEMI: 0,
+          interestRate: 0
+        }
+      },
+      liabilities: {
+        loans: 0,
+        creditCardDebt: 0
+      },
+      insuranceCoverage: {
+        lifeInsurance: {
+          hasInsurance: false,
+          totalCoverAmount: 0,
+          annualPremium: 0,
+          insuranceType: 'Term Life'
+        },
+        healthInsurance: {
+          hasInsurance: false,
+          totalCoverAmount: 0,
+          annualPremium: 0,
+          familyMembers: 1
+        },
+        vehicleInsurance: {
+          hasInsurance: false,
+          annualPremium: 0
+        },
+        otherInsurance: {
+          hasInsurance: false,
+          insuranceTypes: '',
+          annualPremium: 0
+        }
+      },
+      enhancedFinancialGoals: {
+        emergencyFund: {
+          priority: 'High',
+          targetAmount: 0
+        },
+        childEducation: {
+          isApplicable: false,
+          targetAmount: 0,
+          targetYear: 0
+        },
+        homePurchase: {
+          isApplicable: false,
+          targetAmount: 0,
+          targetYear: 0
+        },
+        marriageOfDaughter: {
+          isApplicable: false,
+          targetAmount: 0,
+          targetYear: 0,
+          daughterCurrentAge: 0
+        },
+        customGoals: []
+      },
+      enhancedRiskProfile: {
+        investmentExperience: '',
+        riskTolerance: '',
+        monthlyInvestmentCapacity: 0
+      },
+      formProgress: {
+        step1Completed: false,
+        step2Completed: false,
+        step3Completed: false,
+        step4Completed: false,
+        step5Completed: false,
+        step6Completed: false,
+        step7Completed: false,
+        currentStep: 1,
+        lastSavedAt: new Date()
+      },
+      aadharNumber: '',
+      kycStatus: 'pending',
+      kycDocuments: [],
+      bankDetails: {
+        accountNumber: '',
+        ifscCode: '',
+        bankName: '',
+        branchName: ''
+      },
+      status: 'invited',
+      onboardingStep: 0,
+      lastActiveDate: new Date(),
+      communicationPreferences: {
+        email: true,
+        sms: true,
+        phone: true,
+        whatsapp: false
+      },
+      fatcaStatus: 'pending',
+      crsStatus: 'pending',
+      notes: '',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+
+  /**
+   * Safe string conversion with fallback
+   * @param {*} value - Value to convert
+   * @returns {String} - Safe string
+   */
+  safeString(value) {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number') return value.toString();
+    if (typeof value === 'boolean') return value.toString();
+    return String(value);
+  }
+
+  /**
+   * Safe number conversion with fallback
+   * @param {*} value - Value to convert
+   * @returns {Number} - Safe number
+   */
+  safeNumber(value) {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return isNaN(value) ? 0 : value;
+    if (typeof value === 'string') {
+      const parsed = parseFloat(value);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+  }
+
+  /**
+   * Safe boolean conversion with fallback
+   * @param {*} value - Value to convert
+   * @returns {Boolean} - Safe boolean
+   */
+  safeBoolean(value) {
+    if (value === null || value === undefined) return false;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') return value.toLowerCase() === 'true';
+    if (typeof value === 'number') return value !== 0;
+    return false;
+  }
+
+  /**
+   * Safe array conversion with fallback
+   * @param {*} value - Value to convert
+   * @returns {Array} - Safe array
+   */
+  safeArray(value) {
+    if (Array.isArray(value)) return value;
+    if (value === null || value === undefined) return [];
+    return [];
+  }
+
+  /**
+   * Generate fallback HTML when template rendering fails
+   * @param {Object} templateData - Template data
+   * @returns {String} - Fallback HTML
+   */
+  generateFallbackHTML(templateData) {
+    const client = templateData.client || {};
+    const vault = templateData.vault || {};
+    
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Financial Report - ${client.name || 'Client'}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background: #2563eb; color: white; padding: 20px; text-align: center; }
+        .content { margin: 20px 0; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .error { color: #dc2626; background: #fef2f2; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Financial Report</h1>
+        <p>Generated on ${new Date().toLocaleDateString('en-IN')}</p>
+    </div>
+    
+    <div class="content">
+        <div class="error">
+            <h3>⚠️ Template Rendering Issue</h3>
+            <p>The main template could not be rendered due to a technical issue. This is a simplified version of your financial report.</p>
+        </div>
+        
+        <div class="section">
+            <h2>Client Information</h2>
+            <p><strong>Name:</strong> ${client.name || 'Not Available'}</p>
+            <p><strong>Email:</strong> ${client.email || 'Not Available'}</p>
+            <p><strong>Phone:</strong> ${client.phoneNumber || 'Not Available'}</p>
+        </div>
+        
+        <div class="section">
+            <h2>Financial Summary</h2>
+            <p><strong>Monthly Income:</strong> ₹${(client.totalMonthlyIncome || 0).toLocaleString('en-IN')}</p>
+            <p><strong>Monthly Expenses:</strong> ₹${(client.totalMonthlyExpenses || 0).toLocaleString('en-IN')}</p>
+            <p><strong>Net Worth:</strong> ₹${(templateData.financialMetrics?.netWorth || 0).toLocaleString('en-IN')}</p>
+        </div>
+        
+        <div class="section">
+            <h2>Report Status</h2>
+            <p>This is a fallback report generated due to template rendering issues. Please contact support if this persists.</p>
+        </div>
+    </div>
+</body>
+</html>`;
+  }
+
+  /**
+   * Generate minimal PDF as last resort
+   * @param {Object} clientData - Client data
+   * @param {Object} vaultData - Vault data
+   * @returns {Buffer} - Minimal PDF buffer
+   */
+  async generateMinimalPDF(clientData, vaultData) {
+    try {
+      const client = clientData.client || {};
+      const minimalHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Financial Report - ${client.firstName || 'Client'}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background: #2563eb; color: white; padding: 20px; text-align: center; }
+        .content { margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Financial Report</h1>
+        <p>Generated on ${new Date().toLocaleDateString('en-IN')}</p>
+    </div>
+    <div class="content">
+        <h2>Client: ${client.firstName || 'Unknown'} ${client.lastName || ''}</h2>
+        <p>This is a minimal report generated due to technical issues.</p>
+    </div>
+</body>
+</html>`;
+
+      return await this.htmlToPdf(minimalHTML);
+    } catch (error) {
+      logger.error('❌ [PDF GENERATION] Minimal PDF generation failed', {
+        error: error.message
+      });
+      throw error;
+    }
   }
 }
 
